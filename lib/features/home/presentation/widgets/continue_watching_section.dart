@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:skystream/core/utils/responsive_breakpoints.dart';
-import 'package:skystream/core/utils/layout_constants.dart';
+import 'package:mixstream/core/utils/responsive_breakpoints.dart';
+import 'package:mixstream/core/utils/layout_constants.dart';
 
-import 'package:skystream/features/home/presentation/widgets/continue_watching_card.dart';
-import 'package:skystream/features/library/presentation/history_provider.dart';
-import 'package:skystream/shared/widgets/desktop_scroll_wrapper.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
-import 'package:skystream/core/services/notification_service.dart';
+import 'package:mixstream/features/home/presentation/widgets/continue_watching_card.dart';
+import 'package:mixstream/features/library/presentation/history_provider.dart';
+import 'package:mixstream/shared/widgets/custom_widgets.dart';
+import 'package:mixstream/shared/widgets/desktop_scroll_wrapper.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/core/services/notification_service.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class ContinueWatchingSection extends ConsumerStatefulWidget {
   final String title;
@@ -46,76 +48,59 @@ class _ContinueWatchingSectionState
     final double width = isLarge ? 360.0 : 280.0;
     final double listHeight = isLarge ? 200.0 : 150.0;
 
+    final cs = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(
             isLarge ? LayoutConstants.dashboardContentPadding : 16,
-            widget.topPadding ?? 24,
+            widget.topPadding ?? 20,
             isLarge ? LayoutConstants.dashboardContentPadding : 16,
-            12,
+            10,
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: TextStyle(
-                        fontSize: isLarge ? 24 : 20,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      width: isLarge ? 30 : 20,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  widget.title,
+                  style: TextStyle(
+                    fontSize: isLarge ? 20 : 16,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurface,
+                  ),
                 ),
               ),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(LayoutConstants.radiusMd),
-                  hoverColor: Colors.red.withValues(alpha: 0.15),
-                  onTap: () {
-                    final l10n = AppLocalizations.of(context)!;
-                    showDialog<void>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text(l10n.clearAllHistory),
-                        content: Text(l10n.confirmClearHistory),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(l10n.cancel),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              ref
-                                  .read(watchHistoryProvider.notifier)
-                                  .clearAllHistory();
-                              Navigator.pop(context);
-                              ref
-                                  .read(notificationServiceProvider)
-                                  .showSuccess(l10n.watchHistoryCleared);
-                            },
-                            child: Text(
-                              l10n.clearAll,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
+              CustomButton(
+                onPressed: () {
+                  final l10n = AppLocalizations.of(context)!;
+                  showDialog<void>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(l10n.clearAllHistory),
+                      content: Text(l10n.confirmClearHistory),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(l10n.cancel),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            ref
+                                .read(watchHistoryProvider.notifier)
+                                .clearAllHistory();
+                            Navigator.pop(context);
+                            ref
+                                .read(notificationServiceProvider)
+                                .showSuccess(l10n.watchHistoryCleared);
+                          },
+                          child: Text(
+                            l10n.clearAll,
+                            style: TextStyle(
+                              color: cs.error,
+                            ),
                             ),
                           ),
                         ],
@@ -130,11 +115,7 @@ class _ContinueWatchingSectionState
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.delete_outline,
-                          size: 16,
-                          color: Colors.red,
-                        ),
+                        const AppIcon('delete_outline', size: 16, color: Colors.red),
                         const SizedBox(width: 8),
                         Text(
                           AppLocalizations.of(context)!.clearAll,
@@ -147,7 +128,6 @@ class _ContinueWatchingSectionState
                       ],
                     ),
                   ),
-                ),
               ),
             ],
           ),

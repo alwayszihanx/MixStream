@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "dev.akash.skystream"
+    namespace = "io.alwayszihan.mixstream"
     compileSdk = rootProject.extra["projectCompileSdk"] as Int
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "dev.akash.skystream"
+        applicationId = "io.alwayszihan.mixstream"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

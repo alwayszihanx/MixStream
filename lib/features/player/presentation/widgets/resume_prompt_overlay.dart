@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import '../../../../shared/widgets/app_icon.dart';
+import '../../../../shared/widgets/custom_widgets.dart';
 import 'hotstar_player_style.dart';
 import 'player_prompt_placement.dart';
 
@@ -138,7 +140,7 @@ class _CountdownFillButtonState extends State<CountdownFillButton>
     final buttonHeight = widget.subtitle == null || widget.subtitle!.isEmpty
         ? (isCompact ? 46.0 : 52.0)
         : (isCompact ? 58.0 : 64.0);
-    final radius = isCompact ? 8.0 : 10.0;
+    final radius = ButtonDesign.borderRadius;
     final borderRadius = BorderRadius.circular(radius);
 
     return FocusTraversalGroup(
@@ -165,12 +167,6 @@ class _CountdownFillButtonState extends State<CountdownFillButton>
           builder: (context) {
             final isFocused = Focus.of(context).hasFocus;
 
-            // Layout: DecoratedBox (border + shadow) → ClipRRect → Material
-            // (ink) → Row [ icon | labels | dismiss? ]
-            //
-            // The countdown fill is painted as a custom background on the
-            // Material using AnimatedBuilder, so there is NO Stack at all —
-            // just a single layered widget tree.
             return SizedBox(
               width: buttonWidth,
               height: buttonHeight,
@@ -183,7 +179,7 @@ class _CountdownFillButtonState extends State<CountdownFillButton>
                     color: isFocused && widget.isTv
                         ? HotstarPlayerStyle.accent
                         : Colors.white.withValues(alpha: 0.22),
-                    width: isFocused && widget.isTv ? 2 : 1,
+                    width: isFocused && widget.isTv ? 2 : ButtonDesign.borderWidth,
                   ),
                   boxShadow: isFocused && widget.isTv
                       ? [
@@ -194,13 +190,16 @@ class _CountdownFillButtonState extends State<CountdownFillButton>
                             blurRadius: 8,
                           ),
                         ]
-                      : null,
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                 ),
                 child: ClipRRect(
                   borderRadius: borderRadius,
-                  // AnimatedBuilder drives the fill width; the content Row
-                  // sits on top via foregroundDecoration on a second
-                  // DecoratedBox so there is still no Stack.
                   child: AnimatedBuilder(
                     animation: _controller,
                     builder: (context, child) => DecoratedBox(
@@ -223,18 +222,15 @@ class _CountdownFillButtonState extends State<CountdownFillButton>
                         borderRadius: borderRadius,
                         onTap: _handlePressed,
                         child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isCompact ? 12 : 16,
-                            vertical: isCompact ? 7 : 8,
-                          ),
+                          padding: ButtonDesign.padding,
                           child: Row(
                             children: [
-                              const Icon(
-                                Icons.play_arrow_rounded,
+                              const AppIcon(
+                                'play_arrow_rounded',
                                 color: Colors.white,
                                 size: 22,
                               ),
-                              SizedBox(width: isCompact ? 6 : 8),
+                              SizedBox(width: ButtonDesign.contentGap),
                               Expanded(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -247,7 +243,7 @@ class _CountdownFillButtonState extends State<CountdownFillButton>
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: isCompact ? 13 : 15,
-                                        fontWeight: FontWeight.w800,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     if (widget.subtitle != null &&
@@ -262,7 +258,7 @@ class _CountdownFillButtonState extends State<CountdownFillButton>
                                             alpha: 0.78,
                                           ),
                                           fontSize: isCompact ? 10 : 11,
-                                          fontWeight: FontWeight.w600,
+                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                     ],
@@ -279,8 +275,8 @@ class _CountdownFillButtonState extends State<CountdownFillButton>
                                     minHeight: 28,
                                   ),
                                   onPressed: _handleDismiss,
-                                  icon: const Icon(
-                                    Icons.close_rounded,
+                                  icon: const AppIcon(
+                                    'close_rounded',
                                     color: Colors.white,
                                     size: 18,
                                   ),

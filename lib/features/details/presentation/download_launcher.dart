@@ -13,7 +13,8 @@ import '../../../core/router/app_router.dart';
 import '../../../shared/widgets/loading_dialog.dart';
 import '../../../shared/widgets/custom_widgets.dart';
 import '../../../shared/widgets/loading_indicator.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 part 'download_launcher.g.dart';
 
@@ -48,7 +49,7 @@ class DownloadLauncher {
     try {
       // 2. Resolve streams
       final manager = _ref.read(extensionManagerProvider.notifier);
-      SkyStreamProvider? provider;
+      MixStreamProvider? provider;
       if (item.provider != null) {
         try {
           final val = item.provider!;
@@ -122,7 +123,7 @@ class DownloadLauncher {
                     final host = Uri.tryParse(stream.url)?.host ?? '';
 
                     return ListTile(
-                      leading: const Icon(Icons.file_download_outlined),
+                      leading: const AppIcon('file_download_outlined'),
                       title: Text(label),
                       subtitle: host.isNotEmpty ? Text(host) : null,
                       onTap: () {
@@ -240,15 +241,15 @@ class DownloadLauncher {
               ],
             ),
             actions: [
-              TextButton(
+              CustomButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text(l10n.cancel),
+                label: l10n.cancel,
               ),
-              ElevatedButton(
+              CustomButton(
+                isPrimary: true,
                 onPressed: () async {
                   Navigator.pop(ctx);
 
-                  // Finalize path and filename
                   final episodeData = item.episodes?.firstWhereOrNull(
                     (e) => e.url == resolveUrl,
                   );
@@ -325,20 +326,21 @@ class DownloadLauncher {
         title: Text(l10n.downloadUnavailable),
         content: Text(message),
         actions: [
-          TextButton(
+          CustomButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.cancel),
+            label: l10n.cancel,
           ),
-          ElevatedButton(
+          CustomButton(
+            isPrimary: true,
             onPressed: () {
               Navigator.pop(ctx);
               launch(
                 context,
                 item,
                 episodeUrl: resolveUrl,
-              ); // Go back to source picker
+              );
             },
-            child: Text(l10n.selectAnotherSource),
+            label: l10n.selectAnotherSource,
           ),
         ],
       ),

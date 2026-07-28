@@ -509,7 +509,7 @@ class DownloadService {
 
     if (isIOS) {
       baseDir = BaseDirectory.applicationDocuments;
-      // On iOS, 'directory' (from getDownloadPath(absolute: false)) is relative: "Skystream/Title"
+      // On iOS, 'directory' (from getDownloadPath(absolute: false)) is relative: "MixStream/Title"
       taskDirectory = directory;
     } else {
       // Android, Windows, macOS, Linux: use absolute paths with BaseDirectory.root
@@ -517,7 +517,7 @@ class DownloadService {
       if (isAndroid) {
         taskDirectory = p.join(await _getPublicDownloadsPath(), directory);
       } else {
-        // Desktop: directory is already absolute (e.g. /Users/akash/Downloads/Skystream/Title)
+        // Desktop: directory is already absolute (e.g. /Users/akash/Downloads/MixStream/Title)
         taskDirectory = directory;
       }
     }
@@ -580,12 +580,12 @@ class DownloadService {
     final publicDir = await _getPublicDownloadsPath();
 
     if (Platform.isAndroid || Platform.isIOS) {
-      path = p.join("Skystream", sanitizedTitle);
+      path = p.join("MixStream", sanitizedTitle);
       if (absolute) {
         path = p.join(publicDir, path);
       }
     } else {
-      path = p.join(dir.path, "Skystream", sanitizedTitle);
+      path = p.join(dir.path, "MixStream", sanitizedTitle);
     }
 
     // Add Season subdirectory if it's a series and we have an episode
@@ -678,12 +678,12 @@ class DownloadService {
 
   Future<void> _deleteEmptyParentDirectories(Directory directory) async {
     try {
-      // 1. Safety check: Only delete if it's within a 'Skystream' folder
-      if (!directory.path.contains('Skystream')) return;
+      // 1. Safety check: Only delete if it's within a 'MixStream' folder
+      if (!directory.path.contains('MixStream')) return;
 
-      // 2. Stop at the main 'Skystream' root to avoid deleting the base app directory
-      if (directory.path.endsWith('Skystream') ||
-          directory.path.endsWith('Skystream/')) {
+      // 2. Stop at the main 'MixStream' root to avoid deleting the base app directory
+      if (directory.path.endsWith('MixStream') ||
+          directory.path.endsWith('MixStream/')) {
         return;
       }
 

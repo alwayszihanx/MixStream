@@ -133,12 +133,12 @@ jobs:
           
           # Universal Release
           if [ -f "app-release.apk" ]; then
-            mv "app-release.apk" "../../../../skystream-android-universal-${VERSION}.apk"
+            mv "app-release.apk" "../../../../mixstream-android-universal-${VERSION}.apk"
           fi
           
           # Universal Debug
           if [ -f "app-debug.apk" ]; then
-            mv "app-debug.apk" "../../../../skystream-android-debug-${VERSION}.apk"
+            mv "app-debug.apk" "../../../../mixstream-android-debug-${VERSION}.apk"
           fi
           
           # Splits
@@ -147,7 +147,7 @@ jobs:
               # Extract ABI: app-<abi>-release.apk -> <abi>
               abi="${f#app-}"
               abi="${abi%-release.apk}"
-              mv "$f" "../../../../skystream-android-${abi}-${VERSION}.apk"
+              mv "$f" "../../../../mixstream-android-${abi}-${VERSION}.apk"
             fi
           done
 
@@ -205,7 +205,7 @@ jobs:
           flutter build ios --release --no-codesign --dart-define-from-file=dart-defines.json
           mkdir -p Payload
           mv build/ios/iphoneos/Runner.app Payload/
-          zip -r skystream-ios-unsigned-${{ needs.version.outputs.version }}.ipa Payload
+          zip -r mixstream-ios-unsigned-${{ needs.version.outputs.version }}.ipa Payload
           
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
@@ -213,7 +213,7 @@ jobs:
           tag: ${{ needs.version.outputs.version }}
           allowUpdates: true
           replacesArtifacts: true
-          artifacts: "skystream-ios-unsigned-${{ needs.version.outputs.version }}.ipa"
+          artifacts: "mixstream-ios-unsigned-${{ needs.version.outputs.version }}.ipa"
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -298,7 +298,7 @@ jobs:
       # assertion failures in mpv_render_context_create
       - name: Re-sign Frameworks
         run: |
-          APP_PATH="build/macos/Build/Products/Release/skystream.app"
+          APP_PATH="build/macos/Build/Products/Release/mixstream.app"
           FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
           
           echo "Re-signing frameworks..."
@@ -330,12 +330,12 @@ jobs:
           
           # Create DMG
           mkdir -p dmg_temp
-          cp -R skystream.app dmg_temp/
+          cp -R mixstream.app dmg_temp/
           ln -s /Applications dmg_temp/Applications
-          hdiutil create -volname "SkyStream" -srcfolder dmg_temp -ov -format UDZO "../../../../../skystream-macos-${{ matrix.arch }}-${VERSION}.dmg"
+          hdiutil create -volname "MixStream" -srcfolder dmg_temp -ov -format UDZO "../../../../../mixstream-macos-${{ matrix.arch }}-${VERSION}.dmg"
           
           # Fallback ZIP
-          zip -ry "../../../../../skystream-macos-${{ matrix.arch }}-${VERSION}.zip" skystream.app
+          zip -ry "../../../../../mixstream-macos-${{ matrix.arch }}-${VERSION}.zip" mixstream.app
 
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
@@ -344,8 +344,8 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
           artifacts: |
-            skystream-macos-${{ matrix.arch }}-${{ needs.version.outputs.version }}.dmg
-            skystream-macos-${{ matrix.arch }}-${{ needs.version.outputs.version }}.zip
+            mixstream-macos-${{ matrix.arch }}-${{ needs.version.outputs.version }}.dmg
+            mixstream-macos-${{ matrix.arch }}-${{ needs.version.outputs.version }}.zip
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -405,7 +405,7 @@ jobs:
             throw 'libmpv-2.dll was not found in extracted mpv archive'
           }
 
-          "SKYSTREAM_WINDOWS_MPV_DLL=$($dll.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "MIXSTREAM_WINDOWS_MPV_DLL=$($dll.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Using downloaded libmpv: $($dll.FullName)"
 
       - name: Generate dart-defines file
@@ -443,7 +443,7 @@ jobs:
         shell: pwsh
         run: |
           $Version = "${{ needs.version.outputs.version }}"
-          Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "skystream-windows-${{ matrix.arch }}-$Version.zip"
+          Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "mixstream-windows-${{ matrix.arch }}-$Version.zip"
 
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
@@ -453,7 +453,7 @@ jobs:
           replacesArtifacts: true
           artifacts: |
             windows/packaging/exe/Output/*.exe
-            skystream-windows-${{ matrix.arch }}-${{ needs.version.outputs.version }}.zip
+            mixstream-windows-${{ matrix.arch }}-${{ needs.version.outputs.version }}.zip
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -530,12 +530,12 @@ jobs:
           fastforge package --platform linux --targets deb --flutter-build-args=dart-define-from-file=dart-defines.json
 
           # Rename .deb file to match tar.gz convention
-          mv dist/*/*.deb "skystream-linux-${{ matrix.arch }}-${VERSION}.deb"
+          mv dist/*/*.deb "mixstream-linux-${{ matrix.arch }}-${VERSION}.deb"
 
           # Generate the standard .tar.gz bundle as well
           flutter build linux --release --dart-define-from-file=dart-defines.json
           cd build/linux/${{ matrix.arch }}/release/bundle
-          tar -czvf "../../../../../skystream-linux-${{ matrix.arch }}-${VERSION}.tar.gz" .
+          tar -czvf "../../../../../mixstream-linux-${{ matrix.arch }}-${VERSION}.tar.gz" .
 
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
@@ -544,8 +544,8 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
           artifacts: |
-            skystream-linux-${{ matrix.arch }}-${{ needs.version.outputs.version }}.tar.gz
-            skystream-linux-${{ matrix.arch }}-${{ needs.version.outputs.version }}.deb
+            mixstream-linux-${{ matrix.arch }}-${{ needs.version.outputs.version }}.tar.gz
+            mixstream-linux-${{ matrix.arch }}-${{ needs.version.outputs.version }}.deb
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}

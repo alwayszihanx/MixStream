@@ -2,7 +2,7 @@
 <!--
   Scopes cleartext (http://) traffic.
 
-  Rationale: SkyStream runs user-installed JS plugins that may scrape sources
+  Rationale: MixStream runs user-installed JS plugins that may scrape sources
   using http:// URLs (legacy streaming sites that haven't moved to TLS).
   The audit (B7) flagged the blanket `usesCleartextTraffic="true"` as too
   permissive. Without scoping, _all_ outbound traffic would be allowed in

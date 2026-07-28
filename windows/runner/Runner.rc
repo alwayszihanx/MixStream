@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "dev.akash.skystream" "\0"
-            VALUE "FileDescription", "SkyStream" "\0"
+            VALUE "CompanyName", "io.alwayszihan.mixstream" "\0"
+            VALUE "FileDescription", "MixStream" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "skystream" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 dev.akash.skystream. All rights reserved." "\0"
-            VALUE "OriginalFilename", "skystream.exe" "\0"
-            VALUE "ProductName", "SkyStream" "\0"
+            VALUE "InternalName", "mixstream" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 io.alwayszihan.mixstream. All rights reserved." "\0"
+            VALUE "OriginalFilename", "mixstream.exe" "\0"
+            VALUE "ProductName", "MixStream" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -102,6 +102,12 @@ class ExtensionsController extends _$ExtensionsController {
       final prefs = await SharedPreferences.getInstance();
       final urls = prefs.getStringList('extension_repo_urls') ?? [];
 
+      const mixplugUrl = 'https://raw.githubusercontent.com/alwayszihanx/Mixplug/main/plugins/repo.json';
+      if (!urls.contains(mixplugUrl)) {
+        urls.add(mixplugUrl);
+        await prefs.setStringList('extension_repo_urls', urls);
+      }
+
       final repos = <ExtensionRepository>[];
       final available = <String, List<ExtensionPlugin>>{};
 
@@ -402,7 +408,7 @@ class ExtensionsController extends _$ExtensionsController {
   Future<void> removeRepository(String url) async {
     try {
       final currentRepos = List<ExtensionRepository>.from(state.repositories);
-      final repoToRemove = currentRepos.firstWhere(
+      currentRepos.firstWhere(
         (r) => r.url == url,
         orElse: () => throw Exception("Repo not found"),
       );
@@ -508,10 +514,10 @@ class ExtensionsController extends _$ExtensionsController {
             await savedFile.delete();
           }
         } else {
-          // Download failed, remove from installing set
           final currentInstalling = Set<String>.from(state.installingPlugins)
             ..remove(plugin.packageName);
-          state = ExtensionsSuccess(
+          state = ExtensionsError(
+            'Failed to download plugin ${plugin.name} from ${plugin.sourceUrl}',
             installedPlugins: state.installedPlugins,
             repositories: state.repositories,
             availablePlugins: state.availablePlugins,

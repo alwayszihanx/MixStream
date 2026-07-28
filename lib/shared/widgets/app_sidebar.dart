@@ -2,8 +2,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
-import 'package:skystream/core/utils/layout_constants.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import 'app_icon.dart';
+import 'package:mixstream/core/utils/layout_constants.dart';
 
 /// Global provider to track whether the D-pad/keyboard navigation mode is active.
 /// This prevents cursor hover magnification from fighting with focus magnification,
@@ -128,11 +129,11 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     final isDpadMode = ref.watch<bool>(isDpadActiveProvider);
 
     final destinations = [
-      (Icons.home_outlined, Icons.home, l10n.home),
-      (Icons.search, Icons.search, l10n.search),
-      (Icons.explore_outlined, Icons.explore, l10n.explore),
-      (Icons.video_library_outlined, Icons.video_library, l10n.library),
-      (Icons.settings_outlined, Icons.settings, l10n.settings),
+      ('home_outlined', 'home', l10n.home),
+      ('search', 'search', l10n.search),
+      ('explore_outlined', 'explore', l10n.explore),
+      ('video_library_outlined', 'video_library', l10n.library),
+      ('settings_outlined', 'settings', l10n.settings),
     ];
     assert(
       destinations.length == kSidebarDestinationCount,
@@ -243,7 +244,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: List.generate(destinations.length, (i) {
-                    final (outlinedIcon, filledIcon, label) = destinations[i];
+                    final (outlinedIconName, filledIconName, label) = destinations[i];
                     final isSelected = widget.currentIndex == i;
 
                     return AnimatedPositioned(
@@ -257,7 +258,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       height: itemSizes[i],
                       child: _SidebarDockItem(
                         focusNode: widget.focusNodes[i],
-                        icon: isSelected ? filledIcon : outlinedIcon,
+                        iconName: isSelected ? filledIconName : outlinedIconName,
                         label: label,
                         isSelected: isSelected,
                         iconSize: iconSizes[i],
@@ -280,7 +281,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
 
 class _SidebarDockItem extends ConsumerStatefulWidget {
   final FocusNode focusNode;
-  final IconData icon;
+  final String iconName;
   final String label;
   final bool isSelected;
   final double iconSize;
@@ -291,7 +292,7 @@ class _SidebarDockItem extends ConsumerStatefulWidget {
 
   const _SidebarDockItem({
     required this.focusNode,
-    required this.icon,
+    required this.iconName,
     required this.label,
     required this.isSelected,
     required this.iconSize,
@@ -411,11 +412,10 @@ class _SidebarDockItemState extends ConsumerState<_SidebarDockItem> {
                                 curve: const _AceternitySpringCurve(),
                                 tween: Tween<double>(end: widget.iconSize),
                                 builder: (context, animatedIconSize, child) {
-                                  return Icon(
-                                    widget.icon,
+                                  return AppIcon(
+                                    widget.iconName,
                                     color: iconColor,
-                                    size:
-                                        animatedIconSize, // Dynamic font size animated on the spring curve
+                                    size: animatedIconSize,
                                   );
                                 },
                               ),

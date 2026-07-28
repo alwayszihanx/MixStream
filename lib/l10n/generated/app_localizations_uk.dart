@@ -9,7 +9,7 @@ class AppLocalizationsUk extends AppLocalizations {
   AppLocalizationsUk([String locale = 'uk']) : super(locale);
 
   @override
-  String get appTitle => 'SkyStream';
+  String get appTitle => 'MixStream';
 
   @override
   String get languageName => 'Українська';

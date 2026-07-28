@@ -9,7 +9,7 @@ class AppLocalizationsHi extends AppLocalizations {
   AppLocalizationsHi([String locale = 'hi']) : super(locale);
 
   @override
-  String get appTitle => 'SkyStream';
+  String get appTitle => 'MixStream';
 
   @override
   String get languageName => 'हिन्दी';

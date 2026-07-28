@@ -9,7 +9,7 @@ class AppLocalizationsSv extends AppLocalizations {
   AppLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
-  String get appTitle => 'SkyStream';
+  String get appTitle => 'MixStream';
 
   @override
   String get languageName => 'Svenska';

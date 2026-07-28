@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:collection/collection.dart';
 import '../player_controller.dart';
 import 'hotstar_player_style.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class SubtitleCue {
   final int startTimeMs;
@@ -635,9 +636,7 @@ class _SubtitleSyncDialogState extends ConsumerState<SubtitleSyncDialog> {
                               // subtitle_offset_subtract_more (<<, -1000ms)
                               IconButton(
                                 focusNode: _subtractMoreFocusNode,
-                                icon: const Icon(
-                                  Icons.keyboard_double_arrow_left_rounded,
-                                ),
+                                icon: AppIcon('keyboard_double_arrow_left_rounded', ),
                                 color: Colors.white,
                                 iconSize: 28,
                                 onPressed: () => _changeBy(-1000),
@@ -646,7 +645,7 @@ class _SubtitleSyncDialogState extends ConsumerState<SubtitleSyncDialog> {
                               // subtitle_offset_subtract (-, -100ms)
                               IconButton(
                                 focusNode: _subtractFocusNode,
-                                icon: const Icon(Icons.remove_rounded),
+                                icon: const AppIcon('remove_rounded'),
                                 color: Colors.white,
                                 iconSize: 28,
                                 onPressed: () => _changeBy(-100),
@@ -717,7 +716,7 @@ class _SubtitleSyncDialogState extends ConsumerState<SubtitleSyncDialog> {
                               // subtitle_offset_add (+, +100ms)
                               IconButton(
                                 focusNode: _addFocusNode,
-                                icon: const Icon(Icons.add_rounded),
+                                icon: const AppIcon('add_rounded'),
                                 color: Colors.white,
                                 iconSize: 28,
                                 onPressed: () => _changeBy(100),
@@ -726,9 +725,7 @@ class _SubtitleSyncDialogState extends ConsumerState<SubtitleSyncDialog> {
                               // subtitle_offset_add_more (>>, +1000ms)
                               IconButton(
                                 focusNode: _addMoreFocusNode,
-                                icon: const Icon(
-                                  Icons.keyboard_double_arrow_right_rounded,
-                                ),
+                                icon: AppIcon('keyboard_double_arrow_right_rounded', ),
                                 color: Colors.white,
                                 iconSize: 28,
                                 onPressed: () => _changeBy(1000),
@@ -821,7 +818,7 @@ class _SubtitleSyncDialogState extends ConsumerState<SubtitleSyncDialog> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const AppIcon('close'),
           onPressed: _exitDialog,
         ),
       ),

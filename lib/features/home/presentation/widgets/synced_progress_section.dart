@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:skystream/core/utils/responsive_breakpoints.dart';
-import 'package:skystream/core/utils/layout_constants.dart';
-import 'package:skystream/features/tracking/domain/sync_progress_item.dart';
-import 'package:skystream/shared/widgets/desktop_scroll_wrapper.dart';
+import 'package:mixstream/core/utils/responsive_breakpoints.dart';
+import 'package:mixstream/core/utils/layout_constants.dart';
+import 'package:mixstream/features/tracking/domain/sync_progress_item.dart';
+import 'package:mixstream/shared/widgets/desktop_scroll_wrapper.dart';
 import 'synced_progress_card.dart';
 
 class SyncedProgressSection extends ConsumerStatefulWidget {
@@ -41,38 +41,25 @@ class _SyncedProgressSectionState extends ConsumerState<SyncedProgressSection> {
     final double width = isLarge ? 360.0 : 280.0;
     final double listHeight = isLarge ? 200.0 : 150.0;
 
+    final cs = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(
             isLarge ? LayoutConstants.dashboardContentPadding : 16,
-            24,
+            20,
             isLarge ? LayoutConstants.dashboardContentPadding : 16,
-            12,
+            10,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                widget.title,
-                style: TextStyle(
-                  fontSize: isLarge ? 24 : 20,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                width: isLarge ? 30 : 20,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ],
+          child: Text(
+            widget.title,
+            style: TextStyle(
+              fontSize: isLarge ? 20 : 16,
+              fontWeight: FontWeight.bold,
+              color: cs.onSurface,
+            ),
           ),
         ),
         SizedBox(

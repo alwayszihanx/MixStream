@@ -12,11 +12,12 @@ import '../../../../shared/widgets/custom_widgets.dart';
 import '../../../../shared/widgets/desktop_scroll_wrapper.dart';
 import '../subtitle_search_provider.dart';
 import '../../domain/entity/subtitle_model.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import 'hotstar_player_style.dart';
 import '../../../../core/utils/stream_quality_sorter.dart';
 import 'subtitle_sync_dialog.dart';
 import 'subtitle_appearance_dialog.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class _TrackDialogResult {
   final String? audioId;
@@ -209,7 +210,7 @@ class PlayerBottomSheets {
                               onPressed: () => Navigator.pop(ctx),
                               color: Colors.white,
                               iconSize: 36,
-                              icon: const Icon(Icons.close),
+                              icon: const AppIcon('close'),
                               tooltip: l10n.cancel,
                               autofocus: true,
                             ),
@@ -473,7 +474,7 @@ class PlayerBottomSheets {
                             ),
                             IconButton(
                               onPressed: () => Navigator.pop(ctx),
-                              icon: const Icon(Icons.close),
+                              icon: const AppIcon('close'),
                               color: HotstarPlayerStyle.secondaryText,
                               autofocus: true,
                             ),
@@ -492,7 +493,7 @@ class PlayerBottomSheets {
                         Row(
                           children: [
                             _speedStepButton(
-                              icon: Icons.remove,
+                              icon: const AppIcon('remove'),
                               onPressed: () => setSpeed(selectedSpeed - 0.1),
                               compact: isCompact,
                             ),
@@ -533,7 +534,7 @@ class PlayerBottomSheets {
                             ),
                             SizedBox(width: isCompact ? 10 : 18),
                             _speedStepButton(
-                              icon: Icons.add,
+                              icon: const AppIcon('add'),
                               onPressed: () => setSpeed(selectedSpeed + 0.1),
                               compact: isCompact,
                             ),
@@ -572,7 +573,7 @@ class PlayerBottomSheets {
   }
 
   static Widget _speedStepButton({
-    required IconData icon,
+    required Widget icon,
     required VoidCallback? onPressed,
     bool compact = false,
   }) {
@@ -597,7 +598,7 @@ class PlayerBottomSheets {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back),
+                    icon: const AppIcon('arrow_back'),
                     color: HotstarPlayerStyle.secondaryText,
                     iconSize: 34,
                   ),
@@ -651,7 +652,7 @@ class PlayerBottomSheets {
             final l10n = AppLocalizations.of(dialogContext)!;
 
             Widget option({
-              required IconData icon,
+              required Widget icon,
               required String label,
               required VoidCallback? onTap,
             }) {
@@ -665,13 +666,7 @@ class PlayerBottomSheets {
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        icon,
-                        color: onTap == null
-                            ? HotstarPlayerStyle.mutedText
-                            : HotstarPlayerStyle.secondaryText,
-                        size: 24,
-                      ),
+                      icon,
                       const SizedBox(width: 22),
                       Text(
                         label,
@@ -711,7 +706,7 @@ class PlayerBottomSheets {
                           ),
                           IconButton(
                             onPressed: () => Navigator.pop(ctx),
-                            icon: const Icon(Icons.close),
+                            icon: const AppIcon('close'),
                             color: Colors.white,
                             iconSize: 36,
                             tooltip: l10n.cancel,
@@ -738,8 +733,8 @@ class PlayerBottomSheets {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
-                                Icons.info_outline,
+                              const AppIcon(
+                                'info_outline',
                                 color: Colors.orange,
                                 size: 18,
                               ),
@@ -757,7 +752,7 @@ class PlayerBottomSheets {
                           ),
                         ),
                       option(
-                        icon: Icons.file_open_outlined,
+                        icon: const AppIcon('file_open_outlined'),
                         label: l10n.loadFromDevice,
                         onTap: !supportsExternalSubtitleLoading
                             ? null
@@ -769,7 +764,7 @@ class PlayerBottomSheets {
                               },
                       ),
                       option(
-                        icon: Icons.sync,
+                        icon: const AppIcon('sync'),
                         label: l10n.syncDelay,
                         onTap: () {
                           Navigator.pop(ctx);
@@ -781,7 +776,7 @@ class PlayerBottomSheets {
                         },
                       ),
                       option(
-                        icon: Icons.style,
+                        icon: const AppIcon('style'),
                         label: l10n.styleSettings,
                         onTap: () {
                           Navigator.pop(ctx);
@@ -793,7 +788,7 @@ class PlayerBottomSheets {
                         },
                       ),
                       option(
-                        icon: Icons.search,
+                        icon: const AppIcon('search'),
                         label: l10n.searchOnline,
                         onTap: !supportsExternalSubtitleLoading
                             ? null
@@ -912,10 +907,7 @@ class PlayerBottomSheets {
                         hintStyle: const TextStyle(
                           color: HotstarPlayerStyle.mutedText,
                         ),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: HotstarPlayerStyle.secondaryText,
-                        ),
+                        prefixIcon: AppIcon('search', color: HotstarPlayerStyle.secondaryText,),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
@@ -930,7 +922,7 @@ class PlayerBottomSheets {
                           children: [
                             if (queryController.text.isNotEmpty)
                               IconButton(
-                                icon: const Icon(Icons.clear, size: 20),
+                                icon: AppIcon('clear', size: 20),
                                 onPressed: () {
                                   queryController.clear();
                                   final playerState = ref.read(
@@ -950,7 +942,7 @@ class PlayerBottomSheets {
                                 },
                               ),
                             IconButton(
-                              icon: const Icon(Icons.search),
+                              icon: const AppIcon('search'),
                               onPressed: () {
                                 final playerState = ref.read(
                                   playerControllerProvider,
@@ -1070,8 +1062,8 @@ class PlayerBottomSheets {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.subtitles_rounded,
+                                AppIcon(
+                                  'subtitles_rounded',
                                   size: 64,
                                   color: theme.colorScheme.onSurfaceVariant
                                       .withValues(alpha: 0.3),
@@ -1118,8 +1110,8 @@ class PlayerBottomSheets {
                                             .withValues(alpha: 0.1),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: Icon(
-                                        Icons.vpn_key_rounded,
+                                      child: AppIcon(
+                                        'vpn_key_rounded',
                                         size: 48,
                                         color: theme.colorScheme.primary
                                             .withValues(alpha: 0.5),
@@ -1163,10 +1155,7 @@ class PlayerBottomSheets {
                                           );
                                         }
                                       },
-                                      icon: const Icon(
-                                        Icons.settings_outlined,
-                                        size: 18,
-                                      ),
+                                      icon: AppIcon('settings_outlined', size: 18,),
                                       label: const Text(
                                         'View Settings Instructions',
                                       ),
@@ -1180,8 +1169,8 @@ class PlayerBottomSheets {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.subtitles_off_rounded,
+                                AppIcon(
+                                  'subtitles_off_rounded',
                                   size: 64,
                                   color: theme.colorScheme.onSurfaceVariant
                                       .withValues(alpha: 0.3),
@@ -1398,14 +1387,14 @@ class PlayerBottomSheets {
                 if (sub.isHearingImpaired)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: Icon(
-                      Icons.hearing,
+                    child: AppIcon(
+                      'hearing',
                       size: 16,
                       color: theme.hintColor.withValues(alpha: 0.5),
                     ),
                   ),
-                Icon(
-                  Icons.download_for_offline_outlined,
+                AppIcon(
+                  'download_for_offline_outlined',
                   size: 20,
                   color: theme.hintColor.withValues(alpha: 0.5),
                 ),
@@ -1503,8 +1492,7 @@ class _HotstarSourcesTabState extends State<_HotstarSourcesTab> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.filter_alt_off_rounded,
-                    color: Colors.amber, size: 18),
+                AppIcon('filter_alt_off_rounded', color: Colors.amber, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -1617,8 +1605,8 @@ class _PendingSourceTracksMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.graphic_eq_rounded,
+            AppIcon(
+              'graphic_eq_rounded',
               color: HotstarPlayerStyle.secondaryText,
               size: isCompact ? 34 : 42,
             ),
@@ -1709,7 +1697,7 @@ class _HotstarTracksTab extends StatelessWidget {
         tooltip: optionsTooltip,
         onPressed: onOptions,
         color: HotstarPlayerStyle.secondaryText,
-        icon: const Icon(Icons.settings_outlined),
+        icon: const AppIcon('settings_outlined'),
       ),
       children: [
         _HotstarOptionRow(
@@ -1892,8 +1880,8 @@ class _HotstarOptionRowState extends State<_HotstarOptionRow> {
                 SizedBox(
                   width: isCompact ? 22 : 28,
                   child: widget.selected
-                      ? const Icon(
-                          Icons.check,
+                      ? const AppIcon(
+                          'check',
                           color: HotstarPlayerStyle.accent,
                           size: 22,
                         )
@@ -2046,7 +2034,7 @@ class _SpeedPresetChipState extends State<_SpeedPresetChip> {
 }
 
 class _SpeedStepButton extends StatefulWidget {
-  final IconData icon;
+  final Widget icon;
   final VoidCallback? onPressed;
   final bool compact;
 
@@ -2061,36 +2049,21 @@ class _SpeedStepButton extends StatefulWidget {
 }
 
 class _SpeedStepButtonState extends State<_SpeedStepButton> {
-  bool _isFocused = false;
-
   @override
   Widget build(BuildContext context) {
-    return FocusableActionDetector(
-      onShowFocusHighlight: (v) => setState(() => _isFocused = v),
-      child: AnimatedScale(
-        scale: _isFocused ? 1.08 : 1.0,
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        child: IconButton(
-          onPressed: widget.onPressed,
-          icon: Icon(widget.icon, size: widget.compact ? 20 : 24),
-          color: HotstarPlayerStyle.primaryText,
-          style: IconButton.styleFrom(
-            backgroundColor: _isFocused
-                ? HotstarPlayerStyle.accent.withValues(alpha: 0.22)
-                : Colors.white.withValues(alpha: 0.06),
-            fixedSize: Size(widget.compact ? 42 : 56, widget.compact ? 42 : 56),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(widget.compact ? 10 : 14),
-              side: BorderSide(
-                color: _isFocused
-                    ? HotstarPlayerStyle.accent
-                    : Colors.transparent,
-                width: 1.5,
-              ),
-            ),
+    final size = widget.compact ? 42.0 : 56.0;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomButton(
+        onPressed: widget.onPressed,
+        padding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            widget.compact ? 10 : ButtonDesign.borderRadius,
           ),
         ),
+        child: widget.icon,
       ),
     );
   }

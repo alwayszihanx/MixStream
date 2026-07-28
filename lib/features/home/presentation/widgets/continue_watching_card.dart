@@ -2,18 +2,18 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:skystream/features/library/presentation/history_provider.dart';
+import 'package:mixstream/features/library/presentation/history_provider.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:skystream/core/router/app_router.dart';
-import 'package:skystream/core/utils/image_fallbacks.dart';
-import 'package:skystream/core/utils/layout_constants.dart';
+import 'package:mixstream/core/router/app_router.dart';
+import 'package:mixstream/core/utils/image_fallbacks.dart';
 import '../../../../core/extensions/extension_manager.dart';
 import '../../../../shared/widgets/cards_wrapper.dart';
 import '../../../../shared/widgets/loading_dialog.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
-import 'package:skystream/core/services/notification_service.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/core/services/notification_service.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class ContinueWatchingCard extends ConsumerStatefulWidget {
   final HistoryItem historyItem;
@@ -33,8 +33,6 @@ class ContinueWatchingCard extends ConsumerStatefulWidget {
 }
 
 class _ContinueWatchingCardState extends ConsumerState<ContinueWatchingCard> {
-  bool _isHovered = false;
-
   static String _normalizeMatchKey(String value) {
     return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
@@ -191,7 +189,7 @@ class _ContinueWatchingCardState extends ConsumerState<ContinueWatchingCard> {
                 Text(item.title, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
                 ListTile(
-                  leading: const Icon(Icons.info_outline),
+                  leading: const AppIcon('info_outline'),
                   title: Text(AppLocalizations.of(context)!.viewDetails),
                   onTap: () {
                     Navigator.pop(context);
@@ -203,9 +201,7 @@ class _ContinueWatchingCardState extends ConsumerState<ContinueWatchingCard> {
                   },
                 ),
                 ListTile(
-                  leading: Icon(
-                    Icons.delete_outline,
-                    color: Theme.of(context).colorScheme.error,
+                  leading: AppIcon('delete_outline', color: Theme.of(context).colorScheme.error,
                   ),
                   title: Text(
                     AppLocalizations.of(context)!.removeFromHistory,
@@ -228,7 +224,7 @@ class _ContinueWatchingCardState extends ConsumerState<ContinueWatchingCard> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.close),
+                  leading: const AppIcon('close'),
                   title: Text(AppLocalizations.of(context)!.cancel),
                   onTap: () => Navigator.pop(context),
                 ),
@@ -237,170 +233,126 @@ class _ContinueWatchingCardState extends ConsumerState<ContinueWatchingCard> {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(LayoutConstants.radiusLg),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        child: SizedBox(
-          width: widget.width,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(LayoutConstants.radiusLg),
-            child: Stack(
-              children: [
-                // Banner background
-                Positioned.fill(
-                  child: Container(
-                    color: Theme.of(context).colorScheme.surfaceContainer,
-                    child: bannerUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: bannerUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (_, _) => const SizedBox.shrink(),
-                            errorWidget: (_, _, _) => const SizedBox.shrink(),
-                          )
-                        : null,
-                  ),
+      borderRadius: BorderRadius.circular(4),
+      child: SizedBox(
+        width: widget.width,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Container(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  child: bannerUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: bannerUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (_, _) => const SizedBox.shrink(),
+                          errorWidget: (_, _, _) => const SizedBox.shrink(),
+                        )
+                      : null,
                 ),
-
-                // Dark overlay (full card) — 40% at rest, 60% on hover
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      color: Colors.black.withValues(
-                        alpha: _isHovered ? 0.40 : 0.20,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Bottom scrim gradient (from-black/80 to transparent)
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 64,
-                  child: IgnorePointer(
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [Colors.black87, Colors.transparent],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Duration badge (bottom-right)
-                if (!isLivestream)
-                  Positioned(
-                    bottom: 10,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.70),
-                        borderRadius: BorderRadius.circular(
-                          LayoutConstants.radiusMd,
-                        ),
-                      ),
-                      child: Text(
-                        '${_formatDuration(widget.historyItem.position)} / ${_formatDuration(widget.historyItem.duration)}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Progress bar (bottom edge)
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: SizedBox(
-                    height: 4,
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: Colors.transparent,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Bottom info column
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 24, 12, 28),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (hasEpisodes || isLivestream) ...[
-                          Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                        ],
-                        if (isLivestream)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.20),
-                              borderRadius: BorderRadius.circular(
-                                LayoutConstants.radiusSm,
-                              ),
-                            ),
-                            child: const Text(
-                              'LIVE',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          )
-                        else
-                          Text(
-                            episodeLabel ?? item.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(12, 32, 12, 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.8),
                       ],
                     ),
                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (hasEpisodes || isLivestream)
+                        Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      const SizedBox(height: 2),
+                      if (isLivestream)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(
+                            'LIVE',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        )
+                      else ...[
+                        Text(
+                          episodeLabel ?? item.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Text(
+                              _formatDuration(widget.historyItem.position),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(2),
+                                child: LinearProgressIndicator(
+                                  value: progress,
+                                  minHeight: 3,
+                                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatDuration(widget.historyItem.duration),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

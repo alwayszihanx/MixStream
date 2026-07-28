@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:skystream/core/utils/layout_constants.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
-import 'package:skystream/shared/widgets/cards_wrapper.dart';
-import 'package:skystream/features/explore/presentation/delegates/explore_search_delegate.dart';
-import 'package:skystream/features/explore/presentation/widgets/unified_filter_dialog.dart';
-import 'package:skystream/features/explore/data/explore_filter_provider.dart';
-import 'package:skystream/features/explore/data/explore_mode_provider.dart';
-import 'package:skystream/features/explore/presentation/widgets/hover_border_gradient.dart';
+import 'package:mixstream/core/utils/layout_constants.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/shared/widgets/cards_wrapper.dart';
+import 'package:mixstream/features/explore/presentation/delegates/explore_search_delegate.dart';
+import 'package:mixstream/features/explore/presentation/widgets/unified_filter_dialog.dart';
+import 'package:mixstream/features/explore/data/explore_filter_provider.dart';
+import 'package:mixstream/features/explore/data/explore_mode_provider.dart';
+import 'package:mixstream/features/explore/presentation/widgets/hover_border_gradient.dart';
 import 'dart:async';
+import '../../../../shared/widgets/app_icon.dart';
 
 /// A custom header bar for the explore screen in widescreen/desktop layout.
 ///
@@ -52,9 +53,7 @@ class ExploreHeaderBar extends ConsumerWidget {
               width: 32,
               height: 32,
               alignment: Alignment.center,
-              child: Icon(
-                Icons.arrow_back_ios_new,
-                size: 14,
+              child: AppIcon('arrow_back_ios_new', size: 14,
                 color: hasCarousel
                     ? theme.colorScheme.onSurface
                     : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
@@ -70,9 +69,7 @@ class ExploreHeaderBar extends ConsumerWidget {
               width: 32,
               height: 32,
               alignment: Alignment.center,
-              child: Icon(
-                Icons.arrow_forward_ios,
-                size: 14,
+              child: AppIcon('arrow_forward_ios', size: 14,
                 color: hasCarousel
                     ? theme.colorScheme.onSurface
                     : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
@@ -148,9 +145,7 @@ class ExploreHeaderBar extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.search,
-                      size: 18,
+                    AppIcon('search', size: 18,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
@@ -202,8 +197,7 @@ class ExploreHeaderBar extends ConsumerWidget {
                             alpha: 0.3,
                           ),
                   ),
-                  child: Icon(
-                    Icons.tune,
+                  child: AppIcon('tune',
                     color: theme.colorScheme.onSurface,
                     size: 18,
                   ),

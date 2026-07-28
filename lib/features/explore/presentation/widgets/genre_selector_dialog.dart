@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/explore_filter_provider.dart';
 import '../../data/explore_tmdb_provider.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class GenreSelectorDialog extends ConsumerWidget {
   const GenreSelectorDialog({super.key});
@@ -41,8 +42,7 @@ class GenreSelectorDialog extends ConsumerWidget {
                 padding: const EdgeInsets.all(24.0),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.category_outlined,
+                    AppIcon('category_outlined',
                       color: theme.colorScheme.primary,
                       size: 28,
                     ),
@@ -95,10 +95,8 @@ class GenreSelectorDialog extends ConsumerWidget {
                         tileColor: isSelected
                             ? theme.colorScheme.primary.withValues(alpha: 0.2)
                             : null,
-                        leading: Icon(
-                          isSelected
-                              ? Icons.check_circle
-                              : Icons.circle_outlined,
+                        leading: AppIcon(
+                          isSelected ? 'check_circle' : 'circle_outlined',
                           color: isSelected
                               ? theme.colorScheme.primary
                               : theme.colorScheme.outline,

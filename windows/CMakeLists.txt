@@ -1,10 +1,10 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(skystream LANGUAGES CXX)
+project(mixstream LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "skystream")
+set(BINARY_NAME "mixstream")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -92,18 +92,18 @@ endif()
 # Prefer a custom Shinchiro winbuild libmpv when provided.
 # This is installed AFTER plugin bundled libraries so it replaces
 # media_kit's default libmpv-2.dll in the final bundle.
-set(SKYSTREAM_WINDOWS_MPV_DLL "$ENV{SKYSTREAM_WINDOWS_MPV_DLL}")
-if(NOT SKYSTREAM_WINDOWS_MPV_DLL)
+set(MIXSTREAM_WINDOWS_MPV_DLL "$ENV{MIXSTREAM_WINDOWS_MPV_DLL}")
+if(NOT MIXSTREAM_WINDOWS_MPV_DLL)
   set(
-    SKYSTREAM_WINDOWS_MPV_DLL
+    MIXSTREAM_WINDOWS_MPV_DLL
     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/mpv/shinchiro/libmpv-2.dll"
   )
 endif()
 
-if(EXISTS "${SKYSTREAM_WINDOWS_MPV_DLL}")
-  message(STATUS "Using custom Windows libmpv: ${SKYSTREAM_WINDOWS_MPV_DLL}")
+if(EXISTS "${MIXSTREAM_WINDOWS_MPV_DLL}")
+  message(STATUS "Using custom Windows libmpv: ${MIXSTREAM_WINDOWS_MPV_DLL}")
   install(
-    FILES "${SKYSTREAM_WINDOWS_MPV_DLL}"
+    FILES "${MIXSTREAM_WINDOWS_MPV_DLL}"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime
   )

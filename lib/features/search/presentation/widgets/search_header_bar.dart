@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../search_provider.dart';
+import '../../../../shared/widgets/app_icon.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/cards_wrapper.dart';
 
@@ -389,8 +390,8 @@ class _SearchHeaderBarState extends ConsumerState<SearchHeaderBar> {
                               widget.clearButtonFocusNode.hasFocus;
                           return IconButton(
                             focusNode: widget.clearButtonFocusNode,
-                            icon: Icon(
-                              Icons.clear_rounded,
+                            icon: AppIcon(
+                              'clear_rounded',
                               size: 18,
                               color: isFocused
                                   ? theme.colorScheme.primary
@@ -450,8 +451,8 @@ class _SearchHeaderBarState extends ConsumerState<SearchHeaderBar> {
                           fontSize: 13,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
-                        prefixIcon: Icon(
-                          Icons.search_rounded,
+                        prefixIcon: AppIcon(
+                          'search_rounded',
                           size: 20,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

@@ -1,38 +1,56 @@
 import 'package:flutter/material.dart';
-import '../../../../core/utils/layout_constants.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class SettingsGroup extends StatelessWidget {
   final String title;
+  final Widget? icon;
   final List<Widget> children;
 
-  const SettingsGroup({super.key, required this.title, required this.children});
+  const SettingsGroup({
+    super.key,
+    required this.title,
+    this.icon,
+    required this.children,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: LayoutConstants.spacingMd,
-            vertical: LayoutConstants.spacingSm,
-          ),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+          child: icon != null
+              ? Row(
+                  children: [
+                    icon!,
+                    const SizedBox(width: 8),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  title,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
         Container(
-          margin: const EdgeInsets.symmetric(
-            horizontal: LayoutConstants.spacingMd,
-          ),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).dividerColor),
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Column(children: children),
         ),
@@ -42,7 +60,7 @@ class SettingsGroup extends StatelessWidget {
 }
 
 class SettingsTile extends StatefulWidget {
-  final IconData icon;
+  final Widget icon;
   final String title;
   final String? subtitle;
   final Widget? trailing;
@@ -72,21 +90,17 @@ class _SettingsTileState extends State<SettingsTile> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+
     return Column(
       children: [
         Focus(
-          // Passive observer — we want the inner ListTile's InkWell to remain
-          // the actual focus target (it's what handles onTap when OK is
-          // pressed). hasFocus on this node reflects "any descendant focused"
-          // so onFocusChange still fires when the tile is reached.
           focusNode: widget.focusNode,
           canRequestFocus: false,
           skipTraversal: true,
           onFocusChange: (f) {
             setState(() => _isFocused = f);
             if (f) {
-              // Center the focused setting row in the viewport.
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 final ctx = FocusManager.instance.primaryFocus?.context;
                 final ro = ctx?.findRenderObject();
@@ -104,27 +118,23 @@ class _SettingsTileState extends State<SettingsTile> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               color: _isFocused
-                  ? primary.withValues(alpha: 0.22)
+                  ? theme.colorScheme.onSurface.withValues(alpha: 0.05)
                   : Colors.transparent,
-              border: Border.all(
-                color: _isFocused ? primary : Colors.transparent,
-                width: 2,
-              ),
             ),
             child: Material(
               type: MaterialType.transparency,
               child: ListTile(
                 focusColor: Colors.transparent,
-                hoverColor: primary.withValues(alpha: 0.10),
+                hoverColor: theme.colorScheme.onSurface.withValues(alpha: 0.03),
                 leading: Container(
-                  padding: const EdgeInsets.all(LayoutConstants.spacingXs),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: primary.withValues(alpha: 0.1),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(widget.icon, color: primary, size: 20),
+                  child: widget.icon,
                 ),
                 title: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -132,7 +142,10 @@ class _SettingsTileState extends State<SettingsTile> {
                     Flexible(
                       child: Text(
                         widget.title,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                     if (widget.isBeta) ...[
@@ -143,15 +156,13 @@ class _SettingsTileState extends State<SettingsTile> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
                           "BETA",
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -164,16 +175,16 @@ class _SettingsTileState extends State<SettingsTile> {
                     ? Text(
                         widget.subtitle!,
                         style: TextStyle(
-                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       )
                     : null,
                 trailing:
                     widget.trailing ??
-                    const Icon(Icons.chevron_right_rounded, size: 20),
+                    AppIcon('chevron_right_rounded', size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.38)),
                 onTap: widget.onTap,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -184,7 +195,7 @@ class _SettingsTileState extends State<SettingsTile> {
             height: 1,
             indent: 56,
             endIndent: 16,
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.8),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
           ),
       ],
     );

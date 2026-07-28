@@ -7,6 +7,7 @@ import '../../data/explore_language_provider.dart';
 import '../../data/explore_tmdb_provider.dart';
 import '../../data/explore_mode_provider.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class UnifiedFilterDialog extends ConsumerStatefulWidget {
   const UnifiedFilterDialog({super.key});
@@ -81,9 +82,7 @@ class _UnifiedFilterDialogState extends ConsumerState<UnifiedFilterDialog>
                         padding: const EdgeInsets.all(20.0),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.tune,
-                              color: Theme.of(context).colorScheme.primary,
+                            AppIcon('tune', color: Theme.of(context).colorScheme.primary,
                               size: 28,
                             ),
                             const SizedBox(width: LayoutConstants.spacingSm),
@@ -98,9 +97,7 @@ class _UnifiedFilterDialogState extends ConsumerState<UnifiedFilterDialog>
                             const Spacer(),
                             IconButton(
                               onPressed: () => Navigator.of(context).pop(),
-                              icon: Icon(
-                                Icons.close,
-                                color: Theme.of(context).colorScheme.onSurface,
+                              icon: AppIcon('close', color: Theme.of(context).colorScheme.onSurface,
                               ),
                               splashRadius: 24,
                             ),
@@ -122,12 +119,12 @@ class _UnifiedFilterDialogState extends ConsumerState<UnifiedFilterDialog>
                           if (isAnime)
                             const Tab(
                               text: "Title Lang",
-                              icon: Icon(Icons.title, size: 20),
+                              icon: AppIcon('title', size: 20),
                             )
                           else
                             const Tab(
                               text: "Lang",
-                              icon: Icon(Icons.translate, size: 20),
+                              icon: AppIcon('translate', size: 20),
                             ),
 
                           // Genre Tab
@@ -143,10 +140,7 @@ class _UnifiedFilterDialogState extends ConsumerState<UnifiedFilterDialog>
                                 icon: Stack(
                                   clipBehavior: Clip.none,
                                   children: [
-                                    const Icon(
-                                      Icons.category_outlined,
-                                      size: 20,
-                                    ),
+                                    AppIcon('category_outlined', size: 20,),
                                     if (hasFilter)
                                       Positioned(
                                         right: -2,
@@ -179,7 +173,7 @@ class _UnifiedFilterDialogState extends ConsumerState<UnifiedFilterDialog>
                                 icon: Stack(
                                   clipBehavior: Clip.none,
                                   children: [
-                                    const Icon(Icons.calendar_today, size: 20),
+                                    AppIcon('calendar_today', size: 20),
                                     if (hasFilter)
                                       Positioned(
                                         right: -2,
@@ -210,7 +204,7 @@ class _UnifiedFilterDialogState extends ConsumerState<UnifiedFilterDialog>
                                 icon: Stack(
                                   clipBehavior: Clip.none,
                                   children: [
-                                    const Icon(Icons.star_outline, size: 20),
+                                    AppIcon('star_outline', size: 20),
                                     if (hasFilter)
                                       Positioned(
                                         right: -2,
@@ -323,8 +317,7 @@ class _RatingTab extends ConsumerWidget {
           focusColor: Theme.of(
             context,
           ).colorScheme.primary.withValues(alpha: 0.5),
-          leading: Icon(
-            Icons.star,
+          leading: AppIcon('star',
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
                 : (rating == null
@@ -352,9 +345,7 @@ class _RatingTab extends ConsumerWidget {
             ),
           ),
           trailing: isSelected
-              ? Icon(
-                  Icons.check_circle,
-                  color: Theme.of(context).colorScheme.primary,
+              ? AppIcon('check_circle', color: Theme.of(context).colorScheme.primary,
                 )
               : null,
         );
@@ -467,9 +458,7 @@ class _LanguageTab extends ConsumerWidget {
                   ),
                 ),
                 if (isSelected)
-                  Icon(
-                    Icons.check_circle,
-                    color: Theme.of(context).colorScheme.primary,
+                  AppIcon('check_circle', color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   ),
               ],
@@ -507,8 +496,7 @@ class _GenreTab extends ConsumerWidget {
               tileColor: isSelected
                   ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
                   : null,
-              leading: Icon(
-                Icons.category, // Distinct icon for All
+              leading: AppIcon('category', // Distinct icon for All
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
                     : Colors.white24,
@@ -543,8 +531,8 @@ class _GenreTab extends ConsumerWidget {
             focusColor: Theme.of(
               context,
             ).colorScheme.primary.withValues(alpha: 0.5),
-            leading: Icon(
-              isSelected ? Icons.check_circle : Icons.circle_outlined,
+            leading: AppIcon(
+              isSelected ? 'check_circle' : 'circle_outlined',
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
                   : Theme.of(
@@ -790,9 +778,7 @@ class _TitleLanguageTab extends ConsumerWidget {
                   ),
                 ),
                 if (isSelected)
-                  Icon(
-                    Icons.check_circle,
-                    color: Theme.of(context).colorScheme.primary,
+                  AppIcon('check_circle', color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   ),
               ],

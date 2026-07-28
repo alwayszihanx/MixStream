@@ -2,15 +2,17 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import '../../../../core/router/app_router.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../../core/utils/layout_constants.dart';
 import '../../../../shared/widgets/cards_wrapper.dart';
+import '../../../../shared/widgets/custom_widgets.dart';
 
 import '../../../../core/utils/responsive_breakpoints.dart';
 import '../../../../shared/widgets/multimedia_card.dart';
 import '../view_all_screen.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../../../core/utils/image_utils.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class MediaHorizontalList extends StatefulWidget {
   final String title;
@@ -141,70 +143,51 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
     final double imageHeight = cardWidth / (_isPortrait ? (2 / 3) : (16 / 9));
     final double listHeight = imageHeight + 40.0;
 
+    final cs = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header Row
         Padding(
           padding: EdgeInsets.fromLTRB(
             isDesktop
                 ? LayoutConstants.dashboardContentPadding
                 : LayoutConstants.spacingMd,
-            LayoutConstants.spacingLg,
+            LayoutConstants.spacingMd,
             isDesktop
                 ? LayoutConstants.dashboardContentPadding
                 : LayoutConstants.spacingMd,
-            LayoutConstants.spacingSm,
+            LayoutConstants.spacingXs,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Title with Blue Underline Accent
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: isDesktop ? 24 : 20,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      width: isDesktop ? 30 : 20, // Accent width
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  widget.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isDesktop ? 20 : 16,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurface,
+                  ),
                 ),
               ),
-
-              // Desktop arrow buttons — before the View All chip
               if (isDesktop) ...[
-                const SizedBox(width: 8),
                 _HeaderArrowButton(
-                  icon: Icons.arrow_back_ios_new,
+                  icon: const AppIcon('arrow_back_ios_new', size: 12),
                   onTap: () => _scrollBy(-400),
                 ),
                 const SizedBox(width: 4),
                 _HeaderArrowButton(
-                  icon: Icons.arrow_forward_ios,
+                  icon: const AppIcon('arrow_forward_ios', size: 12),
                   onTap: () => _scrollBy(400),
                 ),
               ],
-
               if (widget.showViewAll)
                 const SizedBox(width: LayoutConstants.spacingXs),
-
+              const SizedBox(width: 8),
               if (widget.showViewAll)
                 CardsWrapper(
                   onTap: () {
@@ -223,31 +206,19 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                       horizontal: LayoutConstants.spacingSm,
                       vertical: 6,
                     ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
                     child: Row(
                       children: [
                         Text(
                           l10n.viewAll,
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.7),
+                            color: cs.primary,
                             fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          size: 10,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        AppIcon('arrow_forward_ios', size: 10,
+                          color: cs.primary,
                         ),
                       ],
                     ),
@@ -256,10 +227,8 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
             ],
           ),
         ),
-
-        // List — no DesktopScrollWrapper overlay; arrows are in the header
         SizedBox(
-          height: listHeight, // Adjusted for 2:3 ratio within list
+          height: listHeight,
           child: Builder(
             builder: (context) {
               final double spacing = isDesktop
@@ -292,6 +261,9 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                       title: itemTitle,
                       heroTag: uniqueTag,
                       isPortrait: _isPortrait,
+                      badgeText: item.score != null
+                          ? item.score!.toStringAsFixed(1)
+                          : null,
                       onTap: () {
                         if (widget.onTap != null) {
                           widget.onTap!(item);
@@ -319,29 +291,23 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
 
 /// Small arrow button used in section headers on desktop.
 class _HeaderArrowButton extends StatelessWidget {
-  final IconData icon;
+  final Widget icon;
   final VoidCallback onTap;
 
   const _HeaderArrowButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return CardsWrapper(
-      scaleFactor: 1.01,
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 28,
-        height: 28,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.4,
-          ),
+    return SizedBox(
+      width: 28,
+      height: 28,
+      child: CustomButton(
+        onPressed: onTap,
+        padding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, size: 12, color: theme.colorScheme.onSurface),
+        child: icon,
       ),
     );
   }

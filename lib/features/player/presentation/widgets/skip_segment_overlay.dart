@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:video_view/video_view.dart' as vv;
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../shared/widgets/custom_widgets.dart';
 import '../../../skip/data/skip_service.dart';
 import '../player_controller.dart';
 import 'hotstar_player_style.dart';
+import '../../../../shared/widgets/app_icon.dart';
 import 'player_prompt_placement.dart';
 
 /// Displays a contextual "Skip Intro / Skip Recap / Skip Outro" button
@@ -225,8 +227,7 @@ class _SkipPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(isCompact ? 8 : 10);
-    final buttonHeight = isCompact ? 46.0 : 52.0;
+    final borderRadius = BorderRadius.circular(ButtonDesign.borderRadius);
 
     return FocusTraversalGroup(
       child: Focus(
@@ -246,74 +247,59 @@ class _SkipPill extends StatelessWidget {
         child: Builder(
           builder: (context) {
             final isFocused = Focus.of(context).hasFocus;
-            return AnimatedScale(
-              scale: isFocused ? 1.04 : 1.0,
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOut,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+            final restingBorder = Border.all(
+              color: Colors.white.withValues(alpha: 0.22),
+              width: ButtonDesign.borderWidth,
+            );
+            final focusedBorder = Border.all(
+              color: HotstarPlayerStyle.accent,
+              width: 2,
+            );
+            final restingShadow = BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            );
+            final focusedShadow = BoxShadow(
+              color: HotstarPlayerStyle.accent.withValues(alpha: 0.55),
+              blurRadius: 16,
+              spreadRadius: 1,
+            );
+
+            return Material(
+              color: Colors.transparent,
+              child: Ink(
                 decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.52),
                   borderRadius: borderRadius,
-                  boxShadow: isFocused
-                      ? [
-                          BoxShadow(
-                            color: HotstarPlayerStyle.accent.withValues(
-                              alpha: 0.55,
-                            ),
-                            blurRadius: 16,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : null,
+                  border: isFocused ? focusedBorder : restingBorder,
+                  boxShadow: [isFocused ? focusedShadow : restingShadow],
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.52),
-                      borderRadius: borderRadius,
-                      border: Border.all(
-                        color: isFocused
-                            ? HotstarPlayerStyle.accent
-                            : Colors.white.withValues(alpha: 0.22),
-                        width: isFocused ? 2 : 1,
-                      ),
-                    ),
-                    child: InkWell(
-                      borderRadius: borderRadius,
-                      onTap: onPressed,
-                      focusColor: HotstarPlayerStyle.accent.withValues(
-                        alpha: 0.24,
-                      ),
-                      child: SizedBox(
-                        height: buttonHeight,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isCompact ? 14 : 18,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.skip_next_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              SizedBox(width: isCompact ? 6 : 8),
-                              Text(
-                                label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: isCompact ? 13 : 15,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
+                child: InkWell(
+                  borderRadius: borderRadius,
+                  onTap: onPressed,
+                  child: Padding(
+                    padding: ButtonDesign.padding,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const AppIcon(
+                          'skip_next_rounded',
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        SizedBox(width: ButtonDesign.contentGap),
+                        Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isCompact ? 13 : 15,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),

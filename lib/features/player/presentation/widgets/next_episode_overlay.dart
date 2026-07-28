@@ -3,8 +3,10 @@ import 'dart:ui' as ui;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
-import 'package:skystream/shared/widgets/thumbnail_error_placeholder.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/shared/widgets/app_icon.dart';
+import 'package:mixstream/shared/widgets/custom_widgets.dart';
+import 'package:mixstream/shared/widgets/thumbnail_error_placeholder.dart';
 import 'hotstar_player_style.dart';
 import 'player_prompt_placement.dart';
 
@@ -259,8 +261,8 @@ class _NextEpisodeOverlayState extends State<NextEpisodeOverlay>
                               width: 1,
                             ),
                           ),
-                          child: const Icon(
-                            Icons.close,
+                          child: const AppIcon(
+                            'close',
                             color: Colors.white,
                             size: 18,
                           ),
@@ -492,22 +494,22 @@ class _NextEpisodeOverlayState extends State<NextEpisodeOverlay>
       mainAxisSize: MainAxisSize.min,
       children: [
         ...List.generate(5, (i) {
-          IconData icon;
+          String iconName;
           final color = i < fullStars
               ? const Color(0xFFFFC107)
               : i == fullStars && halfStar
               ? const Color(0xFFFFC107)
               : Colors.white.withValues(alpha: 0.35);
           if (i < fullStars) {
-            icon = Icons.star_rounded;
+            iconName = 'star_rounded';
           } else if (i == fullStars && halfStar) {
-            icon = Icons.star_half_rounded;
+            iconName = 'star_half_rounded';
           } else {
-            icon = Icons.star_outline_rounded;
+            iconName = 'star_outline_rounded';
           }
           return Padding(
             padding: EdgeInsets.only(right: isCompact ? 1 : 1.5),
-            child: Icon(icon, size: isCompact ? 13 : 14, color: color),
+            child: AppIcon(iconName, size: isCompact ? 13 : 14, color: color),
           );
         }),
         const SizedBox(width: 4),
@@ -568,7 +570,7 @@ class _NextEpisodeOverlayState extends State<NextEpisodeOverlay>
   }
 }
 
-class _PlayNowButton extends StatefulWidget {
+class _PlayNowButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isTv;
   final bool isCompact;
@@ -586,167 +588,31 @@ class _PlayNowButton extends StatefulWidget {
   });
 
   @override
-  State<_PlayNowButton> createState() => _PlayNowButtonState();
-}
-
-class _PlayNowButtonState extends State<_PlayNowButton>
-    with SingleTickerProviderStateMixin {
-  FocusNode? _focusNode;
-  bool _isFocused = false;
-  bool _isHovered = false;
-  late AnimationController _shineController;
-
-  static const double _skew = -0.21;
-
-  bool get _isActive => _isFocused || _isHovered;
-
-  @override
-  void initState() {
-    super.initState();
-    _shineController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-    if (widget.isTv) {
-      _focusNode = widget.focusNode ?? FocusNode();
-      _focusNode!.addListener(() {
-        if (mounted) setState(() => _isFocused = _focusNode!.hasFocus);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _shineController.dispose();
-    if (widget.focusNode == null) _focusNode?.dispose();
-    super.dispose();
-  }
-
-  void _onHover(bool hovering) {
-    if (!mounted) return;
-    setState(() => _isHovered = hovering);
-    if (hovering) {
-      _shineController.forward(from: 0);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isCompact = widget.isCompact;
-    final button = Transform(
-      alignment: Alignment.center,
-      transform: Matrix4.skewX(_skew),
-      child: AnimatedScale(
-        scale: _isActive ? 1.03 : 1.0,
-        duration: const Duration(milliseconds: 150),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: isCompact ? 40 : null,
-          decoration: BoxDecoration(
-            color: HotstarPlayerStyle.accent,
-            boxShadow: _isActive
-                ? [
-                    BoxShadow(
-                      color: HotstarPlayerStyle.accent.withValues(alpha: 0.5),
-                      blurRadius: 16,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Shine overlay
-              Positioned.fill(
-                child: ClipRect(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final w = constraints.maxWidth;
-                      return AnimatedBuilder(
-                        animation: _shineController,
-                        builder: (context, _) {
-                          final streakWidth = w * 0.4;
-                          return Transform.translate(
-                            offset: Offset(
-                              (-0.6 + _shineController.value * 2.1) * w,
-                              0,
-                            ),
-                            child: Container(
-                              width: streakWidth,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.white.withValues(alpha: 0.4),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ),
-              // Content (counter-skewed)
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: widget.isCompleted ? null : widget.onPressed,
-                  onHover: widget.isTv ? null : _onHover,
-                  splashColor: Colors.white.withValues(alpha: 0.15),
-                  highlightColor: Colors.white.withValues(alpha: 0.05),
-                  child: Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.skewX(-_skew),
-                    child: Center(
-                      widthFactor: isCompact ? null : 1.0,
-                      heightFactor: isCompact ? null : 1.0,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isCompact ? 16 : 32,
-                          vertical: isCompact ? 0 : 12,
-                        ),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.play_arrow_rounded,
-                                color: Colors.white,
-                                size: isCompact ? 18 : 20,
-                              ),
-                              SizedBox(width: isCompact ? 6 : 8),
-                              Text(
-                                widget.label.toUpperCase(),
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: isCompact ? 11 : 13,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 2.6,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+    final child = ButtonLabel(
+      icon: AppIcon('play_arrow_rounded', color: Colors.white, size: isCompact ? 18 : 20),
+      label: label,
+      labelStyle: TextStyle(
+        color: Colors.white,
+        fontSize: isCompact ? 13 : 14,
+        fontWeight: FontWeight.w600,
       ),
     );
 
-    if (widget.isTv) {
+    final button = CustomButton(
+      isPrimary: true,
+      onPressed: isCompleted ? null : onPressed,
+      focusNode: focusNode,
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 16 : ButtonDesign.padding.horizontal,
+        vertical: isCompact ? 8 : ButtonDesign.padding.vertical,
+      ),
+      child: child,
+    );
+
+    if (isTv) {
       return Focus(
-        focusNode: _focusNode,
+        focusNode: focusNode,
         autofocus: true,
         onKeyEvent: (node, event) {
           if (event is! KeyDownEvent) return KeyEventResult.ignored;
@@ -754,7 +620,7 @@ class _PlayNowButtonState extends State<_PlayNowButton>
           if (key == LogicalKeyboardKey.select ||
               key == LogicalKeyboardKey.enter ||
               key == LogicalKeyboardKey.space) {
-            widget.onPressed();
+            onPressed();
             return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
@@ -766,7 +632,7 @@ class _PlayNowButtonState extends State<_PlayNowButton>
   }
 }
 
-class _CancelButton extends StatefulWidget {
+class _CancelButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isTv;
   final bool isCompact;
@@ -784,171 +650,44 @@ class _CancelButton extends StatefulWidget {
   });
 
   @override
-  State<_CancelButton> createState() => _CancelButtonState();
-}
-
-class _CancelButtonState extends State<_CancelButton> {
-  FocusNode? _focusNode;
-  bool _isFocused = false;
-  bool _isHovered = false;
-
-  bool get _isActive => _isFocused || _isHovered;
-  static const double _skew = -0.21;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.isTv) {
-      _focusNode = widget.focusNode ?? FocusNode();
-      _focusNode!.addListener(() {
-        if (mounted) setState(() => _isFocused = _focusNode!.hasFocus);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    if (widget.focusNode == null) _focusNode?.dispose();
-    super.dispose();
-  }
-
-  void _onHover(bool hovering) {
-    if (!mounted) return;
-    setState(() => _isHovered = hovering);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isCompact = widget.isCompact;
-    final primary = Theme.of(context).colorScheme.primary;
-    final button = Transform(
-      alignment: Alignment.center,
-      transform: Matrix4.skewX(_skew),
-      child: AnimatedScale(
-        scale: _isActive ? 1.03 : 1.0,
-        duration: const Duration(milliseconds: 150),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: isCompact ? 40 : null,
-          decoration: BoxDecoration(
-            color: _isActive
-                ? Colors.black.withValues(alpha: 0.8)
-                : Colors.black.withValues(alpha: 0.6),
-            border: Border.all(
-              color: _isActive
-                  ? primary.withValues(alpha: 0.8)
-                  : Colors.white.withValues(alpha: 0.1),
-              width: 1,
-            ),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Right edge vertical line
-              Positioned(
-                top: 0,
-                right: 0,
-                bottom: 0,
-                width: 1,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  color: _isActive
-                      ? primary.withValues(alpha: 0.5)
-                      : Colors.white.withValues(alpha: 0.1),
-                ),
-              ),
-              // Gradient overlay (fades in on hover)
-              Positioned.fill(
-                child: AnimatedOpacity(
-                  opacity: _isActive ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          primary.withValues(alpha: 0.0),
-                          primary.withValues(alpha: 0.15),
-                          primary.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // Content (counter-skewed)
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: widget.isCompleted ? null : widget.onPressed,
-                  onHover: widget.isTv ? null : _onHover,
-                  splashColor: Colors.white.withValues(alpha: 0.1),
-                  highlightColor: Colors.white.withValues(alpha: 0.03),
-                  child: Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.skewX(-_skew),
-                    child: Center(
-                      widthFactor: isCompact ? null : 1.0,
-                      heightFactor: isCompact ? null : 1.0,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isCompact ? 16 : 32,
-                          vertical: isCompact ? 0 : 12,
-                        ),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AnimatedRotation(
-                                turns: _isActive ? 0.25 : 0.0,
-                                duration: const Duration(milliseconds: 300),
-                                child: Icon(
-                                  Icons.close_rounded,
-                                  color: Colors.white,
-                                  size: isCompact ? 18 : 20,
-                                ),
-                              ),
-                              SizedBox(width: isCompact ? 6 : 8),
-                              Text(
-                                widget.label.toUpperCase(),
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: isCompact ? 11 : 13,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 2.6,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+    final child = ButtonLabel(
+      icon: AppIcon('close_rounded', color: Colors.white, size: isCompact ? 18 : 20),
+      label: label,
+      labelStyle: TextStyle(
+        color: Colors.white,
+        fontSize: isCompact ? 13 : 14,
+        fontWeight: FontWeight.w600,
       ),
     );
 
-    if (widget.isTv) {
+    final button = CustomButton(
+      isPrimary: false,
+      isOutlined: true,
+      onPressed: isCompleted ? null : onPressed,
+      focusNode: focusNode,
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 16 : ButtonDesign.padding.horizontal,
+        vertical: isCompact ? 8 : ButtonDesign.padding.vertical,
+      ),
+      child: child,
+    );
+
+    if (isTv) {
       return Focus(
-        focusNode: _focusNode,
+        focusNode: focusNode,
         onKeyEvent: (node, event) {
           if (event is! KeyDownEvent) return KeyEventResult.ignored;
           final key = event.logicalKey;
           if (key == LogicalKeyboardKey.select ||
               key == LogicalKeyboardKey.enter ||
               key == LogicalKeyboardKey.space) {
-            widget.onPressed();
+            onPressed();
             return KeyEventResult.handled;
           }
           if (key == LogicalKeyboardKey.escape ||
               key == LogicalKeyboardKey.goBack) {
-            widget.onPressed();
+            onPressed();
             return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;

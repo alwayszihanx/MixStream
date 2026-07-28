@@ -4,7 +4,7 @@ import '../../../core/extensions/models/extension_plugin.dart';
 import '../../../core/extensions/extension_manager.dart';
 import '../../../core/storage/settings_repository.dart';
 import '../../../core/storage/extension_repository.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 
 class PluginSettingsDialog extends ConsumerStatefulWidget {

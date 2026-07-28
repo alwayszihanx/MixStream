@@ -8,20 +8,21 @@ import '../downloaded_file_provider.dart';
 import '../../../settings/presentation/player_settings_provider.dart';
 import '../../../../core/utils/stream_quality_sorter.dart';
 
-import 'package:skystream/core/domain/entity/multimedia_item.dart';
-import 'package:skystream/core/storage/history_repository.dart';
-import 'package:skystream/core/utils/layout_constants.dart';
-import 'package:skystream/shared/widgets/custom_widgets.dart';
+import 'package:mixstream/core/domain/entity/multimedia_item.dart';
+import 'package:mixstream/core/storage/history_repository.dart';
+import 'package:mixstream/core/utils/layout_constants.dart';
+import 'package:mixstream/shared/widgets/custom_widgets.dart';
 import '../details_controller.dart';
-import 'package:skystream/core/extensions/extension_manager.dart';
-import 'package:skystream/core/services/download_service.dart';
+import 'package:mixstream/core/extensions/extension_manager.dart';
+import 'package:mixstream/core/services/download_service.dart';
 import '../download_launcher.dart';
 import 'download_progress_dialog.dart';
 import 'download_management_dialog.dart';
 import 'episode_card.dart';
-import 'package:skystream/core/providers/device_info_provider.dart';
-import 'package:skystream/core/utils/responsive_breakpoints.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/core/providers/device_info_provider.dart';
+import 'package:mixstream/core/utils/responsive_breakpoints.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class DetailsSeasonListWrapper extends ConsumerWidget {
   const DetailsSeasonListWrapper({super.key, required this.itemUrl});
@@ -186,7 +187,7 @@ class DetailsActionButtons extends HookConsumerWidget {
                   Text(AppLocalizations.of(context)!.resolving),
                 ]
               : [
-                  const Icon(Icons.play_arrow_rounded),
+                  const AppIcon('play_arrow_rounded'),
                   const SizedBox(width: LayoutConstants.spacingXs),
                   Text(playLabel),
                 ],
@@ -219,7 +220,7 @@ class DetailsActionButtons extends HookConsumerWidget {
           child: Row(
             children: [
               if (q == currentPreference)
-                const Icon(Icons.check_rounded, color: Colors.blue, size: 18)
+                AppIcon('check_rounded', color: Colors.blue, size: 18)
               else
                 const SizedBox(width: 18),
               const SizedBox(width: 8),
@@ -237,7 +238,7 @@ class DetailsActionButtons extends HookConsumerWidget {
             padding: btnPadding,
             child: Row(
               children: [
-                const Icon(Icons.hd_rounded, size: 20),
+                AppIcon('hd_rounded', size: 20),
                 const SizedBox(width: LayoutConstants.spacingXs),
                 Expanded(
                   child: Center(
@@ -248,7 +249,7 @@ class DetailsActionButtons extends HookConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: LayoutConstants.spacingXs),
-                const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                AppIcon('keyboard_arrow_down_rounded', size: 20),
               ],
             ),
           ),
@@ -311,7 +312,7 @@ class DetailsActionButtons extends HookConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.download_done_sharp, color: Colors.green),
+                  AppIcon('download_done_sharp', color: Colors.green),
                   const SizedBox(width: LayoutConstants.spacingXs),
                   Text(AppLocalizations.of(context)!.downloaded),
                 ],
@@ -347,9 +348,7 @@ class DetailsActionButtons extends HookConsumerWidget {
                           height: 20,
                           child:
                               downloadProgressData?.status == TaskStatus.paused
-                              ? Icon(
-                                  Icons.pause_rounded,
-                                  size: 18,
+                              ? AppIcon('pause_rounded', size: 18,
                                   color: Theme.of(context).colorScheme.primary,
                                 )
                               : CircularProgressIndicator(
@@ -369,7 +368,7 @@ class DetailsActionButtons extends HookConsumerWidget {
                         ),
                       ]
                     : [
-                        const Icon(Icons.download_rounded),
+                        const AppIcon('download_rounded'),
                         const SizedBox(width: LayoutConstants.spacingXs),
                         Text(AppLocalizations.of(context)!.download),
                       ],
@@ -401,9 +400,7 @@ class DetailsActionButtons extends HookConsumerWidget {
             const SizedBox(height: 6),
             Row(
               children: [
-                Icon(
-                  Icons.history_toggle_off_rounded,
-                  size: 14,
+                AppIcon('history_toggle_off_rounded', size: 14,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 4),
@@ -721,9 +718,7 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
-                        icon: Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          size: 20,
+                        icon: AppIcon('keyboard_arrow_down_rounded', size: 20,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         items: List.generate(batchCount, (index) {
@@ -768,9 +763,7 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
                     .toggleSort(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Icon(
-                    Icons.swap_vert_rounded,
-                    size: 22,
+                  child: AppIcon('swap_vert_rounded', size: 22,
                     color: isAscending
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -835,49 +828,25 @@ class _LanguageButton extends StatefulWidget {
 }
 
 class _LanguageButtonState extends State<_LanguageButton> {
-  bool _isFocused = false;
-
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onFocusChange: (hasFocus) => setState(() => _isFocused = hasFocus),
-        onTap: widget.onTap,
+    final cs = Theme.of(context).colorScheme;
+    return CustomButton(
+      onPressed: widget.onTap,
+      isPrimary: widget.isSelected,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: widget.isSelected
-                ? Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 40 / 255)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: _isFocused
-                  ? Colors.white
-                  : (widget.isSelected
-                        ? Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 80 / 255)
-                        : Colors.transparent),
-              width: _isFocused ? 2 : 1,
-            ),
-          ),
-          child: Text(
-            widget.label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: widget.isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: widget.isSelected
-                  ? FontWeight.bold
-                  : FontWeight.normal,
-            ),
-          ),
+      ),
+      child: Text(
+        widget.label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: widget.isSelected
+              ? cs.primary
+              : cs.onSurfaceVariant,
+          fontWeight: widget.isSelected
+              ? FontWeight.w600
+              : FontWeight.normal,
         ),
       ),
     );
@@ -950,9 +919,7 @@ class DetailsProviderChip extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.extension_rounded,
-            size: 14,
+          AppIcon('extension_rounded', size: 14,
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: 4),

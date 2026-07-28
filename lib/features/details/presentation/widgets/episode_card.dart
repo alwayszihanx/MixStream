@@ -5,12 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import '../../../../shared/widgets/app_icon.dart';
 import 'package:background_downloader/background_downloader.dart';
-import 'package:skystream/core/domain/entity/multimedia_item.dart';
-import 'package:skystream/core/storage/history_repository.dart';
-import 'package:skystream/core/services/download_service.dart';
-import 'package:skystream/core/utils/layout_constants.dart';
-import 'package:skystream/core/utils/responsive_breakpoints.dart';
+import 'package:mixstream/core/domain/entity/multimedia_item.dart';
+import 'package:mixstream/core/storage/history_repository.dart';
+import 'package:mixstream/core/services/download_service.dart';
+import 'package:mixstream/core/utils/layout_constants.dart';
+import 'package:mixstream/core/utils/responsive_breakpoints.dart';
 import '../../../../shared/widgets/thumbnail_error_placeholder.dart';
 import '../../../library/presentation/history_provider.dart';
 import '../details_controller.dart';
@@ -343,8 +344,8 @@ class EpisodeCard extends HookConsumerWidget {
   ) {
     if (downloadedFile != null) {
       return IconButton(
-        icon: const Icon(
-          Icons.download_done_sharp,
+        icon: const AppIcon(
+          'download_done_sharp',
           color: Colors.green,
           size: 32,
         ),
@@ -373,8 +374,8 @@ class EpisodeCard extends HookConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(4.0),
             child: downloadProgressData?.status == TaskStatus.paused
-                ? Icon(
-                    Icons.pause_rounded,
+                ? AppIcon(
+                    'pause_rounded',
                     size: 16,
                     color: Theme.of(context).colorScheme.primary,
                   )
@@ -399,8 +400,8 @@ class EpisodeCard extends HookConsumerWidget {
       );
     } else {
       return IconButton(
-        icon: Icon(
-          Icons.file_download_outlined,
+        icon: AppIcon(
+          'file_download_outlined',
           size: 32,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
@@ -492,8 +493,8 @@ class EpisodeCard extends HookConsumerWidget {
                 color: Colors.black.withValues(alpha: 0.6),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.play_arrow_rounded,
+              child: const AppIcon(
+                'play_arrow_rounded',
                 color: Colors.white,
                 size: 24,
               ),

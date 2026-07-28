@@ -1,15 +1,16 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:skystream/core/domain/entity/multimedia_item.dart';
-import 'package:skystream/core/utils/image_fallbacks.dart';
+import 'package:mixstream/core/domain/entity/multimedia_item.dart';
+import 'package:mixstream/core/utils/image_fallbacks.dart';
 import 'package:intl/intl.dart';
-import 'package:skystream/shared/widgets/cards_wrapper.dart';
-import 'package:skystream/shared/widgets/shimmer_placeholder.dart';
+import 'package:mixstream/shared/widgets/cards_wrapper.dart';
+import 'package:mixstream/shared/widgets/shimmer_placeholder.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:skystream/shared/widgets/thumbnail_error_placeholder.dart';
-import 'package:skystream/core/utils/responsive_breakpoints.dart';
+import 'package:mixstream/shared/widgets/thumbnail_error_placeholder.dart';
+import 'package:mixstream/core/utils/responsive_breakpoints.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'details_layout_widgets.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class MetadataBar extends ConsumerWidget {
   final MultimediaItem item;
@@ -47,7 +48,7 @@ class MetadataBar extends ConsumerWidget {
         if (item.year != null)
           _buildIconInfo(
             context,
-            Icons.calendar_today_rounded,
+            const AppIcon('calendar_today_rounded', size: 14),
             item.year.toString(),
           )
         else if (isLoading)
@@ -67,7 +68,7 @@ class MetadataBar extends ConsumerWidget {
           ),
 
         if (item.duration != null)
-          _buildIconInfo(context, Icons.timer_outlined, "${item.duration}m")
+          _buildIconInfo(context, const AppIcon('timer_outlined', size: 14), "${item.duration}m")
         else if (isLoading)
           ShimmerPlaceholder.rectangular(
             width: 60,
@@ -78,7 +79,7 @@ class MetadataBar extends ConsumerWidget {
         if (item.score != null)
           _buildIconInfo(
             context,
-            Icons.star_rounded,
+            const AppIcon('star_rounded', size: 14, color: Color(0xFF01B4E4)),
             item.score!.toStringAsFixed(1),
             iconColor: const Color(0xFF01B4E4),
           )
@@ -162,20 +163,14 @@ class MetadataBar extends ConsumerWidget {
 
   Widget _buildIconInfo(
     BuildContext context,
-    IconData icon,
+    Widget icon,
     String text, {
     Color? iconColor,
   }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color:
-              iconColor ??
-              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-        ),
+        icon,
         const SizedBox(width: 4),
         _buildInfoText(context, text),
       ],
@@ -185,7 +180,6 @@ class MetadataBar extends ConsumerWidget {
   Widget _buildPlaybackBadge(BuildContext context, String policy) {
     final color = Theme.of(context).colorScheme.secondary;
     final label = policy;
-    const icon = Icons.play_circle_outline_rounded;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -197,7 +191,7 @@ class MetadataBar extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
+          AppIcon('play_circle_outline_rounded', size: 12, color: color),
           const SizedBox(width: 4),
           Text(
             label,
@@ -241,9 +235,7 @@ class NextAiringWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.upcoming_rounded,
-                size: 20,
+              AppIcon('upcoming_rounded', size: 20,
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 8),
@@ -310,7 +302,7 @@ class CastCarousel extends StatelessWidget {
                           ? CachedNetworkImageProvider(actor.image!)
                           : null,
                       child: actor.image == null
-                          ? const Icon(Icons.person)
+                          ? const AppIcon('person')
                           : null,
                     ),
                     const SizedBox(height: 8),
@@ -392,16 +384,12 @@ class TrailersSection extends StatelessWidget {
                             "https://img.youtube.com/vi/${_extractYoutubeId(trailer.url)}/mqdefault.jpg",
                         fit: BoxFit.cover,
                         errorWidget: (_, _, _) =>
-                            const Center(child: Icon(Icons.movie_rounded)),
+                            const Center(child: AppIcon('movie_rounded')),
                       ),
                       Container(
                         color: Colors.black26,
                         child: const Center(
-                          child: Icon(
-                            Icons.play_circle_fill_rounded,
-                            color: Colors.white,
-                            size: 48,
-                          ),
+                          child: AppIcon('play_circle_fill_rounded', color: Colors.white, size: 48),
                         ),
                       ),
                       Positioned(

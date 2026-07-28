@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/layout_constants.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import '../../../shared/widgets/app_icon.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 
 import 'widgets/settings_widgets.dart';
 import 'widgets/settings_dialogs.dart';
@@ -92,7 +93,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                 title: l10n.accounts,
                 children: [
                   SettingsTile(
-                    icon: Icons.subtitles_rounded,
+                    icon: const AppIcon('subtitles_rounded'),
                     title: l10n.openSubtitles,
                     subtitle: playerSettings.osUsername.isNotEmpty
                         ? l10n.loggedInAs(playerSettings.osUsername)
@@ -104,7 +105,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                     ),
                   ),
                   SettingsTile(
-                    icon: Icons.vpn_key_rounded,
+                    icon: const AppIcon('vpn_key_rounded'),
                     title: l10n.subDl,
                     subtitle: playerSettings.subdlApiKey.isNotEmpty
                         ? l10n.apiKeyConfigured
@@ -113,7 +114,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                         showSubDlAuthDialog(context, ref, playerSettings),
                   ),
                   SettingsTile(
-                    icon: Icons.vpn_key_rounded,
+                    icon: const AppIcon('vpn_key_rounded'),
                     title: l10n.subSource,
                     subtitle: playerSettings.subsourceApiKey.isNotEmpty
                         ? l10n.apiKeyConfigured
@@ -129,7 +130,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                         children: [
                           SettingsTile(
                             focusNode: _simklFocusNode,
-                            icon: Icons.sync_rounded,
+                            icon: const AppIcon('sync_rounded'),
                             title: 'Simkl',
                             subtitle: trackingAuthAsync.when(
                               data: (state) => state['simkl'] == true
@@ -209,7 +210,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                           ),
                           SettingsTile(
                             focusNode: _traktFocusNode,
-                            icon: Icons.sync_rounded,
+                            icon: const AppIcon('sync_rounded'),
                             title: 'Trakt',
                             subtitle: trackingAuthAsync.when(
                               data: (state) => state['trakt'] == true
@@ -287,7 +288,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                           ),
                           SettingsTile(
                             focusNode: _malFocusNode,
-                            icon: Icons.sync_rounded,
+                            icon: const AppIcon('sync_rounded'),
                             title: 'MyAnimeList',
                             subtitle: trackingAuthAsync.when(
                               data: (state) => state['mal'] == true
@@ -374,7 +375,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                           ),
                           SettingsTile(
                             focusNode: _anilistFocusNode,
-                            icon: Icons.sync_rounded,
+                            icon: const AppIcon('sync_rounded'),
                             title: 'AniList',
                             subtitle: trackingAuthAsync.when(
                               data: (state) => state['anilist'] == true
@@ -466,9 +467,9 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
               SettingsGroup(
                 title: 'Integrations',
                 children: [
-                  SettingsTile(
-                    icon: Icons.fast_forward_rounded,
-                    title: 'AnimeSkip',
+                          SettingsTile(
+                            icon: const AppIcon('fast_forward_rounded'),
+                            title: 'AnimeSkip',
                     isBeta: true,
                     subtitle:
                         'Automatically fetch skip segments for Anime (requires AniList authentication)',
@@ -488,7 +489,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                     },
                   ),
                   SettingsTile(
-                    icon: Icons.fast_forward_rounded,
+                    icon: const AppIcon('fast_forward_rounded'),
                     title: 'IntroDB',
                     isBeta: true,
                     subtitle: 'Automatically fetch skip segments for TV Shows',

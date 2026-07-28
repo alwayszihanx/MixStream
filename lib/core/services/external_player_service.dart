@@ -6,11 +6,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:open_file/open_file.dart';
 import '../utils/app_utils.dart';
 
-/// Represents an external video player that can be launched from Skystream.
+/// Represents an external video player that can be launched from Mixstream.
 class ExternalPlayer {
   final String id;
   final String displayName;
-  final IconData icon;
+  final String iconName;
   final Set<TargetPlatform> supportedPlatforms;
 
   // Platform-specific identifiers
@@ -24,7 +24,7 @@ class ExternalPlayer {
   const ExternalPlayer({
     required this.id,
     required this.displayName,
-    required this.icon,
+    required this.iconName,
     required this.supportedPlatforms,
     this.androidPackage,
     this.androidAction,
@@ -43,7 +43,7 @@ class ExternalPlayerService {
     ExternalPlayer(
       id: 'vlc',
       displayName: 'VLC',
-      icon: Icons.play_circle_filled,
+      iconName: 'play_circle_filled',
       supportedPlatforms: {
         TargetPlatform.android,
         TargetPlatform.iOS,
@@ -59,59 +59,59 @@ class ExternalPlayerService {
     ExternalPlayer(
       id: 'mx_player',
       displayName: 'MX Player',
-      icon: Icons.ondemand_video,
+      iconName: 'ondemand_video',
       supportedPlatforms: {TargetPlatform.android},
       androidPackage: 'com.mxtech.videoplayer.ad',
     ),
     ExternalPlayer(
       id: 'mx_player_pro',
       displayName: 'MX Player Pro',
-      icon: Icons.ondemand_video,
+      iconName: 'ondemand_video',
       supportedPlatforms: {TargetPlatform.android},
       androidPackage: 'com.mxtech.videoplayer.pro',
     ),
     ExternalPlayer(
       id: 'just_player',
       displayName: 'Just Player',
-      icon: Icons.smart_display,
+      iconName: 'smart_display',
       supportedPlatforms: {TargetPlatform.android},
       androidPackage: 'com.brouken.player',
     ),
     ExternalPlayer(
       id: 'mpv_android',
       displayName: 'mpv (Android)',
-      icon: Icons.videocam,
+      iconName: 'videocam',
       supportedPlatforms: {TargetPlatform.android},
       androidPackage: 'is.xyz.mpv',
     ),
     ExternalPlayer(
       id: 'mpvex',
       displayName: 'mpvEx',
-      icon: Icons.videocam_outlined,
+      iconName: 'videocam_outlined',
       supportedPlatforms: {TargetPlatform.android},
       androidPackage: 'app.marlboroadvance.mpvex',
     ),
     // Web Video Cast — accepts ACTION_VIEW with video/* mime, routes to
     // Chromecast / DLNA / Roku / Fire TV / smart TV. Useful for casting
-    // a SkyStream-resolved stream URL to a TV without leaving the phone.
+    // a MixStream-resolved stream URL to a TV without leaving the phone.
     ExternalPlayer(
       id: 'web_video_cast',
       displayName: 'Web Video Cast',
-      icon: Icons.cast,
+      iconName: 'cast',
       supportedPlatforms: {TargetPlatform.android},
       androidPackage: 'com.instantbits.cast.webvideo',
     ),
     ExternalPlayer(
       id: 'web_video_cast_premium',
       displayName: 'Web Video Cast (Premium)',
-      icon: Icons.cast,
+      iconName: 'cast',
       supportedPlatforms: {TargetPlatform.android},
       androidPackage: 'com.instantbits.cast.webvideo.premium',
     ),
     ExternalPlayer(
       id: 'mpv',
       displayName: 'mpv',
-      icon: Icons.videocam,
+      iconName: 'videocam',
       supportedPlatforms: {
         TargetPlatform.windows,
         TargetPlatform.macOS,
@@ -122,7 +122,7 @@ class ExternalPlayerService {
     ExternalPlayer(
       id: 'iina',
       displayName: 'IINA',
-      icon: Icons.play_circle,
+      iconName: 'play_circle',
       supportedPlatforms: {TargetPlatform.macOS},
       desktopCommand: 'iina',
       macAppName: 'IINA',
@@ -130,42 +130,42 @@ class ExternalPlayerService {
     ExternalPlayer(
       id: 'infuse',
       displayName: 'Infuse',
-      icon: Icons.live_tv,
+      iconName: 'live_tv',
       supportedPlatforms: {TargetPlatform.iOS},
       iosScheme: 'infuse://',
     ),
     ExternalPlayer(
       id: 'nplayer',
       displayName: 'nPlayer',
-      icon: Icons.video_library,
+      iconName: 'video_library',
       supportedPlatforms: {TargetPlatform.iOS},
       iosScheme: 'nplayer-',
     ),
     ExternalPlayer(
       id: 'potplayer',
       displayName: 'PotPlayer',
-      icon: Icons.play_circle_outline,
+      iconName: 'play_circle_outline',
       supportedPlatforms: {TargetPlatform.windows},
       desktopCommand: 'PotPlayerMini64',
     ),
     ExternalPlayer(
       id: 'mpc_hc',
       displayName: 'MPC-HC',
-      icon: Icons.play_circle_outline,
+      iconName: 'play_circle_outline',
       supportedPlatforms: {TargetPlatform.windows},
       desktopCommand: 'mpc-hc64',
     ),
     ExternalPlayer(
       id: 'mpc_be',
       displayName: 'MPC-BE',
-      icon: Icons.play_circle_outline,
+      iconName: 'play_circle_outline',
       supportedPlatforms: {TargetPlatform.windows},
       desktopCommand: 'mpc-be64',
     ),
     ExternalPlayer(
       id: 'celluloid',
       displayName: 'Celluloid',
-      icon: Icons.movie,
+      iconName: 'movie',
       supportedPlatforms: {TargetPlatform.linux},
       desktopCommand: 'celluloid',
     ),
@@ -231,7 +231,7 @@ class ExternalPlayerService {
   // -- Android: Native Intent via platform channel --
 
   static const _playerChannel = MethodChannel(
-    'dev.akash.skystream/external_player',
+    'io.alwayszihan.mixstream/external_player',
   );
 
   Future<bool> _launchAndroid(

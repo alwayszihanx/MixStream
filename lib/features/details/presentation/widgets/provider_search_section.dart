@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../../core/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:skystream/core/domain/entity/multimedia_item.dart';
-import 'package:skystream/core/extensions/extension_manager.dart';
-import 'package:skystream/core/utils/image_fallbacks.dart';
-import 'package:skystream/features/search/presentation/search_provider.dart';
+import 'package:mixstream/core/domain/entity/multimedia_item.dart';
+import 'package:mixstream/core/extensions/extension_manager.dart';
+import 'package:mixstream/core/utils/image_fallbacks.dart';
+import 'package:mixstream/features/search/presentation/search_provider.dart';
 import '../../../../shared/widgets/cards_wrapper.dart';
 
 import '../../../../shared/widgets/desktop_scroll_wrapper.dart';
@@ -14,7 +14,8 @@ import '../../../../core/utils/layout_constants.dart';
 import '../../../../shared/widgets/shimmer_placeholder.dart';
 import '../../../../shared/widgets/thumbnail_error_placeholder.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 part 'provider_search_section.g.dart';
 
@@ -321,9 +322,7 @@ class _ProviderSearchSectionState extends ConsumerState<ProviderSearchSection> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.extension,
-                  size: 18,
+                AppIcon('extension', size: 18,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: LayoutConstants.spacingXs),

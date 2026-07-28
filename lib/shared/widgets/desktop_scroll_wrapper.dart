@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'app_icon.dart';
+import 'custom_widgets.dart';
 import '../../core/utils/responsive_breakpoints.dart';
 import '../../core/providers/device_info_provider.dart';
 
@@ -135,7 +137,7 @@ class _DesktopScrollWrapperState extends ConsumerState<DesktopScrollWrapper> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: _ScrollButton(
-                icon: Icons.chevron_left,
+                icon: const AppIcon('chevron_left'),
                 isCompact: widget.isCompact,
                 onTap: () => _scroll(false),
               ),
@@ -148,7 +150,7 @@ class _DesktopScrollWrapperState extends ConsumerState<DesktopScrollWrapper> {
             child: Align(
               alignment: Alignment.centerRight,
               child: _ScrollButton(
-                icon: Icons.chevron_right,
+                icon: const AppIcon('chevron_right'),
                 isCompact: widget.isCompact,
                 onTap: () => _scroll(true),
               ),
@@ -160,7 +162,7 @@ class _DesktopScrollWrapperState extends ConsumerState<DesktopScrollWrapper> {
 }
 
 class _ScrollButton extends StatelessWidget {
-  final IconData icon;
+  final Widget icon;
   final VoidCallback onTap;
   final bool isCompact;
 
@@ -172,24 +174,14 @@ class _ScrollButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final paddingVal = isCompact ? 4.0 : 8.0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: Material(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+      child: CustomButton(
+        onPressed: onTap,
         shape: const CircleBorder(),
-        elevation: 4,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.all(isCompact ? 4.0 : 8.0),
-            child: Icon(
-              icon,
-              color: Theme.of(context).colorScheme.onSurface,
-              size: isCompact ? 20 : 24,
-            ),
-          ),
-        ),
+        padding: EdgeInsets.all(paddingVal),
+        child: icon,
       ),
     );
   }

@@ -303,9 +303,215 @@ class _CustomTextFieldState extends State<CustomTextField> {
   }
 }
 
+/// Design constants matching the Button Design Specification.
+class ButtonDesign {
+  ButtonDesign._();
+
+  static const double borderRadius = 14;
+  static const double borderWidth = 1.5;
+  static const EdgeInsetsGeometry padding = EdgeInsets.symmetric(
+    horizontal: 20,
+    vertical: 12,
+  );
+  static const double contentGap = 8;
+  static const double hoverTranslateY = -5;
+  static const Duration hoverDuration = Duration(milliseconds: 300);
+  static const Duration clickDuration = Duration(milliseconds: 120);
+  static const double clickScale = 0.98;
+  static const String secondarySeparator = '\u2500 ';
+
+  static BoxDecoration restingDecoration(ColorScheme cs, {Color? borderColor}) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+        color: borderColor ?? cs.outline.withValues(alpha: 0.4),
+        width: borderWidth,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
+
+  static BoxDecoration hoveredDecoration(ColorScheme cs, {Color? borderColor}) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+        color: borderColor ?? cs.outline.withValues(alpha: 0.6),
+        width: borderWidth,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.15),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    );
+  }
+
+  static Widget wrapWithHoverClick({
+    required Widget child,
+    required VoidCallback? onPressed,
+    bool enabled = true,
+  }) {
+    if (!enabled || onPressed == null) return child;
+    return _HoverClickWrapper(
+      onPressed: onPressed,
+      child: child,
+    );
+  }
+}
+
+class _HoverClickWrapper extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onPressed;
+
+  const _HoverClickWrapper({
+    required this.child,
+    required this.onPressed,
+  });
+
+  @override
+  State<_HoverClickWrapper> createState() => _HoverClickWrapperState();
+}
+
+class _HoverClickWrapperState extends State<_HoverClickWrapper>
+    with SingleTickerProviderStateMixin {
+  bool _hovered = false;
+  bool _pressed = false;
+  late AnimationController _hoverController;
+  late Animation<double> _hoverAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _hoverController = AnimationController(
+      vsync: this,
+      duration: ButtonDesign.hoverDuration,
+    );
+    _hoverAnimation = CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _hoverController.dispose();
+    super.dispose();
+  }
+
+  void _onEnter(PointerEnterEvent _) {
+    if (!_hovered) {
+      setState(() => _hovered = true);
+      _hoverController.forward();
+    }
+  }
+
+  void _onExit(PointerExitEvent _) {
+    setState(() {
+      _hovered = false;
+      _pressed = false;
+    });
+    _hoverController.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: _onEnter,
+      onExit: _onExit,
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedBuilder(
+          animation: _hoverAnimation,
+          builder: (context, child) {
+            final hoverFraction = _hoverAnimation.value;
+            final translateY = ButtonDesign.hoverTranslateY * hoverFraction;
+            final scale = _pressed ? ButtonDesign.clickScale : 1.0;
+            return Transform.translate(
+              offset: Offset(0, translateY.toDouble()),
+              child: Transform.scale(
+                scale: scale,
+                child: child,
+              ),
+            );
+          },
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+/// A two-part label widget for buttons: main text + optional secondary text
+/// with a decorative separator.
+class ButtonLabel extends StatelessWidget {
+  final String label;
+  final String? secondary;
+  final Widget? icon;
+  final TextStyle? labelStyle;
+  final TextStyle? secondaryStyle;
+
+  const ButtonLabel({
+    super.key,
+    required this.label,
+    this.secondary,
+    this.icon,
+    this.labelStyle,
+    this.secondaryStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[
+          icon!,
+          const SizedBox(width: ButtonDesign.contentGap),
+        ],
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: labelStyle ??
+              TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        if (secondary != null && secondary!.isNotEmpty) ...[
+          const SizedBox(width: ButtonDesign.contentGap),
+          Text(
+            '${ButtonDesign.secondarySeparator}$secondary',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: secondaryStyle ??
+                TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 /// A styled button for TV that shows focus state clearly with proper Material Design styling.
 class CustomButton extends StatefulWidget {
-  final Widget child;
+  final Widget? child;
   final VoidCallback? onPressed;
   final bool autofocus;
   final bool isPrimary;
@@ -314,10 +520,17 @@ class CustomButton extends StatefulWidget {
   final Color? backgroundColor;
   final OutlinedBorder? shape;
   final bool showFocusHighlight;
+  final EdgeInsetsGeometry? padding;
+  final double? borderRadius;
+
+  /// Convenience: build label content automatically.
+  final String? label;
+  final String? secondaryLabel;
+  final Widget? icon;
 
   const CustomButton({
     super.key,
-    required this.child,
+    this.child,
     this.onPressed,
     this.autofocus = false,
     this.isPrimary = false,
@@ -326,19 +539,27 @@ class CustomButton extends StatefulWidget {
     this.backgroundColor,
     this.shape,
     this.showFocusHighlight = true,
+    this.padding,
+    this.borderRadius,
+    this.label,
+    this.secondaryLabel,
+    this.icon,
   });
 
   @override
   State<CustomButton> createState() => _CustomButtonState();
 }
 
-class _CustomButtonState extends State<CustomButton> {
+class _CustomButtonState extends State<CustomButton>
+    with SingleTickerProviderStateMixin {
   late FocusNode _focusNode;
   bool _isFocused = false;
+  bool _hovered = false;
+  bool _pressed = false;
   late final VoidCallback _focusListener;
-  // Tracks whether focus was last driven by keyboard/D-pad (traditional) vs a
-  // touch tap, so the focus ring only appears for directional navigation.
   FocusHighlightMode _highlightMode = FocusManager.instance.highlightMode;
+  late AnimationController _hoverController;
+  late Animation<double> _hoverAnimation;
 
   @override
   void initState() {
@@ -349,6 +570,14 @@ class _CustomButtonState extends State<CustomButton> {
     };
     _focusNode.addListener(_focusListener);
     FocusManager.instance.addHighlightModeListener(_onHighlightModeChange);
+    _hoverController = AnimationController(
+      vsync: this,
+      duration: ButtonDesign.hoverDuration,
+    );
+    _hoverAnimation = CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeOut,
+    );
   }
 
   void _onHighlightModeChange(FocusHighlightMode mode) {
@@ -357,26 +586,76 @@ class _CustomButtonState extends State<CustomButton> {
 
   @override
   void dispose() {
-    // Always remove the listener; the node may be owned by the parent, in
-    // which case it outlives this state and would otherwise hold a reference
-    // to a disposed closure target.
     _focusNode.removeListener(_focusListener);
     FocusManager.instance.removeHighlightModeListener(_onHighlightModeChange);
     if (widget.focusNode == null) {
       _focusNode.dispose();
     }
+    _hoverController.dispose();
     super.dispose();
+  }
+
+  void _onEnter(PointerEnterEvent _) {
+    if (!_hovered) {
+      setState(() => _hovered = true);
+      _hoverController.forward();
+    }
+  }
+
+  void _onExit(PointerExitEvent _) {
+    setState(() {
+      _hovered = false;
+      _pressed = false;
+    });
+    _hoverController.reverse();
+  }
+
+  Widget _buildContent() {
+    if (widget.child != null) return widget.child!;
+    return ButtonLabel(
+      label: widget.label ?? '',
+      secondary: widget.secondaryLabel,
+      icon: widget.icon,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    // Show the focus ring only when navigating by keyboard/remote — never for a
-    // touch tap that incidentally moves focus to the button.
+    final cs = Theme.of(context).colorScheme;
+    final primaryColor = cs.primary;
     final showHighlight =
         widget.showFocusHighlight &&
         _isFocused &&
         _highlightMode != FocusHighlightMode.touch;
+
+    final effectiveShape = widget.shape ??
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            widget.borderRadius ?? ButtonDesign.borderRadius,
+          ),
+        );
+
+    final effectivePadding = widget.padding ?? ButtonDesign.padding;
+
+    // Mirror shape for outer focus ring
+    final BoxShape outerShape;
+    final BorderRadius? outerBorderRadius;
+    if (effectiveShape is CircleBorder) {
+      outerShape = BoxShape.circle;
+      outerBorderRadius = null;
+    } else if (effectiveShape is StadiumBorder) {
+      outerShape = BoxShape.rectangle;
+      outerBorderRadius = BorderRadius.circular(999);
+    } else if (effectiveShape is RoundedRectangleBorder) {
+      outerShape = BoxShape.rectangle;
+      final inner = effectiveShape.borderRadius;
+      outerBorderRadius = inner is BorderRadius
+          ? inner
+          : BorderRadius.circular(ButtonDesign.borderRadius);
+    } else {
+      outerShape = BoxShape.rectangle;
+      outerBorderRadius = BorderRadius.circular(ButtonDesign.borderRadius);
+    }
 
     Widget core;
     if (widget.isPrimary) {
@@ -386,25 +665,18 @@ class _CustomButtonState extends State<CustomButton> {
         onPressed: widget.onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: showHighlight
-              // On focus, brighten the primary fill so it pops against the dark
-              // background and the white outline contrasts clearly.
               ? Color.lerp(primaryColor, Colors.white, 0.18)
               : (widget.backgroundColor ?? primaryColor),
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          disabledBackgroundColor: Theme.of(
-            context,
-          ).colorScheme.onSurface.withValues(alpha: 0.12),
-          disabledForegroundColor: Theme.of(
-            context,
-          ).colorScheme.onSurface.withValues(alpha: 0.38),
-          // No inner side on focus — the outer accent ring (below) is the
-          // focus indicator. Mixing both produced double rings.
+          foregroundColor: cs.onPrimary,
+          disabledBackgroundColor: cs.onSurface.withValues(alpha: 0.12),
+          disabledForegroundColor: cs.onSurface.withValues(alpha: 0.38),
           side: BorderSide.none,
           shadowColor: Colors.transparent,
-          shape: widget.shape,
+          shape: effectiveShape,
           overlayColor: Colors.transparent,
+          padding: effectivePadding,
         ),
-        child: widget.child,
+        child: _buildContent(),
       );
     } else {
       core = TextButton(
@@ -413,71 +685,98 @@ class _CustomButtonState extends State<CustomButton> {
         onPressed: widget.onPressed,
         style: TextButton.styleFrom(
           backgroundColor: showHighlight
-              // Fill the button on focus so a "grey" outlined button no longer
-              // looks identical to its non-focused state.
               ? primaryColor.withValues(alpha: 0.28)
               : null,
           foregroundColor: _isFocused
-              ? Theme.of(context).colorScheme.onSurface
-              : Theme.of(context).colorScheme.onSurfaceVariant,
-          disabledForegroundColor: Theme.of(
-            context,
-          ).colorScheme.onSurface.withValues(alpha: 0.38),
+              ? cs.onSurface
+              : cs.onSurfaceVariant,
+          disabledForegroundColor: cs.onSurface.withValues(alpha: 0.38),
           side: widget.isOutlined
-              ? BorderSide(color: Theme.of(context).colorScheme.outline)
+              ? BorderSide(color: cs.outline)
               : BorderSide.none,
-          shape: widget.shape,
+          shape: effectiveShape,
           overlayColor: Colors.transparent,
           shadowColor: Colors.transparent,
+          padding: effectivePadding,
         ),
-        child: widget.child,
+        child: _buildContent(),
       );
     }
 
-    // Outer focus ring — accent border + subtle glow.
-    // Geometry mirrors the inner button's shape so the ring traces the
-    // button correctly for circles, pills, and rounded rectangles.
-    final shape = widget.shape;
-    final BoxShape outerShape;
-    final BorderRadius? outerBorderRadius;
-    if (shape is CircleBorder) {
-      outerShape = BoxShape.circle;
-      outerBorderRadius = null;
-    } else if (shape is StadiumBorder) {
-      outerShape = BoxShape.rectangle;
-      outerBorderRadius = BorderRadius.circular(999);
-    } else if (shape is RoundedRectangleBorder) {
-      outerShape = BoxShape.rectangle;
-      final inner = shape.borderRadius;
-      outerBorderRadius = inner is BorderRadius
-          ? inner
-          : BorderRadius.circular(12);
-    } else {
-      // No explicit shape → Material 3 buttons default to a pill (StadiumBorder),
-      // so trace a fully-rounded ring rather than a squarish 12px corner.
-      outerShape = BoxShape.rectangle;
-      outerBorderRadius = BorderRadius.circular(999);
-    }
-    return AnimatedContainer(
+    final focusShadow = showHighlight
+        ? BoxShadow(
+            color: primaryColor.withValues(alpha: 0.6),
+            blurRadius: 24,
+            spreadRadius: 2,
+          )
+        : null;
+
+    final button = AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
         shape: outerShape,
         borderRadius: outerBorderRadius,
-        // Accent ring + glow (the keyboard/D-pad focus cue).
         border: showHighlight
             ? Border.all(color: primaryColor, width: 2)
             : null,
-        boxShadow: showHighlight
-            ? [
-                BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.6),
-                  blurRadius: 24,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
+        boxShadow: [
+          if (showHighlight && focusShadow != null) focusShadow,
+        ],
       ),
       child: core,
+    );
+
+    // Wrap with hover/click animations using AnimatedBuilder
+    return MouseRegion(
+      onEnter: widget.onPressed != null ? _onEnter : null,
+      onExit: widget.onPressed != null ? _onExit : null,
+      cursor: widget.onPressed != null
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTapDown: widget.onPressed != null
+            ? (_) => setState(() => _pressed = true)
+            : null,
+        onTapUp: widget.onPressed != null
+            ? (_) => setState(() => _pressed = false)
+            : null,
+        onTapCancel: widget.onPressed != null
+            ? () => setState(() => _pressed = false)
+            : null,
+        child: AnimatedBuilder(
+          animation: _hoverAnimation,
+          builder: (context, child) {
+            final hoverFraction = _hoverAnimation.value;
+            final translateY = ButtonDesign.hoverTranslateY * hoverFraction;
+            final scale = _pressed ? ButtonDesign.clickScale : 1.0;
+            double shadowOpacity = 0.08 + (0.15 - 0.08) * hoverFraction;
+            double shadowBlur = 4 + (12 - 4) * hoverFraction;
+            double shadowOffset = 2 + (6 - 2) * hoverFraction;
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: outerBorderRadius,
+                boxShadow: showHighlight && focusShadow != null
+                    ? [focusShadow]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: shadowOpacity),
+                          blurRadius: shadowBlur,
+                          offset: Offset(0, shadowOffset),
+                        ),
+                      ],
+              ),
+              child: Transform.translate(
+                offset: Offset(0, translateY.toDouble()),
+                child: Transform.scale(
+                  scale: scale,
+                  child: child,
+                ),
+              ),
+            );
+          },
+          child: button,
+        ),
+      ),
     );
   }
 }

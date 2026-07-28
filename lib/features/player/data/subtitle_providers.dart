@@ -7,7 +7,7 @@ class OpenSubtitlesProvider extends SubtitleProvider {
   final String? _apiKey;
   static const String baseUrl = "https://api.opensubtitles.com/api/v1";
   static const String _defaultApiKey = "uyBLgFD17MgrYmA0gSXoKllMJBelOYj2";
-  static const String _userAgent = "SkyStream v2.2.1";
+  static const String _userAgent = "MixStream v2.2.1";
 
   // Auth state
   final String? _username;

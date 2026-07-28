@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/storage/history_repository.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
 import '../data/tmdb_details_provider.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 
 import 'widgets/tmdb_details_desktop_hero.dart';
 import 'widgets/provider_search_section.dart';
@@ -21,6 +21,7 @@ import 'widgets/movie_production_companies.dart';
 import 'widgets/movie_seasons_list.dart';
 import '../../../../shared/widgets/thumbnail_error_placeholder.dart';
 import '../../../../shared/widgets/shimmer_placeholder.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 class TmdbMovieDetailsScreen extends ConsumerStatefulWidget {
   final int movieId;
@@ -199,7 +200,7 @@ class _TmdbMovieDetailsScreenState
                     ElevatedButton.icon(
                       onPressed: () =>
                           ref.invalidate(tmdbDetailsProvider(params)),
-                      icon: const Icon(Icons.refresh),
+                      icon: const AppIcon('refresh'),
                       label: Text(l10n.retry),
                     ),
                   ],
@@ -235,7 +236,7 @@ class _TmdbMovieDetailsScreenState
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const AppIcon('arrow_back_rounded'),
           onPressed: () => context.pop(),
           style: IconButton.styleFrom(
             backgroundColor: isDark ? Colors.black45 : Colors.white54,
@@ -348,9 +349,7 @@ class _TmdbMovieDetailsScreenState
               ).colorScheme.onSurface.withValues(alpha: 0.1),
               radius: 18,
               child: IconButton(
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: Theme.of(context).colorScheme.onSurface,
+                icon: AppIcon('arrow_back', color: Theme.of(context).colorScheme.onSurface,
                   size: 20,
                 ),
                 padding: EdgeInsets.zero,
@@ -382,71 +381,42 @@ class _TmdbMovieDetailsScreenState
               valueListenable: _scrollOffset,
               builder: (context, offset, child) {
                 final contentOffset = -offset * 0.4;
-                final parallaxOffset = -offset * 0.1;
 
                 return Stack(
                   fit: StackFit.expand,
                   children: [
-                    Transform.translate(
-                      offset: Offset(0, parallaxOffset),
-                      child: CachedNetworkImage(
-                        imageUrl: backdropImageUrl,
-                        fit: BoxFit.cover,
-                        // Bound the decoded bitmap to display pixels. After
-                        // H29, TV / desktop fetches `original`-size backdrops
-                        // (~3840 px on 4K) — decoding at source would cost
-                        // ~33 MB per image and starve the image cache.
-                        memCacheWidth:
-                            (MediaQuery.sizeOf(context).width *
-                                    MediaQuery.devicePixelRatioOf(context))
-                                .round(),
-                        placeholder: (context, url) => Container(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                        ),
-                        errorWidget: (_, _, _) => ThumbnailErrorPlaceholder(
-                          label: title,
-                          isBackdrop: true,
-                        ),
+                    CachedNetworkImage(
+                      imageUrl: backdropImageUrl,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                      memCacheWidth:
+                          (MediaQuery.sizeOf(context).width *
+                                  MediaQuery.devicePixelRatioOf(context))
+                              .round(),
+                      placeholder: (context, url) => Container(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                      ),
+                      errorWidget: (_, _, _) => ThumbnailErrorPlaceholder(
+                        label: title,
+                        isBackdrop: true,
                       ),
                     ),
-                    // 1. Legibility Scrim: Fixed dark-tinted overlay at the bottom of the backdrop
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.65),
-                          ],
-                          stops: const [0.4, 1.0],
-                        ),
-                      ),
-                    ),
-                    // 2. Blend-into-page transition: Theme-aware eased fade to surface
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Theme.of(
-                              context,
-                            ).scaffoldBackgroundColor.withValues(alpha: 0.0),
-                            Theme.of(
-                              context,
-                            ).scaffoldBackgroundColor.withValues(alpha: 0.15),
-                            Theme.of(
-                              context,
-                            ).scaffoldBackgroundColor.withValues(alpha: 0.45),
-                            Theme.of(
-                              context,
-                            ).scaffoldBackgroundColor.withValues(alpha: 0.8),
-                            Theme.of(context).scaffoldBackgroundColor,
-                          ],
-                          stops: const [0.0, 0.5, 0.75, 0.9, 1.0],
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Theme.of(context).scaffoldBackgroundColor,
+                              Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.7),
+                              Colors.transparent,
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.3, 0.6, 1.0],
+                          ),
                         ),
                       ),
                     ),
@@ -630,25 +600,31 @@ class _TmdbMovieDetailsScreenState
                                 ? l10n.movie.toUpperCase()
                                 : l10n.tvShow.toUpperCase()),
                     ),
-                    _buildIconInfo(context, Icons.calendar_today_rounded, year),
+                    _buildIconInfo(context, const AppIcon('calendar_today_rounded', size: 14), year),
                     _buildIconInfo(
                       context,
-                      Icons.star_rounded,
+                      AppIcon('star_rounded', size: 14, color: Theme.of(context).colorScheme.primary),
                       rating,
-                      iconColor: const Color(0xFF01B4E4),
                     ),
                     if (runtime > 0)
                       _buildIconInfo(
                         context,
-                        Icons.timer_outlined,
+                        const AppIcon('timer_outlined', size: 14),
                         durationText,
                       ),
                     if (certification.isNotEmpty)
-                      _buildBorderedInfo(context, certification),
+                      Text(
+                        certification,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     if (!isMovie && data.seasons.isNotEmpty)
                       _buildIconInfo(
                         context,
-                        Icons.layers_rounded,
+                        const AppIcon('layers_rounded', size: 14),
                         l10n.seasonsCount(data.seasons.length),
                       ),
                   ],
@@ -723,10 +699,10 @@ class _TmdbMovieDetailsScreenState
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Icon(
+                                AppIcon(
                                   _isDescriptionExpanded
-                                      ? Icons.keyboard_arrow_up
-                                      : Icons.keyboard_arrow_down,
+                                      ? 'keyboard_arrow_up'
+                                      : 'keyboard_arrow_down',
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.onSurface,
@@ -862,11 +838,7 @@ class _TmdbMovieDetailsScreenState
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-          width: 0.5,
-        ),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
@@ -882,20 +854,13 @@ class _TmdbMovieDetailsScreenState
 
   Widget _buildIconInfo(
     BuildContext context,
-    IconData icon,
-    String text, {
-    Color? iconColor,
-  }) {
+    Widget icon,
+    String text,
+  ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color:
-              iconColor ??
-              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-        ),
+        icon,
         const SizedBox(width: 4),
         Text(
           text,
@@ -911,39 +876,9 @@ class _TmdbMovieDetailsScreenState
     );
   }
 
-  Widget _buildBorderedInfo(BuildContext context, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
   Widget _buildDetailRow(String label, String value) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-          ),
-        ),
-      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

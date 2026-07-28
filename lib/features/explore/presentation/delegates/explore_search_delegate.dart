@@ -11,6 +11,7 @@ import '../controllers/explore_search_controller.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../core/providers/device_info_provider.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class ExploreSearchDelegate extends SearchDelegate<void> {
   ExploreSearchDelegate()
@@ -53,7 +54,7 @@ class ExploreSearchDelegate extends SearchDelegate<void> {
     return [
       if (query.isNotEmpty)
         IconButton(
-          icon: const Icon(Icons.clear),
+          icon: const AppIcon('clear'),
           onPressed: () {
             query = '';
             showSuggestions(context);
@@ -66,7 +67,7 @@ class ExploreSearchDelegate extends SearchDelegate<void> {
   @override
   Widget? buildLeading(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.arrow_back_rounded),
+      icon: const AppIcon('arrow_back_rounded'),
       onPressed: () => close(context, null),
     );
   }
@@ -344,6 +345,9 @@ class _SearchResultsGridState extends ConsumerState<_SearchResultsGrid> {
           imageUrl: imageUrl,
           title: title,
           heroTag: uniqueTag,
+          badgeText: item.score != null
+              ? item.score!.toStringAsFixed(1)
+              : null,
           onTap: () {
             TmdbDetailsRoute(
               movieId: id,

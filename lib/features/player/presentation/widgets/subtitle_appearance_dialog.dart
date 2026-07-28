@@ -10,6 +10,8 @@ import 'package:dpad/dpad.dart';
 import '../../../settings/presentation/player_settings_provider.dart';
 import '../player_controller.dart';
 import 'hotstar_player_style.dart';
+import '../../../../shared/widgets/app_icon.dart';
+import '../../../../shared/widgets/custom_widgets.dart';
 
 // Unified settings card container that highlights border when any of its children are focused
 class DpadSettingCard extends StatelessWidget {
@@ -310,8 +312,8 @@ class DpadColorCircle extends StatelessWidget {
                 ),
                 child: isTransparent
                     ? const Center(
-                        child: Icon(
-                          Icons.disabled_by_default_outlined,
+                        child: AppIcon(
+                          'disabled_by_default_outlined',
                           size: 16,
                           color: Colors.red,
                         ),
@@ -341,6 +343,7 @@ class DpadButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(ButtonDesign.borderRadius);
     return DpadFocusable(
       onSelect: onPressed,
       builder: (context, isFocused, child) {
@@ -360,18 +363,18 @@ class DpadButton extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: onPressed,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: borderRadius,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: ButtonDesign.padding,
               decoration: BoxDecoration(
                 color: isFocused ? focusedColor : baseColor,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: borderRadius,
                 border: Border.all(
                   color: isFocused
                       ? HotstarPlayerStyle.accent
                       : (isPrimary ? Colors.transparent : Colors.grey.shade800),
-                  width: 1.5,
+                  width: ButtonDesign.borderWidth,
                 ),
                 boxShadow: isFocused
                     ? [
@@ -389,7 +392,7 @@ class DpadButton extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: textColor,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
               ),
@@ -587,7 +590,7 @@ class _SubtitleAppearanceDialogState
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: HotstarPlayerStyle.primaryText),
+          icon: AppIcon('close', color: HotstarPlayerStyle.primaryText),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -931,8 +934,8 @@ class _SubtitleAppearanceDialogState
                       ),
                     )
                   else
-                    const Icon(
-                      Icons.chevron_right_rounded,
+                    const AppIcon(
+                      'chevron_right_rounded',
                       color: HotstarPlayerStyle.mutedText,
                       size: 20,
                     ),

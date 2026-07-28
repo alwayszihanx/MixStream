@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/explore_filter_provider.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class YearSelectorDialog extends ConsumerWidget {
   const YearSelectorDialog({super.key});
@@ -40,8 +41,7 @@ class YearSelectorDialog extends ConsumerWidget {
                 padding: const EdgeInsets.all(24.0),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today,
+                    AppIcon('calendar_today',
                       color: theme.colorScheme.primary,
                       size: 28,
                     ),

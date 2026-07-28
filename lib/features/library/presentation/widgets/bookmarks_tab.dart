@@ -5,6 +5,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/image_fallbacks.dart';
 import '../../../../core/utils/layout_constants.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
+import '../../../../shared/widgets/app_icon.dart';
 import '../../../../shared/widgets/multimedia_card.dart';
 import '../library_provider.dart';
 
@@ -52,6 +53,9 @@ class _BookmarksTabState extends ConsumerState<BookmarksTab>
                 '',
             title: item.title,
             heroTag: 'lib_bookmark_${item.url}_$index',
+            badgeText: item.score != null
+                ? item.score!.toStringAsFixed(1)
+                : null,
             onTap: () => DetailsRoute(
               $extra: DetailsRouteExtra(item: item),
             ).push<void>(context),
@@ -66,8 +70,8 @@ class _BookmarksTabState extends ConsumerState<BookmarksTab>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.bookmark_outline_rounded,
+          AppIcon(
+            'bookmark_outline_rounded',
             size: 64,
             color: Theme.of(context).dividerColor,
           ),

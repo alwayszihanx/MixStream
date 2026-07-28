@@ -3,7 +3,7 @@
   "name": "template",
   "version": 1,
   "baseUrl": "https://example.com",
-  "description": "template plugin for skystream-plugins",
+  "description": "template plugin for mixstream-plugins",
   "authors": [
     "Developer"
   ],

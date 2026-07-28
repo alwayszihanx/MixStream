@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 
 import 'dart:async';
 
+import '../../../shared/widgets/app_icon.dart';
 import '../../../shared/widgets/custom_widgets.dart';
 import '../../extensions/providers/extensions_controller.dart';
 import '../../../core/storage/settings_repository.dart';
@@ -11,7 +12,7 @@ import '../../../core/domain/entity/multimedia_item.dart';
 import '../../../core/providers/device_info_provider.dart';
 import '../../../core/router/app_router.dart';
 import 'widgets/settings_widgets.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../core/services/notification_service.dart';
 
 import 'package:flutter/foundation.dart';
@@ -48,13 +49,13 @@ class _DeveloperOptionsScreenState
             title: l10n.debugTools,
             children: [
               SettingsTile(
-                icon: Icons.video_file_rounded,
+                icon: const AppIcon('video_file_rounded'),
                 title: l10n.playLocalVideo,
                 subtitle: l10n.playLocalVideoSubtitle,
                 onTap: () => _pickLocalVideo(context),
               ),
               SettingsTile(
-                icon: Icons.link_rounded,
+                icon: const AppIcon('link_rounded'),
                 title: l10n.streamUrl,
                 subtitle: l10n.streamUrlSubtitle,
                 onTap: () => _showStreamUrlDialog(
@@ -63,14 +64,14 @@ class _DeveloperOptionsScreenState
                 ),
               ),
               SettingsTile(
-                icon: Icons.stream,
+                icon: const AppIcon('stream'),
                 title: l10n.streamTorrent,
                 subtitle: l10n.streamTorrentSubtitle,
                 onTap: () => _pickTorrentFile(context),
               ),
               if (kDebugMode)
                 SettingsTile(
-                  icon: Icons.folder_copy_rounded,
+                  icon: const AppIcon('folder_copy_rounded'),
                   title: l10n.loadPluginFromAssets,
                   subtitle: _devLoadAssets ? l10n.enabled : l10n.disabled,
                   isLast: true,
@@ -86,7 +87,7 @@ class _DeveloperOptionsScreenState
             title: l10n.diagnostics,
             children: [
               SettingsTile(
-                icon: Icons.bug_report_rounded,
+                icon: const AppIcon('bug_report_rounded'),
                 title: l10n.viewLogs,
                 subtitle: l10n.viewLogsSubtitle,
                 isLast: true,

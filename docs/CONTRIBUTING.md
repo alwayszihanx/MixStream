@@ -1,6 +1,6 @@
-# Contributing to SkyStream
+# Contributing to MixStream
 
-First off, thank you for considering contributing to SkyStream! It's people like you who make SkyStream a better tool for everyone.
+First off, thank you for considering contributing to MixStream! It's people like you who make MixStream a better tool for everyone.
 
 This guide will help you get started with setting up the project on your local machine and understanding the development workflow.
 
@@ -10,7 +10,7 @@ This guide will help you get started with setting up the project on your local m
 
 ### Prerequisites
 
-To build SkyStream from source, you need the following installed on your machine:
+To build MixStream from source, you need the following installed on your machine:
 
 1.  **Flutter SDK**: Version `3.10.4` or higher is required.
     - [Download Flutter](https://docs.flutter.dev/get-started/install)
@@ -22,8 +22,8 @@ To build SkyStream from source, you need the following installed on your machine
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/akashdh11/skystream.git
-    cd skystream
+    git clone https://github.com/alwayszihanx/MixStream.git
+    cd mixstream
     ```
 
 2.  **Install dependencies**:
@@ -32,13 +32,13 @@ To build SkyStream from source, you need the following installed on your machine
     ```
 
 3.  **Generate Localization classes**:
-    SkyStream uses the `intl` package for internationalization. Run this command to generate the necessary Dart classes from our `.arb` files:
+    MixStream uses the `intl` package for internationalization. Run this command to generate the necessary Dart classes from our `.arb` files:
     ```bash
     flutter gen-l10n
     ```
 
 4.  **Generate Code**:
-    SkyStream uses Riverpod and other code generators. Since generated files are not tracked in Git, you must run this command after cloning or pulling changes:
+    MixStream uses Riverpod and other code generators. Since generated files are not tracked in Git, you must run this command after cloning or pulling changes:
     ```bash
     dart run build_runner build --delete-conflicting-outputs
     ```
@@ -54,7 +54,7 @@ To build SkyStream from source, you need the following installed on your machine
 
 ## 📂 Project Structure
 
-SkyStream follows a feature-first architecture combined with standard clean architecture layers:
+MixStream follows a feature-first architecture combined with standard clean architecture layers:
 
 -   `lib/core/`: Contains core services, network logic, database (Hive) schemas, and shared providers.
 -   `lib/features/`: Contains the main application features (Home, Search, Discover, Settings, etc.).
@@ -91,7 +91,7 @@ We use `flutter_lints` and some additional rules to ensure code quality. Before 
 
 If you find a bug or have a feature request, please use our community channels:
 
--   **GitHub Issues**: [Open an issue here](https://github.com/akashdh11/skystream/issues). This is our primary tracker for bugs and technical tasks.
+-   **GitHub Issues**: [Open an issue here](https://github.com/alwayszihanx/MixStream/issues). This is our primary tracker for bugs and technical tasks.
 -   **Discord server**: Join the discussion on [Discord](https://discord.gg/73XGA8Mxn9).
 -   **Telegram Channel**: Stay updated via [Telegram](https://t.me/+Ez5Vsv2pUUFjZmNl).
 
@@ -102,7 +102,7 @@ Please check for existing issues before creating a new one to avoid duplicates.
 ## 📖 Other Guides
 
 -   **[CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md)**: specifically for helping with app translations (over 40 languages supported!).
--   **[PLUGIN_DEVELOPMENT_GUIDE.md](PLUGIN_DEVELOPMENT_GUIDE.md)**: specifically for creating and publishing your own SkyStream extensions.
+-   **[PLUGIN_DEVELOPMENT_GUIDE.md](PLUGIN_DEVELOPMENT_GUIDE.md)**: specifically for creating and publishing your own MixStream extensions.
 
 ---
 

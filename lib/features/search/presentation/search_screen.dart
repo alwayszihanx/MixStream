@@ -10,6 +10,7 @@ import 'widgets/search_result_section.dart';
 import 'widgets/search_header_bar.dart';
 import 'widgets/bouncy_entry_animation.dart';
 import '../../../shared/widgets/loading_indicator.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -418,8 +419,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       const SizedBox(width: 12),
                       const Expanded(child: Text('Non Livestreams')),
                       if (!isLive)
-                        Icon(
-                          Icons.check,
+                        AppIcon(
+                          'check',
                           size: 18,
                           color: theme.colorScheme.primary,
                         ),
@@ -438,8 +439,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       const SizedBox(width: 12),
                       const Expanded(child: Text('Livestreams')),
                       if (isLive)
-                        Icon(
-                          Icons.check,
+                        AppIcon(
+                          'check',
                           size: 18,
                           color: theme.colorScheme.primary,
                         ),
@@ -493,7 +494,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   );
                 } else if (value.text.isNotEmpty) {
                   suffix = IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
+                    icon: AppIcon('clear', size: 18),
                     style: IconButton.styleFrom(
                       minimumSize: const Size(32, 32),
                       padding: EdgeInsets.zero,
@@ -554,8 +555,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       fontSize: 13,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
-                    prefixIcon: Icon(
-                      Icons.search,
+                    prefixIcon: AppIcon(
+                      'search',
                       size: 18,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -690,8 +691,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.movie_filter_rounded,
+            AppIcon(
+              'movie_filter_rounded',
               size: 64,
               color: Theme.of(
                 context,
@@ -920,8 +921,8 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.search_rounded,
+                        AppIcon(
+                          'search_rounded',
                           color: isBodyHighlighted ? highlightColor : iconColor,
                           size: 20,
                         ),
@@ -996,8 +997,8 @@ class _SuggestionCardState extends State<_SuggestionCard> {
                       bottomRight: Radius.circular(11),
                     ),
                   ),
-                  child: Icon(
-                    Icons.north_west_rounded,
+                  child: AppIcon(
+                    'north_west_rounded',
                     color: isButtonHighlighted
                         ? highlightColor
                         : buttonIconColor,

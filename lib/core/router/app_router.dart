@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:skystream/features/home/presentation/home_screen.dart';
-import 'package:skystream/features/search/presentation/search_screen.dart';
+import 'package:mixstream/features/home/presentation/home_screen.dart';
+import 'package:mixstream/features/search/presentation/search_screen.dart';
 import '../../features/explore/presentation/explore_screen.dart';
-import 'package:skystream/features/library/presentation/library_screen.dart';
-import 'package:skystream/features/settings/presentation/settings_screen.dart';
+import 'package:mixstream/features/library/presentation/library_screen.dart';
+import 'package:mixstream/features/settings/presentation/settings_screen.dart';
+import 'package:mixstream/features/settings/presentation/about_screen.dart';
 import '../../features/extensions/screens/extensions_screen.dart';
 import '../../features/settings/presentation/developer_options_screen.dart';
 import '../../features/details/presentation/details_screen.dart';
@@ -13,7 +14,7 @@ import '../../features/details/presentation/tmdb_movie_details_screen.dart';
 import '../../features/explore/presentation/view_all_screen.dart';
 import '../../features/player/presentation/player_screen.dart';
 import '../domain/entity/multimedia_item.dart';
-import 'package:skystream/shared/widgets/app_scaffold.dart';
+import 'package:mixstream/shared/widgets/app_scaffold.dart';
 import '../../core/storage/settings_repository.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:flutter/foundation.dart';
@@ -44,6 +45,7 @@ part 'app_router.g.dart';
           routes: [
             TypedGoRoute<ExtensionsRoute>(path: 'extensions'),
             TypedGoRoute<DeveloperOptionsRoute>(path: 'developer'),
+            TypedGoRoute<AboutRoute>(path: 'about'),
           ],
         ),
       ],
@@ -131,6 +133,13 @@ class DeveloperOptionsRoute extends GoRouteData with $DeveloperOptionsRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const DeveloperOptionsScreen();
+}
+
+class AboutRoute extends GoRouteData with $AboutRoute {
+  const AboutRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const AboutScreen();
 }
 
 @TypedGoRoute<AppLogsRoute>(path: '/logs')

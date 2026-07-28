@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_icon.dart';
 
 /// Consistent error/missing-image placeholder for thumbnails and posters.
 ///
@@ -46,10 +47,8 @@ class ThumbnailErrorPlaceholder extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  isBackdrop
-                      ? Icons.movie_outlined
-                      : Icons.image_not_supported_outlined,
+                AppIcon(
+                  isBackdrop ? 'movie_outlined' : 'image_not_supported_outlined',
                   size: dynamicIconSize,
                   color: fg,
                 ),
@@ -80,12 +79,10 @@ class ThumbnailErrorPlaceholder extends StatelessWidget {
         return Container(
           color: bg,
           child: Center(
-            child: Icon(
+            child: AppIcon(
               label != null && label!.isNotEmpty
-                  ? (isBackdrop
-                        ? Icons.movie_outlined
-                        : Icons.image_not_supported_outlined)
-                  : Icons.broken_image,
+                  ? (isBackdrop ? 'movie_outlined' : 'image_not_supported_outlined')
+                  : 'broken_image',
               size: smallIconSize,
               color: fg,
             ),

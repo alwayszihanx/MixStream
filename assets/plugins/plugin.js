@@ -8,7 +8,7 @@
      */
 
     /**
-     * @type {import('@skystream/sdk').Manifest}
+     * @type {import('@mixstream/sdk').Manifest}
      */
     // var manifest is injected at runtime
 

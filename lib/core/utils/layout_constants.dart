@@ -8,6 +8,7 @@ class LayoutConstants {
   static const double spacingSm = 12;
   static const double spacingMd = 16;
   static const double spacingLg = 24;
+  static const double spacingXxl = 32;
 
   // Details screen SliverAppBar
   static const double detailsExpandedHeightMobile = 400;

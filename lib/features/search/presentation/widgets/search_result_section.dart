@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:skystream/core/utils/responsive_breakpoints.dart';
+import 'package:mixstream/core/utils/responsive_breakpoints.dart';
 
-import 'package:skystream/core/extensions/extension_manager.dart';
-import 'package:skystream/core/domain/entity/multimedia_item.dart';
-import 'package:skystream/core/router/app_router.dart';
-import 'package:skystream/core/utils/image_fallbacks.dart';
-import 'package:skystream/shared/widgets/desktop_scroll_wrapper.dart';
-import 'package:skystream/shared/widgets/multimedia_card.dart';
+import 'package:mixstream/core/extensions/extension_manager.dart';
+import 'package:mixstream/core/domain/entity/multimedia_item.dart';
+import 'package:mixstream/core/router/app_router.dart';
+import 'package:mixstream/core/utils/image_fallbacks.dart';
+import 'package:mixstream/shared/widgets/desktop_scroll_wrapper.dart';
+import 'package:mixstream/shared/widgets/multimedia_card.dart';
 import 'stamp_in_label.dart';
 import 'bouncy_entry_animation.dart';
 
@@ -131,6 +131,9 @@ class _SearchResultSectionState extends ConsumerState<SearchResultSection> {
                           heroTag: uniqueTag,
                           focusNode: rIndex == 0
                               ? widget.firstCardFocusNode
+                              : null,
+                          badgeText: item.score != null
+                              ? item.score!.toStringAsFixed(1)
                               : null,
                           onTap: () => DetailsRoute(
                             $extra: DetailsRouteExtra(item: item),

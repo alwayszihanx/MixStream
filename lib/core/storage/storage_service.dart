@@ -149,6 +149,14 @@ class StorageService {
     return _settingsBox.get('theme_mode') as String?;
   }
 
+  Future<void> saveThemeConfig(int index) async {
+    await _settingsBox.put('theme_config', index);
+  }
+
+  int getThemeConfig() {
+    return _settingsBox.get('theme_config', defaultValue: 0) as int;
+  }
+
   // --- Sidebar State ---
   Future<void> setSidebarExpanded(bool expanded) async {
     await _settingsBox.put('sidebar_expanded', expanded);

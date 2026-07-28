@@ -1,6 +1,6 @@
-# Contributing Translations to SkyStream
+# Contributing Translations to MixStream
 
-Thank you for helping localize SkyStream! Our localization system is fully automated. You only need to edit or add translation files—no code changes are required.
+Thank you for helping localize MixStream! Our localization system is fully automated. You only need to edit or add translation files—no code changes are required.
 
 ## Where to Find Translations
 All translation files are located in:

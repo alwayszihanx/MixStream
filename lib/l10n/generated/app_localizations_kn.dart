@@ -9,7 +9,7 @@ class AppLocalizationsKn extends AppLocalizations {
   AppLocalizationsKn([String locale = 'kn']) : super(locale);
 
   @override
-  String get appTitle => 'SkyStream';
+  String get appTitle => 'MixStream';
 
   @override
   String get languageName => 'ಕನ್ನಡ';

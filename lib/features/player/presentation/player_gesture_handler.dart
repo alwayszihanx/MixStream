@@ -12,7 +12,7 @@ enum PlayerDragMode { none, vertical, horizontal }
 class PlayerGestureState {
   final PlayerGesture? currentGesture;
   final bool showOSD;
-  final IconData osdIcon;
+  final String osdIconName;
   final double? osdValue;
   final String osdLabel;
   final Alignment osdAlignment;
@@ -24,7 +24,7 @@ class PlayerGestureState {
   const PlayerGestureState({
     this.currentGesture,
     this.showOSD = false,
-    this.osdIcon = Icons.settings,
+    this.osdIconName = 'settings',
     this.osdValue,
     this.osdLabel = "",
     this.osdAlignment = Alignment.center,
@@ -39,7 +39,7 @@ class PlayerGestureState {
   PlayerGestureState copyWith({
     PlayerGesture? currentGesture,
     bool? showOSD,
-    IconData? osdIcon,
+    String? osdIconName,
     Object? osdValue = _keep,
     String? osdLabel,
     Alignment? osdAlignment,
@@ -51,7 +51,7 @@ class PlayerGestureState {
     return PlayerGestureState(
       currentGesture: currentGesture ?? this.currentGesture,
       showOSD: showOSD ?? this.showOSD,
-      osdIcon: osdIcon ?? this.osdIcon,
+      osdIconName: osdIconName ?? this.osdIconName,
       osdValue: identical(osdValue, _keep)
           ? this.osdValue
           : osdValue as double?,
@@ -159,10 +159,10 @@ class PlayerGestureHandler extends _$PlayerGestureHandler {
     state = state.copyWith(showOSD: false);
   }
 
-  void showToast(String message, IconData icon) {
+  void showToast(String message, String iconName) {
     state = state.copyWith(
       showOSD: true,
-      osdIcon: icon,
+      osdIconName: iconName,
       osdLabel: message,
       osdValue: null,
       osdAlignment: Alignment.bottomCenter,
@@ -229,7 +229,7 @@ class PlayerGestureHandler extends _$PlayerGestureHandler {
       activeDragMode: PlayerDragMode.vertical,
       currentGesture: type,
       showOSD: true,
-      osdIcon: _getIconForValue(type, startVal),
+      osdIconName: _getIconNameForValue(type, startVal),
       osdValue: startVal,
       osdLabel: type == PlayerGesture.brightness ? "Brightness" : "Volume",
       osdAlignment: alignment,
@@ -265,14 +265,14 @@ class PlayerGestureHandler extends _$PlayerGestureHandler {
         ScreenBrightness().resetApplicationScreenBrightness();
         state = state.copyWith(
           osdValue: newVal,
-          osdIcon: _getIconForValue(state.currentGesture!, newVal),
+          osdIconName: _getIconNameForValue(state.currentGesture!, newVal),
           osdLabel: "Auto",
         );
       } else {
         ScreenBrightness().setApplicationScreenBrightness(newVal);
         state = state.copyWith(
           osdValue: newVal,
-          osdIcon: _getIconForValue(state.currentGesture!, newVal),
+          osdIconName: _getIconNameForValue(state.currentGesture!, newVal),
           osdLabel: "Brightness",
         );
       }
@@ -282,7 +282,7 @@ class PlayerGestureHandler extends _$PlayerGestureHandler {
       unawaited(future?.then((_) => null) ?? Future.value());
       state = state.copyWith(
         osdValue: newVal,
-        osdIcon: _getIconForValue(state.currentGesture!, newVal),
+        osdIconName: _getIconNameForValue(state.currentGesture!, newVal),
       );
     }
   }
@@ -394,7 +394,7 @@ class PlayerGestureHandler extends _$PlayerGestureHandler {
     final value = await toggleMuteLevel?.call();
     if (value == null) return;
     if (value <= 0) {
-      showToast("Mute", Icons.volume_off);
+      showToast("Mute", 'volume_off');
     } else {
       _showVolumeOsd(value);
     }
@@ -415,26 +415,26 @@ class PlayerGestureHandler extends _$PlayerGestureHandler {
 
     state = state.copyWith(
       showOSD: true,
-      osdIcon: _getIconForValue(PlayerGesture.volume, value),
+      osdIconName: _getIconNameForValue(PlayerGesture.volume, value),
       osdValue: effectiveValue,
       osdLabel: label,
     );
     _triggerOSDTimer();
   }
 
-  IconData _getIconForValue(PlayerGesture type, double value) {
+  String _getIconNameForValue(PlayerGesture type, double value) {
     if (type == PlayerGesture.brightness) {
-      if (value <= 0.0) return Icons.brightness_auto;
-      if (value < 0.3) return Icons.brightness_low;
-      if (value < 0.7) return Icons.brightness_medium;
-      return Icons.brightness_high;
+      if (value <= 0.0) return 'brightness_auto';
+      if (value < 0.3) return 'brightness_low';
+      if (value < 0.7) return 'brightness_medium';
+      return 'brightness_high';
     } else if (type == PlayerGesture.volume) {
-      if (value <= 0.0) return Icons.volume_off;
-      if (value < 0.3) return Icons.volume_mute;
-      if (value < 0.7) return Icons.volume_down;
-      if (!supportsVolumeBoost || value <= 1.0) return Icons.volume_up;
-      return Icons.campaign;
+      if (value <= 0.0) return 'volume_off';
+      if (value < 0.3) return 'volume_mute';
+      if (value < 0.7) return 'volume_down';
+      if (!supportsVolumeBoost || value <= 1.0) return 'volume_up';
+      return 'campaign';
     }
-    return Icons.settings;
+    return 'settings';
   }
 }

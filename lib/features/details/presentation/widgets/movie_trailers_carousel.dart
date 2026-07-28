@@ -6,6 +6,7 @@ import '../../../../shared/widgets/cards_wrapper.dart';
 import '../../../../shared/widgets/desktop_scroll_wrapper.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
 import '../../../../core/models/tmdb_details.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class MovieTrailersCarousel extends StatefulWidget {
   final List<TmdbVideo> trailers;
@@ -114,9 +115,7 @@ class _MovieTrailersCarouselState extends State<MovieTrailersCarousel> {
                         fontSize: 12,
                       ),
                     ),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      color: Theme.of(context).colorScheme.onSurface,
+                    AppIcon('keyboard_arrow_down', color: Theme.of(context).colorScheme.onSurface,
                       size: 16,
                     ),
                   ],
@@ -174,8 +173,8 @@ class _MovieTrailersCarouselState extends State<MovieTrailersCarousel> {
               ),
               Container(color: Colors.black26),
               const Center(
-                child: Icon(
-                  Icons.play_circle_outline,
+                child: AppIcon(
+                  'play_circle_outline',
                   color: Colors.white,
                   size: 40,
                 ),
@@ -221,7 +220,7 @@ class _MovieTrailersCarouselState extends State<MovieTrailersCarousel> {
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.play_arrow, color: Colors.white),
+                  child: AppIcon('play_arrow', color: Colors.white),
                 ),
               ),
               Positioned(

@@ -74,7 +74,6 @@ key.properties
 **/linux/flutter/ephemeral/
 
 # Web
-lib/generated_plugin_registrant.dart
 
 # Project Specific
 *.g.dart
@@ -85,8 +84,8 @@ packages/flutter_torrent_server/go_src/.gradle/
 /coverage/
 plugins/
 keystore/
-skystream-plugins/
-skystream-tools/
+mixstream-plugins/
+mixstream-tools/
 tree-shaking-test*.js
 
 node_modules/

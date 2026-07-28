@@ -117,7 +117,7 @@ Stream<SearchAggregateState> searchAllProviders(
   // Livestream-only providers (large M3U playlists) are deprioritized to the
   // back of the queue. They still run and IPTV channel searches work; we just
   // let movie/series providers finish their burst first to reduce peak jank.
-  final sortedProviders = List<SkyStreamProvider>.from(providers)
+  final sortedProviders = List<MixStreamProvider>.from(providers)
     ..sort((a, b) {
       final aLiveOnly =
           a.supportedTypes.isNotEmpty &&
@@ -128,9 +128,9 @@ Stream<SearchAggregateState> searchAllProviders(
       if (aLiveOnly == bLiveOnly) return 0;
       return aLiveOnly ? 1 : -1;
     });
-  final queue = List<SkyStreamProvider>.from(sortedProviders);
+  final queue = List<MixStreamProvider>.from(sortedProviders);
   final List<CancelToken> activeTokens = [];
-  final List<SkyStreamProvider> activeProviders = [];
+  final List<MixStreamProvider> activeProviders = [];
   bool isCompleted = false;
 
   Timer? throttleTimer;

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../shared/widgets/custom_widgets.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class WebViewAuthDialog extends StatefulWidget {
   final String providerName;
@@ -179,7 +180,7 @@ class _WebViewAuthDialogState extends State<WebViewAuthDialog> {
               AppBar(
                 title: Text('Login to ${widget.providerName}'),
                 leading: IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const AppIcon('close'),
                   onPressed: () => Navigator.pop(context),
                 ),
                 elevation: 0,

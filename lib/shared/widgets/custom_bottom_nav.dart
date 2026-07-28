@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import './app_icon.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -13,62 +14,50 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Glassmorphism-style background if desired, but native NavBarr is safer for initial setup.
-    // We will use a highly customized container to give it that floating/premium look.
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: theme.dividerColor.withValues(alpha: 0.2),
+          ),
+        ),
+      ),
       child: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: onTap,
-        backgroundColor: Colors.transparent,
-        indicatorColor: Theme.of(
-          context,
-        ).colorScheme.primary.withValues(alpha: 0.15),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        indicatorColor: Colors.transparent,
         elevation: 0,
-        labelBehavior:
-            NavigationDestinationLabelBehavior.alwaysHide, // Cleaner look
-        height: 65,
+        height: 56,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: Icon(
-              Icons.home,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            label: AppLocalizations.of(context)!.home,
+            icon: AppIcon('home_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            selectedIcon: AppIcon('home', color: theme.colorScheme.primary),
+            label: l10n.home,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.search_outlined),
-            selectedIcon: Icon(
-              Icons.search,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            label: AppLocalizations.of(context)!.search,
+            icon: AppIcon('search_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            selectedIcon: AppIcon('search', color: theme.colorScheme.primary),
+            label: l10n.search,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.explore_outlined),
-            selectedIcon: Icon(
-              Icons.explore,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            label: AppLocalizations.of(context)!.explore,
+            icon: AppIcon('explore_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            selectedIcon: AppIcon('explore', color: theme.colorScheme.primary),
+            label: l10n.explore,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.video_library_outlined),
-            selectedIcon: Icon(
-              Icons.video_library,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            label: AppLocalizations.of(context)!.library,
+            icon: AppIcon('video_library_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            selectedIcon: AppIcon('video_library', color: theme.colorScheme.primary),
+            label: l10n.library,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: Icon(
-              Icons.settings,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            label: AppLocalizations.of(context)!.settings,
+            icon: AppIcon('settings_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            selectedIcon: AppIcon('settings', color: theme.colorScheme.primary),
+            label: l10n.settings,
           ),
         ],
       ),

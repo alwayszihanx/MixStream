@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../shared/widgets/app_icon.dart';
 import '../../../../shared/widgets/custom_widgets.dart';
 import 'hotstar_player_style.dart';
 
@@ -44,7 +45,7 @@ class PlayerTopBar extends StatelessWidget {
           child: Row(
             children: [
               PlayerIconButton(
-                icon: Icons.arrow_back_rounded,
+                icon: const AppIcon('arrow_back_rounded'),
                 tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                 onPressed: onBack,
                 isTv: isTv,
@@ -206,7 +207,7 @@ class PlayerBottomBar extends StatelessWidget {
 /// Compact icon-only button for utilities (resize, PiP, fullscreen) and the
 /// top-bar back button. Tooltip doubles as the semantics label.
 class PlayerIconButton extends StatefulWidget {
-  final IconData icon;
+  final Widget icon;
   final String tooltip;
   final VoidCallback? onPressed;
   final bool isTv;
@@ -233,37 +234,23 @@ class PlayerIconButton extends StatefulWidget {
 }
 
 class _PlayerIconButtonState extends State<PlayerIconButton> {
-  bool _hovered = false;
-
   @override
   Widget build(BuildContext context) {
     final double glyph = widget.iconSize ?? (widget.isTv ? 28 : 26);
     final double box = glyph + (widget.isTv ? 20 : 18);
 
-    Color iconColor;
-    if (_hovered) {
-      iconColor = HotstarPlayerStyle.accent;
-    } else if (widget.highlight) {
-      iconColor = HotstarPlayerStyle.accent;
-    } else {
-      iconColor = Colors.white;
-    }
-
     return Tooltip(
       message: widget.tooltip,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: CustomButton(
-          onPressed: widget.onPressed,
-          showFocusHighlight: widget.isTv,
-          focusNode: widget.focusNode,
-          shape: const CircleBorder(),
-          child: SizedBox(
-            width: box,
-            height: box,
-            child: Icon(widget.icon, color: iconColor, size: glyph),
-          ),
+      child: CustomButton(
+        onPressed: widget.onPressed,
+        showFocusHighlight: widget.isTv,
+        focusNode: widget.focusNode,
+        shape: const CircleBorder(),
+        padding: EdgeInsets.zero,
+        child: SizedBox(
+          width: box,
+          height: box,
+          child: widget.icon,
         ),
       ),
     );
@@ -275,7 +262,7 @@ class _PlayerIconButtonState extends State<PlayerIconButton> {
 /// directional navigation between buttons is handled natively by the
 /// enclosing traversal group — this widget never moves focus itself.
 class PlayerActionButton extends StatefulWidget {
-  final IconData icon;
+  final Widget icon;
   final String label;
   final VoidCallback onTap;
   final bool highlight;
@@ -297,23 +284,14 @@ class PlayerActionButton extends StatefulWidget {
 }
 
 class _PlayerActionButtonState extends State<PlayerActionButton> {
-  bool _hovered = false;
   bool _focused = false;
-  bool _pressed = false;
-
-  void _setPressed(bool value) {
-    if (_pressed == value) return;
-    setState(() => _pressed = value);
-  }
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final showBg = (widget.highlight || _focused || _pressed) && !_hovered;
-    final color = (widget.highlight || _hovered || _focused || _pressed)
+    final color = (widget.highlight || _hovered || _focused)
         ? HotstarPlayerStyle.accent
         : Colors.white;
-    final showTvFocusRing = widget.isTv && _focused;
-
     return Semantics(
       button: true,
       selected: widget.highlight,
@@ -335,62 +313,30 @@ class _PlayerActionButtonState extends State<PlayerActionButton> {
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
           onEnter: (_) => setState(() => _hovered = true),
-          onExit: (_) => setState(() {
-            _hovered = false;
-            _pressed = false;
-          }),
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            child: InkWell(
-              onTap: widget.onTap,
-              onHighlightChanged: _setPressed,
-              borderRadius: BorderRadius.circular(8),
-              hoverColor: Colors.transparent,
-              focusColor: Colors.transparent,
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              child: AnimatedContainer(
-                duration: HotstarPlayerStyle.fastMotionDuration,
-                constraints: const BoxConstraints(minHeight: 44),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: showBg
-                      ? HotstarPlayerStyle.accent.withValues(alpha: 0.16)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  border: showTvFocusRing
-                      ? Border.all(color: HotstarPlayerStyle.accent, width: 2)
-                      : null,
-                  boxShadow: showTvFocusRing
-                      ? [
-                          BoxShadow(
-                            color: HotstarPlayerStyle.accent.withValues(
-                              alpha: 0.2,
-                            ),
-                            blurRadius: 8,
-                          ),
-                        ]
-                      : null,
+          onExit: (_) => setState(() => _hovered = false),
+          child: CustomButton(
+            onPressed: widget.onTap,
+            showFocusHighlight: widget.isTv,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(ButtonDesign.borderRadius),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                widget.icon,
+                const SizedBox(width: 6),
+                Text(
+                  widget.label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(widget.icon, color: color, size: 20),
-                    const SizedBox(width: 6),
-                    Text(
-                      widget.label,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
         ),

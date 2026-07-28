@@ -1,9 +1,9 @@
-display_name: SkyStream
-package_name: skystream
+display_name: MixStream
+package_name: mixstream
 description: A modern, media streaming client.
 maintainer:
-  name: Akash
-  email: akashdh11@gmail.com
+  name: alwayszihan
+  email: alwayszihanx@gmail.com
 priority: optional
 section: utils
 depends:

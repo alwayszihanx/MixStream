@@ -3,11 +3,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/widgets/cards_wrapper.dart';
-import '../data/explore_tmdb_provider.dart';
+import '../../../shared/widgets/custom_widgets.dart';
+import '../../home/presentation/home_provider.dart';
+import '../../home/presentation/home_state.dart';
 import '../data/explore_mode_provider.dart';
 import 'anilist_explore_screen.dart';
-import 'view_all_screen.dart';
-import 'widgets/explore_carousel.dart';
 import 'widgets/explore_header_bar.dart';
 import 'widgets/media_horizontal_list.dart';
 import 'widgets/unified_filter_dialog.dart';
@@ -17,9 +17,11 @@ import '../../../../core/utils/layout_constants.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
 import '../../../../core/providers/device_info_provider.dart';
 import '../../../../shared/widgets/shimmer_placeholder.dart';
-import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import 'view_all_screen.dart';
 import 'dart:async';
+import '../../../shared/widgets/app_icon.dart';
+import '../../../core/router/app_router.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
@@ -50,9 +52,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   final ValueNotifier<bool> _showBottomFade = ValueNotifier(false);
   final ValueNotifier<bool> _isFabExtended = ValueNotifier<bool>(true);
   final FocusNode _firstActionFocusNode = FocusNode();
-
-  /// Carousel controller exposed by ExploreCarousel via [onControllerReady].
-  HeroCarouselController? _carouselController;
 
   @override
   bool get wantKeepAlive => true;
@@ -210,9 +209,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                                 context,
                               ).colorScheme.onSurface.withValues(alpha: 0.1),
                         radius: 18,
-                        child: Icon(
-                          Icons.tune,
-                          color: Theme.of(context).colorScheme.onSurface,
+                        child: AppIcon('tune', color: Theme.of(context).colorScheme.onSurface,
                           size: 18,
                         ),
                       );
@@ -242,9 +239,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                       context,
                     ).colorScheme.onSurface.withValues(alpha: 0.1),
                     radius: 18,
-                    child: Icon(
-                      Icons.search,
-                      color: Theme.of(context).colorScheme.onSurface,
+                    child: AppIcon('search', color: Theme.of(context).colorScheme.onSurface,
                       size: 18,
                     ),
                   ),
@@ -257,8 +252,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 ? AnilistExploreScreen(
                     scrollController: _scrollController,
                     firstActionFocusNode: _firstActionFocusNode,
-                    onControllerReady: (c) =>
-                        setState(() => _carouselController = c),
                   )
                 : _buildScrollView(context),
           ),
@@ -266,57 +259,42 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             valueListenable: _isFabExtended,
             builder: (context, isFabExtended, _) {
               final isAnime = ref.watch(exploreModeProvider);
-              return Material(
-                elevation: 4,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Theme.of(context).colorScheme.surfaceDim
-                    : Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    ref
-                        .read(exploreModeProvider.notifier)
-                        .setAnimeMode(!isAnime);
-                  },
-                  child: Container(
-                    height: 56,
-                    constraints: const BoxConstraints(minWidth: 56),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isFabExtended ? 16 : 0,
+              return CustomButton(
+                onPressed: () {
+                  ref
+                      .read(exploreModeProvider.notifier)
+                      .setAnimeMode(!isAnime);
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AppIcon(
+                      isAnime ? 'arrow_back' : 'explore',
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          isAnime ? Icons.arrow_back : Icons.explore,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          child: SizedBox(
-                            width: isFabExtended ? null : 0,
-                            child: isFabExtended
-                                ? Padding(
-                                    padding: const EdgeInsets.only(left: 12),
-                                    child: Text(
-                                      isAnime ? 'Go Back' : 'Explore Anime',
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  )
-                                : null,
-                          ),
-                        ),
-                      ],
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: SizedBox(
+                        width: isFabExtended ? null : 0,
+                        child: isFabExtended
+                            ? Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Text(
+                                  isAnime ? 'Go Back' : 'Explore Anime',
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               );
             },
@@ -334,12 +312,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
           padding: const EdgeInsets.only(top: 8),
           child: ExploreHeaderBar(
             searchFocusNode: _firstActionFocusNode,
-            onPrevious: _carouselController != null
-                ? () => _carouselController!.previousPage()
-                : null,
-            onNext: _carouselController != null
-                ? () => _carouselController!.nextPage()
-                : null,
           ),
         ),
         Expanded(
@@ -348,8 +320,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 ? AnilistExploreScreen(
                     scrollController: _scrollController,
                     firstActionFocusNode: _firstActionFocusNode,
-                    onControllerReady: (c) =>
-                        setState(() => _carouselController = c),
                   )
                 : _buildScrollView(context),
           ),
@@ -401,20 +371,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   }
 
   Widget _buildScrollView(BuildContext context) {
-    final heroMoviesAsync = ref.watch(exploreHeroMovieProvider);
-    final isNone = heroMoviesAsync.maybeWhen(
-      data: (list) => list.isEmpty,
-      error: (_, __) => true,
-      orElse: () => false,
-    );
-    final topPadding = isNone ? (MediaQuery.paddingOf(context).top + kToolbarHeight) : 0.0;
+    final homeState = ref.watch(homeDataProvider);
 
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
-        if (topPadding > 0)
-          SliverToBoxAdapter(child: SizedBox(height: topPadding)),
-        ..._buildContentSlivers(context).map((sliver) {
+        ..._buildContentSlivers(context, homeState).map((sliver) {
           return SliverSafeArea(
             top: false,
             bottom: false,
@@ -433,192 +395,65 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     );
   }
 
-
-
-  List<Widget> _buildContentSlivers(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return [
-      SliverToBoxAdapter(
-        child: Consumer(
-          builder: (context, ref, _) {
-            final heroMoviesAsync = ref.watch(exploreHeroMovieProvider);
-            return switch (heroMoviesAsync) {
-              AsyncData(:final value) =>
-                value.isEmpty
-                    ? const SizedBox.shrink()
-                    : ExploreCarousel(
-                        movies: value,
-                        scrollController: _scrollController,
-                        onNavigateUp: () =>
-                            _firstActionFocusNode.requestFocus(),
-                        onControllerReady: (c) =>
-                            setState(() => _carouselController = c),
-                      ),
-              AsyncLoading() => _buildCarouselShimmer(context),
-              AsyncError() => Container(
-                height: 500,
-                margin: const EdgeInsets.only(
-                  bottom: LayoutConstants.spacingLg,
-                ),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline_rounded,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        AppLocalizations.of(context)!.couldNotLoadTrending,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: () =>
-                            ref.invalidate(exploreHeroMovieProvider),
-                        icon: const Icon(Icons.refresh),
-                        label: Text(AppLocalizations.of(context)!.retry),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            };
-          },
-        ),
-      ),
-
-      SliverToBoxAdapter(
-        child: _buildSection(
-          context,
-          ref.watch(popularMoviesProvider),
-          l10n.popularMovies,
-          ViewAllCategory.popularMovies,
-        ),
-      ),
-
-      SliverToBoxAdapter(
-        child: _buildSection(
-          context,
-          ref.watch(popularTVProvider),
-          l10n.popularTVShows,
-          ViewAllCategory.popularTV,
-        ),
-      ),
-
-      SliverToBoxAdapter(
-        child: _buildSection(
-          context,
-          ref.watch(nowPlayingMoviesProvider),
-          l10n.newMovies,
-          ViewAllCategory.nowPlayingMovies,
-        ),
-      ),
-
-      SliverToBoxAdapter(
-        child: _buildSection(
-          context,
-          ref.watch(onTheAirTVProvider),
-          l10n.newTVShows,
-          ViewAllCategory.onTheAirTV,
-        ),
-      ),
-
-      SliverToBoxAdapter(
-        child: _buildSection(
-          context,
-          ref.watch(topRatedMoviesProvider),
-          l10n.featuredMovies,
-          ViewAllCategory.topRatedMovies,
-        ),
-      ),
-
-      SliverToBoxAdapter(
-        child: _buildSection(
-          context,
-          ref.watch(topRatedTVProvider),
-          l10n.featuredTVShows,
-          ViewAllCategory.topRatedTV,
-        ),
-      ),
-
-      SliverToBoxAdapter(
-        child: _buildSection(
-          context,
-          ref.watch(airingTodayTVProvider),
-          l10n.lastVideosTVShows,
-          ViewAllCategory.airingTodayTV,
-        ),
-      ),
-    ];
-  }
-
-  Widget _buildSection(
+  List<Widget> _buildContentSlivers(
     BuildContext context,
-    AsyncValue<List<MultimediaItem>> asyncValue,
-    String title,
-    ViewAllCategory category,
+    HomeState homeState,
   ) {
-    return switch (asyncValue) {
-      AsyncData(:final value) =>
-        value.isEmpty
-            ? const SizedBox.shrink()
-            : MediaHorizontalList(
-                title: title,
-                mediaList: value,
-                category: category,
+    return switch (homeState) {
+      HomeSuccess(data: final data) => [
+        for (final entry in data.entries)
+          if (entry.key != 'Trending')
+            SliverToBoxAdapter(
+              child: MediaHorizontalList(
+                title: entry.key,
+                mediaList: entry.value,
+                category: ViewAllCategory.providerContent,
+                showViewAll: true,
                 heroTagPrefix: 'explore',
+                onTap: (item) {
+                  DetailsRoute(
+                    $extra: DetailsRouteExtra(item: item),
+                  ).push<void>(context);
+                },
               ),
-      AsyncLoading() => _buildListShimmer(context),
-      AsyncError() => const SizedBox.shrink(),
+            ),
+      ],
+      HomeLoading() => [
+        SliverToBoxAdapter(
+          child: _buildListShimmer(context),
+        ),
+      ],
+      HomeNoProvider() => [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(48),
+            child: Center(
+              child: Text(
+                'Select a provider on the home screen to browse content',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+      _ => [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(48),
+            child: SizedBox.shrink(),
+          ),
+        ),
+      ],
     };
   }
 
-  Widget _buildCarouselShimmer(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final heroHeight = size.height * 0.60;
-    final isDesktop =
-        size.width > LayoutConstants.exploreCarouselDesktopBreakpoint;
-
-    if (isDesktop) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: LayoutConstants.dashboardContentPadding,
-          vertical: LayoutConstants.spacingSm,
-        ),
-        child: SizedBox(
-          height: heroHeight,
-          width: double.infinity,
-          child: ShimmerPlaceholder(borderRadius: 18),
-        ),
-      );
-    } else {
-      return SizedBox(
-        height: heroHeight,
-        width: double.infinity,
-        child: ShimmerPlaceholder.rectangular(
-          width: double.infinity,
-          height: heroHeight,
-          borderRadius: 0,
-        ),
-      );
-    }
-  }
-
   Widget _buildListShimmer(BuildContext context) {
-    final isDesktop = context.isDesktop;
+    final size = MediaQuery.sizeOf(context);
+    final isDesktop = size.width > 768;
     final cardWidth = isDesktop ? 200.0 : 130.0;
     final imageHeight = cardWidth / (2 / 3);
     final listHeight = imageHeight + 40.0;
@@ -626,7 +461,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title Placeholder
         Padding(
           padding: EdgeInsets.fromLTRB(
             isDesktop
@@ -645,7 +479,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
           ),
         ),
         const SizedBox(height: LayoutConstants.spacingMd),
-        // List Placeholder
         SizedBox(
           height: listHeight,
           child: ListView.separated(
@@ -655,7 +488,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   : LayoutConstants.spacingMd,
             ),
             scrollDirection: Axis.horizontal,
-            itemCount: 10,
+            itemCount: 5,
             separatorBuilder: (_, _) => SizedBox(
               width: isDesktop
                   ? LayoutConstants.spacingLg

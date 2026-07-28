@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_provider.dart';
 import 'home_state.dart';
-import 'package:skystream/features/home/presentation/widgets/continue_watching_section.dart';
-import 'package:skystream/features/search/presentation/search_provider.dart';
-import 'package:skystream/features/tracking/data/sync_manager.dart';
-import 'package:skystream/features/tracking/domain/sync_progress_item.dart';
-import 'package:skystream/features/home/presentation/widgets/synced_progress_section.dart';
-import 'package:skystream/features/library/presentation/history_provider.dart';
+import 'package:mixstream/features/home/presentation/widgets/continue_watching_section.dart';
+import 'package:mixstream/features/search/presentation/search_provider.dart';
+import 'package:mixstream/features/tracking/data/sync_manager.dart';
+import 'package:mixstream/features/tracking/domain/sync_progress_item.dart';
+import 'package:mixstream/features/home/presentation/widgets/synced_progress_section.dart';
+import 'package:mixstream/features/library/presentation/history_provider.dart';
 import '../../settings/presentation/general_settings_provider.dart';
 import '../../explore/presentation/widgets/explore_carousel.dart';
 import '../../explore/presentation/widgets/media_horizontal_list.dart';
@@ -20,9 +20,9 @@ import '../../../core/extensions/models/extension_plugin.dart';
 
 import 'package:flutter/rendering.dart';
 import '../../../l10n/generated/app_localizations.dart';
-import 'package:skystream/core/extensions/extension_manager.dart';
-import 'package:skystream/core/extensions/base_provider.dart';
-import 'package:skystream/core/router/app_router.dart';
+import 'package:mixstream/core/extensions/extension_manager.dart';
+import 'package:mixstream/core/extensions/base_provider.dart';
+import 'package:mixstream/core/router/app_router.dart';
 import 'delegates/home_search_delegate.dart';
 import '../../../shared/widgets/cards_wrapper.dart';
 import '../../../shared/widgets/custom_widgets.dart';
@@ -32,6 +32,7 @@ import '../../../../core/utils/responsive_breakpoints.dart';
 import '../../../../core/providers/device_info_provider.dart';
 import 'dart:async';
 import 'widgets/dashboard_header_bar.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -228,9 +229,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   context,
                 ).colorScheme.onSurface.withValues(alpha: 0.1),
                 radius: 18,
-                child: Icon(
-                  Icons.search,
-                  color: Theme.of(context).colorScheme.onSurface,
+                child: AppIcon('search', color: Theme.of(context).colorScheme.onSurface,
                   size: 18,
                 ),
               ),
@@ -260,9 +259,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.extension,
-                      color: Theme.of(context).colorScheme.primary,
+                    AppIcon('extension', color: Theme.of(context).colorScheme.primary,
                     ),
                     AnimatedSize(
                       duration: const Duration(milliseconds: 300),
@@ -476,7 +473,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ),
 
-              const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 48)),
             ],
           ),
         ),
@@ -495,7 +492,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           bottom: 0,
           left: 0,
           right: 0,
-          height: 48, // Taller height for smoother blend
+          height: 32,
           child: ValueListenableBuilder<bool>(
             valueListenable: _showBottomFade,
             builder: (context, show, _) {
@@ -535,8 +532,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.extension_off_rounded,
+          AppIcon(
+            'extension_off_rounded',
             size: 64,
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
           ),
@@ -550,7 +547,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: () => _showProviderSelector(context, ref),
-              icon: const Icon(Icons.extension_rounded),
+              icon: const AppIcon('extension_rounded'),
               label: const Text('Select Provider'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
@@ -581,8 +578,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isOffline ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
+            AppIcon(
+              isOffline ? 'wifi_off_rounded' : 'cloud_off_rounded',
               size: 80,
               color: Theme.of(context).colorScheme.error,
             ),
@@ -593,18 +590,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               isOffline
                   ? l10n.checkConnectionOrDownloads
                   : l10n.tryVpnOrConnection,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             if (!isOffline) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -621,29 +618,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ),
             ],
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               alignment: WrapAlignment.center,
               children: [
-                FilledButton.icon(
+                CustomButton(
                   onPressed: () => ref.invalidate(homeDataProvider),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(l10n.retry),
+                  label: l10n.retry,
+                  icon: const AppIcon('refresh_rounded'),
+                  isPrimary: true,
                 ),
-                ElevatedButton.icon(
+                CustomButton(
                   onPressed: () => const LibraryRoute().push<void>(context),
-                  icon: const Icon(Icons.download_for_offline_rounded),
-                  label: Text(l10n.goToDownloads),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.secondaryContainer,
-                    foregroundColor: Theme.of(
-                      context,
-                    ).colorScheme.onSecondaryContainer,
-                  ),
+                  label: l10n.goToDownloads,
+                  icon: const AppIcon('download_for_offline_rounded'),
                 ),
               ],
             ),
@@ -657,7 +647,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final l10n = AppLocalizations.of(context)!;
     final extManager = ref.read(extensionManagerProvider.notifier);
     final activeProvider = ref.read(activeProviderProvider);
-    final providers = List<SkyStreamProvider>.from(extManager.getAllProviders())
+    final providers = List<MixStreamProvider>.from(extManager.getAllProviders())
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     if (providers.isEmpty) {
@@ -668,8 +658,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.extension_off_rounded,
+              AppIcon(
+                'extension_off_rounded',
                 size: 56,
                 color: Theme.of(
                   context,
@@ -686,13 +676,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ],
           ),
           actions: [
-            TextButton(
+            CustomButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(l10n.close),
+              label: l10n.close,
             ),
-            FilledButton.icon(
-              icon: const Icon(Icons.extension, size: 18),
-              label: Text(l10n.goToExtensions),
+            CustomButton(
+              icon: AppIcon('extension', size: 18),
+              label: l10n.goToExtensions,
+              isPrimary: true,
               onPressed: () {
                 Navigator.pop(context);
                 const ExtensionsRoute().push<void>(context);

@@ -4,7 +4,7 @@ import 'package:background_downloader/background_downloader.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:skystream/core/utils/image_fallbacks.dart';
+import 'package:mixstream/core/utils/image_fallbacks.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../../../core/services/download_service.dart';
 import '../../../../core/utils/layout_constants.dart';
@@ -13,6 +13,7 @@ import '../downloads_provider.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class DownloadsTab extends ConsumerStatefulWidget {
   const DownloadsTab({super.key});
@@ -40,8 +41,8 @@ class _DownloadsTabState extends ConsumerState<DownloadsTab>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.download_for_offline_outlined,
+                AppIcon(
+                  'download_for_offline_outlined',
                   size: 64,
                   color: Theme.of(context).dividerColor,
                 ),
@@ -134,7 +135,6 @@ class _GroupedDownloadTile extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(LayoutConstants.radiusXl),
-        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
       ),
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
@@ -164,7 +164,7 @@ class _GroupedDownloadTile extends ConsumerWidget {
                   width: 80,
                   height: 120,
                   color: theme.dividerColor,
-                  child: const Icon(Icons.movie_outlined),
+                  child: const AppIcon('movie_outlined'),
                 ),
               ),
             ),
@@ -185,8 +185,8 @@ class _GroupedDownloadTile extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(
-                        Icons.library_books_rounded,
+                      AppIcon(
+                        'library_books_rounded',
                         size: 14,
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -204,7 +204,7 @@ class _GroupedDownloadTile extends ConsumerWidget {
             ),
             const SizedBox(width: LayoutConstants.spacingSm),
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded),
+              icon: const AppIcon('delete_outline_rounded'),
               onPressed: () => _confirmDeleteAll(context, ref),
               color: theme.colorScheme.error.withValues(alpha: 0.8),
               visualDensity: VisualDensity.compact,
@@ -330,7 +330,7 @@ class _DownloadItemTile extends ConsumerWidget {
               width: 80,
               height: 120,
               color: theme.dividerColor,
-              child: const Icon(Icons.movie_outlined),
+              child: const AppIcon('movie_outlined'),
             ),
           ),
         ),
@@ -367,10 +367,10 @@ class _DownloadItemTile extends ConsumerWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(
+                  AppIcon(
                     isDone
-                        ? Icons.check_circle_rounded
-                        : Icons.download_rounded,
+                        ? 'check_circle_rounded'
+                        : 'download_rounded',
                     size: 14,
                     color: isDone
                         ? Colors.green
@@ -410,7 +410,7 @@ class _DownloadItemTile extends ConsumerWidget {
                 children: [
                   if (isWorking)
                     IconButton(
-                      icon: const Icon(Icons.pause_rounded),
+                      icon: const AppIcon('pause_rounded'),
                       onPressed: () => ref
                           .read(downloadsProvider.notifier)
                           .pauseDownload(item.task.taskId),
@@ -418,7 +418,7 @@ class _DownloadItemTile extends ConsumerWidget {
                     ),
                   if (isPaused)
                     IconButton(
-                      icon: const Icon(Icons.play_arrow_rounded),
+                      icon: const AppIcon('play_arrow_rounded'),
                       onPressed: () => ref
                           .read(downloadsProvider.notifier)
                           .resumeDownload(item.task.taskId),
@@ -426,15 +426,12 @@ class _DownloadItemTile extends ConsumerWidget {
                     ),
                   if (isDone)
                     IconButton(
-                      icon: const Icon(
-                        Icons.play_circle_fill_rounded,
-                        color: Colors.green,
-                      ),
+                      icon: AppIcon('play_circle_fill_rounded', color: Colors.green,),
                       onPressed: () => _playLocalFile(context, ref, l10n),
                       iconSize: 28,
                     ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded),
+                    icon: const AppIcon('delete_outline_rounded'),
                     onPressed: () => _confirmDelete(context, ref, l10n),
                     color: theme.colorScheme.error.withValues(alpha: 0.8),
                     visualDensity: VisualDensity.compact,
@@ -462,7 +459,6 @@ class _DownloadItemTile extends ConsumerWidget {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(LayoutConstants.radiusXl),
-        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
       ),
       color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
       clipBehavior: Clip.antiAlias,

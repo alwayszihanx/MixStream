@@ -5,10 +5,11 @@ import '../../../../core/extensions/extension_manager.dart';
 import '../../../../core/extensions/base_provider.dart';
 import '../../../../core/utils/image_fallbacks.dart';
 import '../../../search/presentation/search_provider.dart';
-import 'package:skystream/shared/widgets/multimedia_card.dart';
+import 'package:mixstream/shared/widgets/multimedia_card.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../core/providers/device_info_provider.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class HomeSearchDelegate extends SearchDelegate<void> {
   final String? initialQuery;
@@ -57,7 +58,7 @@ class HomeSearchDelegate extends SearchDelegate<void> {
     return [
       if (query.isNotEmpty)
         IconButton(
-          icon: const Icon(Icons.clear),
+          icon: const AppIcon('clear'),
           onPressed: () {
             query = '';
             showSuggestions(context);
@@ -70,7 +71,7 @@ class HomeSearchDelegate extends SearchDelegate<void> {
   @override
   Widget? buildLeading(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.arrow_back_rounded),
+      icon: const AppIcon('arrow_back_rounded'),
       onPressed: () => close(context, null),
     );
   }
@@ -164,11 +165,11 @@ class _HomeSearchSuggestionsState
         return Material(
           type: MaterialType.transparency,
           child: ListTile(
-            leading: const Icon(Icons.search_rounded),
+            leading: const AppIcon('search_rounded'),
             title: Text(suggestion),
             trailing: IconButton(
               tooltip: 'Fill query',
-              icon: const Icon(Icons.north_west_rounded),
+              icon: const AppIcon('north_west_rounded'),
               onPressed: () {
                 widget.onSelect(suggestion);
               },
@@ -214,7 +215,7 @@ class _HomeSearchResultsState extends ConsumerState<_HomeSearchResults> {
       result = null;
     });
 
-    final SkyStreamProvider? provider = ref.read(activeProviderProvider);
+    final MixStreamProvider? provider = ref.read(activeProviderProvider);
     if (provider == null) {
       if (mounted) setState(() => isLoading = false);
       return;
@@ -302,6 +303,9 @@ class _HomeSearchResultsState extends ConsumerState<_HomeSearchResults> {
           imageUrl: AppImageFallbacks.poster(item.posterUrl, label: item.title),
           title: item.title,
           heroTag: uniqueTag,
+          badgeText: item.score != null
+              ? item.score!.toStringAsFixed(1)
+              : null,
           onTap: () => DetailsRoute(
             $extra: DetailsRouteExtra(item: item),
           ).push<void>(context),

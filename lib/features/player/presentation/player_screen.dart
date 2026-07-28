@@ -12,16 +12,17 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:video_view/video_view.dart' as vv;
 import 'package:wakelock_plus/wakelock_plus.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../../../core/providers/device_info_provider.dart';
 import '../../../../features/settings/presentation/player_settings_provider.dart';
-import 'widgets/skystream_player_controls.dart';
-import 'widgets/skystream_subtitle_view.dart';
+import 'widgets/mixstream_player_controls.dart';
+import 'widgets/mixstream_subtitle_view.dart';
 import 'player_controller.dart';
 import 'player_gesture_handler.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 TextStyle _getSubtitleTextStyle(String? fontFamily, TextStyle baseStyle) {
   if (fontFamily == null) return baseStyle;
@@ -61,7 +62,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   _videoViewController; // video_view (ExoPlayer/AVPlayer)
 
   final ValueNotifier<BoxFit> _videoFit = ValueNotifier(BoxFit.contain);
-  // Mirrors SkyStreamPlayerControlsState._isVisible, fed by its
+  // Mirrors MixStreamPlayerControlsState._isVisible, fed by its
   // onVisibilityChanged callback. Starts false to match the child's
   // initial state; the child will push true once it decides controls
   // should be visible (immediately on TV; on duration-load elsewhere).
@@ -69,7 +70,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   // intercept in PopScope.
   final ValueNotifier<bool> _controlsVisible = ValueNotifier(false);
 
-  final GlobalKey<SkyStreamPlayerControlsState> _controlsKeyFinal = GlobalKey();
+  final GlobalKey<MixStreamPlayerControlsState> _controlsKeyFinal = GlobalKey();
 
   // The persistent root key handler. It always stays focusable (it is the
   // parent of the ExcludeFocus'd chrome), so when the controls hide we route
@@ -326,7 +327,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           );
           ref
               .read(playerGestureHandlerProvider.notifier)
-              .showToast("2.0x", Icons.fast_forward_rounded);
+              .showToast("2.0x", 'fast_forward_rounded');
         });
         return KeyEventResult.handled;
       }
@@ -343,7 +344,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           );
           ref
               .read(playerGestureHandlerProvider.notifier)
-              .showToast("2.0x", Icons.fast_forward_rounded);
+              .showToast("2.0x", 'fast_forward_rounded');
         }
         return KeyEventResult.handled;
       }
@@ -367,7 +368,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             .read(playerGestureHandlerProvider.notifier)
             .showToast(
               "${previousSpeed.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}x",
-              Icons.play_arrow_rounded,
+              'play_arrow_rounded',
             );
         return KeyEventResult.handled;
       }
@@ -547,8 +548,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.error_outline,
+                      const AppIcon(
+                        'error_outline',
                         color: Colors.red,
                         size: 56,
                       ),
@@ -570,7 +571,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       ElevatedButton.icon(
                         autofocus: true,
                         onPressed: _handleBack,
-                        icon: const Icon(Icons.arrow_back),
+                        icon: const AppIcon('arrow_back'),
                         label: Text(AppLocalizations.of(context)!.goBack),
                       ),
                     ],
@@ -583,7 +584,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 top: 8,
                 left: 8,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const AppIcon('arrow_back'),
                   tooltip: AppLocalizations.of(context)!.goBack,
                   onPressed: _handleBack,
                 ),
@@ -685,7 +686,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                                 exoSubId.startsWith('file://'));
 
                         if (isExternalMediaKit || isExternalExo) {
-                          return SkyStreamSubtitleView(
+                          return MixStreamSubtitleView(
                             player: _player,
                             videoViewController: _videoViewController,
                             useExoPlayer: useExoPlayer,
@@ -697,7 +698,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                           return const SizedBox.shrink();
                         }
 
-                        return SkyStreamEmbeddedSubtitleView(
+                        return MixStreamEmbeddedSubtitleView(
                           player: _player,
                           controlsVisible: controlsVisible,
                         );
@@ -705,7 +706,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     ),
                     Positioned.fill(
                       child: RepaintBoundary(
-                        child: SkyStreamPlayerControls(
+                        child: MixStreamPlayerControls(
                           key: _controlsKeyFinal,
                           isLoading: isLoading,
                           player: _player,
@@ -739,23 +740,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   }
 }
 
-class SkyStreamEmbeddedSubtitleView extends ConsumerStatefulWidget {
+class MixStreamEmbeddedSubtitleView extends ConsumerStatefulWidget {
   final Player player;
   final bool controlsVisible;
 
-  const SkyStreamEmbeddedSubtitleView({
+  const MixStreamEmbeddedSubtitleView({
     super.key,
     required this.player,
     required this.controlsVisible,
   });
 
   @override
-  ConsumerState<SkyStreamEmbeddedSubtitleView> createState() =>
-      _SkyStreamEmbeddedSubtitleViewState();
+  ConsumerState<MixStreamEmbeddedSubtitleView> createState() =>
+      _MixStreamEmbeddedSubtitleViewState();
 }
 
-class _SkyStreamEmbeddedSubtitleViewState
-    extends ConsumerState<SkyStreamEmbeddedSubtitleView> {
+class _MixStreamEmbeddedSubtitleViewState
+    extends ConsumerState<MixStreamEmbeddedSubtitleView> {
   bool _customFontLoaded = false;
 
   @override
@@ -765,7 +766,7 @@ class _SkyStreamEmbeddedSubtitleViewState
   }
 
   @override
-  void didUpdateWidget(covariant SkyStreamEmbeddedSubtitleView oldWidget) {
+  void didUpdateWidget(covariant MixStreamEmbeddedSubtitleView oldWidget) {
     super.didUpdateWidget(oldWidget);
     _loadCustomFontIfNeeded();
   }

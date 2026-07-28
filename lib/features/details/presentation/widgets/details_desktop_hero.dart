@@ -8,13 +8,8 @@ import '../../../../shared/widgets/thumbnail_error_placeholder.dart';
 import '../../../../shared/widgets/expandable_text.dart';
 import 'premium_details_widgets.dart';
 import 'details_layout_widgets.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 
-/// Immersive desktop/TV hero for non-TMDB details.
-///
-/// Layout: full-viewport backdrop fading via gradients, with metadata
-/// overlaid on the left ~55% of the screen. [child] renders below the
-/// hero section (episodes, cast, trailers, recommendations).
 class DetailsDesktopHero extends ConsumerWidget {
   const DetailsDesktopHero({
     super.key,
@@ -27,30 +22,17 @@ class DetailsDesktopHero extends ConsumerWidget {
     required this.child,
   });
 
-  /// The resolved item for display (details ?? widget.item).
   final MultimediaItem displayItem;
-
-  /// The original item — used by [DetailsActionButtons] for URL matching.
   final MultimediaItem baseItem;
-
-  /// Loaded details (nullable while loading).
   final MultimediaItem? details;
-
-  /// Async state for loading/error indicators.
   final AsyncValue<MultimediaItem?> detailsState;
-
   final bool isMovie;
   final String itemUrl;
-
-  /// Content rendered below the hero section (episodes, cast, etc.).
   final Widget child;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final scaffoldColor = theme.scaffoldBackgroundColor;
-    final textColor = theme.colorScheme.onSurface;
-    final textSecondary = textColor.withValues(alpha: 0.7);
     final l10n = AppLocalizations.of(context)!;
 
     final backdropUrl =
@@ -61,149 +43,114 @@ class DetailsDesktopHero extends ConsumerWidget {
         ) ??
         '';
 
-    return Stack(
-      fit: StackFit.expand,
+    final posterUrl =
+        AppImageFallbacks.poster(displayItem.posterUrl, label: displayItem.title) ?? '';
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final heroHeight = screenWidth * 0.45;
+
+    return Column(
       children: [
-        // ── Layer 1: Backdrop image with left-fade ShaderMask ──
-        Positioned.fill(
-          child: ShaderMask(
-            shaderCallback: (rect) {
-              return LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  scaffoldColor,
-                  scaffoldColor.withValues(alpha: 0.85),
-                  scaffoldColor.withValues(alpha: 0.55),
-                  scaffoldColor.withValues(alpha: 0.25),
-                  scaffoldColor.withValues(alpha: 0.08),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-              ).createShader(rect);
-            },
-            blendMode: BlendMode.dstOut,
-            child: CachedNetworkImage(
-              imageUrl: backdropUrl,
-              fit: BoxFit.cover,
-              alignment: Alignment.centerRight,
-              // Bound decoded bitmap; plugin-supplied backdrops are often
-              // already at source resolution (no size negotiation), so a 4K
-              // poster decoded at native size would burn ~33 MB.
-              memCacheWidth:
-                  (MediaQuery.sizeOf(context).width *
-                          MediaQuery.devicePixelRatioOf(context))
-                      .round(),
-              errorWidget: (_, _, _) => ThumbnailErrorPlaceholder(
-                label: displayItem.title,
-                isBackdrop: true,
+        // ── Hero section ──
+        SizedBox(
+          height: heroHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Backdrop
+              CachedNetworkImage(
+                imageUrl: backdropUrl,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                memCacheWidth: (screenWidth * MediaQuery.devicePixelRatioOf(context)).round(),
+                errorWidget: (_, _, _) => ThumbnailErrorPlaceholder(
+                  label: displayItem.title,
+                  isBackdrop: true,
+                ),
               ),
-            ),
+              // Bottom gradient fade
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        theme.scaffoldBackgroundColor,
+                        theme.scaffoldBackgroundColor.withValues(alpha: 0.7),
+                        Colors.transparent,
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.3, 0.6, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
 
-        // ── Layer 2: Left-to-right gradient overlay ──
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  scaffoldColor,
-                  scaffoldColor.withValues(alpha: 0.85),
-                  scaffoldColor.withValues(alpha: 0.55),
-                  scaffoldColor.withValues(alpha: 0.25),
-                  scaffoldColor.withValues(alpha: 0.08),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+        // ── Content section ──
+        // Poster + Info row sits just below/between the hero
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 48),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Poster
+              Transform.translate(
+                offset: const Offset(0, -60),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: AspectRatio(
+                    aspectRatio: 2 / 3,
+                    child: SizedBox(
+                      width: 180,
+                      child: CachedNetworkImage(
+                        imageUrl: posterUrl,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, _, _) => ThumbnailErrorPlaceholder(label: displayItem.title),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-        ),
+              const SizedBox(width: 32),
 
-        // ── Layer 3: Bottom-to-top gradient (seamless transition) ──
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  scaffoldColor,
-                  scaffoldColor.withValues(alpha: 0.85),
-                  scaffoldColor.withValues(alpha: 0.55),
-                  scaffoldColor.withValues(alpha: 0.25),
-                  scaffoldColor.withValues(alpha: 0.08),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.1, 0.2, 0.28, 0.35, 0.4],
-              ),
-            ),
-          ),
-        ),
-
-        // ── Layer 4: Scrollable content ──
-        Positioned.fill(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 60),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Hero content (constrained to left 55%) ──
-                SizedBox(
-                  width: MediaQuery.sizeOf(context).width * 0.55,
+              // Info
+              Expanded(
+                child: Transform.translate(
+                  offset: const Offset(0, -20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Logo or Title
-                      if (displayItem.logoUrl != null)
-                        CachedNetworkImage(
-                          imageUrl: displayItem.logoUrl!,
-                          height: 200,
-                          alignment: Alignment.centerLeft,
-                          fit: BoxFit.contain,
-                          placeholder: (_, _) => _buildTitle(textColor),
-                          errorWidget: (_, _, _) => _buildTitle(textColor),
-                        )
-                      else
-                        _buildTitle(textColor),
-
-                      const SizedBox(height: 16),
-
-                      // Metadata bar (provider badge, type, year, rating, etc.)
+                      Text(
+                        displayItem.title,
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       MetadataBar(
                         item: displayItem,
                         isLoading: detailsState is AsyncLoading,
                       ),
-
-                      const SizedBox(height: 20),
-
-                      // Synopsis
+                      const SizedBox(height: 16),
                       ExpandableText(
                         text: displayItem.description ?? l10n.noDescription,
-                        maxLines: 4,
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 16,
+                        maxLines: 3,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                           height: 1.5,
                         ),
                       ),
-
-                      // Next airing (for currently-airing shows)
                       if (displayItem.nextAiring != null) ...[
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         NextAiringWidget(nextAiring: displayItem.nextAiring!),
                       ],
-
-                      const SizedBox(height: 32),
-
-                      // Action buttons (Play / Download)
-                      // Constrained width so they don't stretch across
-                      // the full hero area — looks better on wide screens.
+                      const SizedBox(height: 20),
                       ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 400),
+                        constraints: const BoxConstraints(maxWidth: 360),
                         child: DetailsActionButtons(
                           item: baseItem,
                           details: details,
@@ -213,28 +160,21 @@ class DetailsDesktopHero extends ConsumerWidget {
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 60),
-
-                // ── Content below hero (full width) ──
-                child,
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      ],
-    );
-  }
 
-  Widget _buildTitle(Color textColor) {
-    return Text(
-      displayItem.title,
-      style: TextStyle(
-        color: textColor,
-        fontSize: 56,
-        fontWeight: FontWeight.bold,
-        height: 1.1,
-      ),
+        const SizedBox(height: 32),
+
+        // ── Content below (full width) ──
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 48),
+          child: child,
+        ),
+
+        const SizedBox(height: 48),
+      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../shared/widgets/app_icon.dart';
 
 part 'notification_service.g.dart';
 
@@ -36,7 +37,7 @@ class NotificationService {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+            AppIcon('error_outline', color: Colors.red.shade700, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -61,11 +62,7 @@ class NotificationService {
       SnackBar(
         content: Row(
           children: [
-            Icon(
-              Icons.check_circle_outline,
-              color: Colors.green.shade700,
-              size: 20,
-            ),
+            AppIcon('check_circle_outline', color: Colors.green.shade700, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

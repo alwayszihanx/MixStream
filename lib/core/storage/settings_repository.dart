@@ -21,6 +21,14 @@ class SettingsRepository {
     return _storageService.getThemeMode();
   }
 
+  Future<void> saveThemeConfig(int index) async {
+    await _storageService.saveThemeConfig(index);
+  }
+
+  int getThemeConfig() {
+    return _storageService.getThemeConfig();
+  }
+
   Future<void> setSidebarExpanded(bool expanded) async {
     await _storageService.setSidebarExpanded(expanded);
   }

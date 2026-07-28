@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
 import '../../../../core/services/download_service.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class DownloadProgressDialog extends ConsumerWidget {
   final String title;
@@ -77,9 +78,7 @@ class DownloadProgressDialog extends ConsumerWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(
-                    Icons.data_usage_rounded,
-                    size: 16,
+                AppIcon('data_usage_rounded', size: 16,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 4),
@@ -94,13 +93,13 @@ class DownloadProgressDialog extends ConsumerWidget {
                 children: [
                   _buildInfoItem(
                     context,
-                    Icons.speed_rounded,
+                    const AppIcon('speed_rounded', size: 16),
                     l10n.speed,
                     data.speedString,
                   ),
                   _buildInfoItem(
                     context,
-                    Icons.timer_outlined,
+                    const AppIcon('timer_outlined', size: 16),
                     l10n.remaining,
                     data.timeRemainingString,
                   ),
@@ -155,7 +154,7 @@ class DownloadProgressDialog extends ConsumerWidget {
 
   Widget _buildInfoItem(
     BuildContext context,
-    IconData icon,
+    Widget icon,
     String label,
     String value,
   ) {
@@ -164,7 +163,7 @@ class DownloadProgressDialog extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+            icon,
             const SizedBox(width: 4),
             Text(
               label,

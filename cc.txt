@@ -1,0 +1,10 @@
+alwayszihan@fedora:~/Apps/Mix/MixStream$ opencode
+                                   ▄
+  █▀▀█ █▀▀█ █▀▀█ █▀▀▄ █▀▀▀ █▀▀█ █▀▀█ █▀▀█
+  █  █ █  █ █▀▀▀ █  █ █    █  █ █  █ █▀▀▀
+  ▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
+
+  Session   Apply button design spec to all buttons
+  Continue  opencode -s ses_058f2969dffeNSClRJUKkvvoZO
+
+alwayszihan@fedora:~/Apps/Mix/MixStream$

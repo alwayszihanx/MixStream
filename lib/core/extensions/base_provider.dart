@@ -3,7 +3,7 @@ import '../domain/entity/multimedia_item.dart';
 
 enum ProviderType { movie, series, anime, livestream, other }
 
-abstract class SkyStreamProvider {
+abstract class MixStreamProvider {
   /// Unique Package Name (from plugin.json)
   String get packageName;
 

@@ -83,7 +83,7 @@ Future<List<R>> _processInChunks<T, R>(
   return results.cast<R>();
 }
 
-class JsBasedProvider extends SkyStreamProvider {
+class JsBasedProvider extends MixStreamProvider {
   final JsEngineService _jsEngine;
   final String _scriptPath;
   String get scriptPath => _scriptPath;

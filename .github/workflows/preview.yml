@@ -142,13 +142,13 @@ jobs:
           flutter build ios --release --no-codesign --dart-define-from-file=dart-defines.json
           mkdir -p Payload
           mv build/ios/iphoneos/Runner.app Payload/
-          zip -r skystream-ios-unsigned.ipa Payload
+          zip -r mixstream-ios-unsigned.ipa Payload
           
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: skystream-ios-unsigned.ipa
+          path: mixstream-ios-unsigned.ipa
           retention-days: 7
 
   macos:
@@ -223,7 +223,7 @@ jobs:
       # Re-sign all frameworks to fix media_kit MPV crash (Issue #830)
       - name: Re-sign Frameworks
         run: |
-          APP_PATH="build/macos/Build/Products/Release/skystream.app"
+          APP_PATH="build/macos/Build/Products/Release/mixstream.app"
           FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
           
           echo "Re-signing frameworks..."
@@ -247,20 +247,20 @@ jobs:
           
           # Create DMG
           mkdir -p dmg_temp
-          cp -R skystream.app dmg_temp/
+          cp -R mixstream.app dmg_temp/
           ln -s /Applications dmg_temp/Applications
-          hdiutil create -volname "SkyStream" -srcfolder dmg_temp -ov -format UDZO "../../../../../skystream-macos-${{ matrix.arch }}-preview.dmg"
+          hdiutil create -volname "MixStream" -srcfolder dmg_temp -ov -format UDZO "../../../../../mixstream-macos-${{ matrix.arch }}-preview.dmg"
           
           # Fallback ZIP
-          zip -ry "../../../../../skystream-macos-${{ matrix.arch }}-preview.zip" skystream.app
+          zip -ry "../../../../../mixstream-macos-${{ matrix.arch }}-preview.zip" mixstream.app
 
       - name: Upload macOS Build
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
           path: |
-            skystream-macos-${{ matrix.arch }}-preview.dmg
-            skystream-macos-${{ matrix.arch }}-preview.zip
+            mixstream-macos-${{ matrix.arch }}-preview.dmg
+            mixstream-macos-${{ matrix.arch }}-preview.zip
           retention-days: 7
 
   windows:
@@ -318,7 +318,7 @@ jobs:
             throw 'libmpv-2.dll was not found in extracted mpv archive'
           }
 
-          "SKYSTREAM_WINDOWS_MPV_DLL=$($dll.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "MIXSTREAM_WINDOWS_MPV_DLL=$($dll.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Using downloaded libmpv: $($dll.FullName)"
 
       - name: Generate dart-defines file
@@ -354,7 +354,7 @@ jobs:
       - name: Compress Release
         shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "skystream-windows-${{ matrix.arch }}-preview.zip"
+          Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "mixstream-windows-${{ matrix.arch }}-preview.zip"
 
       - name: Upload Windows Build
         uses: actions/upload-artifact@v4
@@ -362,7 +362,7 @@ jobs:
           name: windows-${{ matrix.arch }}
           path: |
             windows/packaging/exe/Output/*.exe
-            skystream-windows-${{ matrix.arch }}-preview.zip
+            mixstream-windows-${{ matrix.arch }}-preview.zip
           retention-days: 7
 
   linux:
@@ -434,18 +434,18 @@ jobs:
           fastforge package --platform linux --targets deb --flutter-build-args=dart-define-from-file=dart-defines.json
 
           # Rename .deb file to match tar.gz convention
-          mv dist/*/*.deb "skystream-linux-${{ matrix.arch }}-preview.deb"
+          mv dist/*/*.deb "mixstream-linux-${{ matrix.arch }}-preview.deb"
 
           # Generate the standard .tar.gz bundle as well
           flutter build linux --release --dart-define-from-file=dart-defines.json
           cd build/linux/${{ matrix.arch }}/release/bundle
-          tar -czvf "../../../../../skystream-linux-${{ matrix.arch }}-preview.tar.gz" .
+          tar -czvf "../../../../../mixstream-linux-${{ matrix.arch }}-preview.tar.gz" .
 
       - name: Upload Linux Build
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}
           path: |
-            skystream-linux-${{ matrix.arch }}-preview.tar.gz
-            skystream-linux-${{ matrix.arch }}-preview.deb
+            mixstream-linux-${{ matrix.arch }}-preview.tar.gz
+            mixstream-linux-${{ matrix.arch }}-preview.deb
           retention-days: 7

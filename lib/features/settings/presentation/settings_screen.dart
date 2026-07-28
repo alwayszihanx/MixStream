@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/layout_constants.dart';
 import '../../../core/utils/responsive_breakpoints.dart';
 import '../../../core/providers/device_info_provider.dart';
 import '../../../core/theme/theme_provider.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 import '../../../core/utils/stream_quality_sorter.dart';
 import 'widgets/settings_widgets.dart';
 import 'widgets/settings_dialogs.dart';
 import 'player_settings_provider.dart';
 import 'general_settings_provider.dart';
-import 'app_version_provider.dart';
 import 'account_settings_screen.dart';
 
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/network/doh_service.dart';
 import '../../../core/router/app_router.dart';
@@ -28,12 +27,13 @@ class SettingsScreen extends ConsumerWidget {
     final isTv = profile?.isTv == true || context.isTv;
     final isWidescreen = isTv || context.isTabletOrLarger;
 
+    final theme = Theme.of(context);
+
     if (isWidescreen) {
       return Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: Column(
           children: [
-            // Inline header matching other widescreen screens
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Container(
@@ -43,10 +43,12 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  AppLocalizations.of(context)!.settings,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  'Settings',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -59,13 +61,17 @@ class SettingsScreen extends ConsumerWidget {
     // Mobile layout
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.settings)),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        title: Text(l10n.settings, style: TextStyle(color: theme.colorScheme.onSurface)),
+        iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
+      ),
       body: _buildSettingsList(context, ref, isTv),
     );
   }
 
   Widget _buildSettingsList(BuildContext context, WidgetRef ref, bool isTv) {
-    final versionAsync = ref.watch(appVersionProvider);
     final themeMode = ref.watch(appThemeModeProvider);
     final generalSettings = ref.watch(generalSettingsProvider);
 
@@ -93,7 +99,7 @@ class SettingsScreen extends ConsumerWidget {
               title: l10n.general,
               children: [
                 SettingsTile(
-                  icon: Icons.dark_mode_rounded,
+                  icon: const AppIcon('dark_mode_rounded'),
                   title: l10n.appTheme,
                   subtitle: themeMode == ThemeMode.system
                       ? l10n.system
@@ -101,7 +107,14 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () => showThemeDialog(context, ref, themeMode),
                 ),
                 SettingsTile(
-                  icon: Icons.history_rounded,
+                  icon: const AppIcon('palette_rounded'),
+                  title: 'Color Theme',
+                  subtitle: ref.read(appThemeConfigProvider.notifier).currentConfig.displayName,
+                  isLast: true,
+                  onTap: () => showThemeConfigDialog(context, ref),
+                ),
+                SettingsTile(
+                  icon: const AppIcon('history_rounded'),
                   title: l10n.recordWatchHistory,
                   subtitle: generalSettings.watchHistoryEnabled
                       ? l10n.enabled
@@ -119,7 +132,7 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                 ),
                 SettingsTile(
-                  icon: Icons.home_rounded,
+                  icon: const AppIcon('home_rounded'),
                   title: l10n.defaultHomeScreen,
                   subtitle: getHomeScreenLabel(
                     generalSettings.defaultHomeScreen,
@@ -132,7 +145,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 SettingsTile(
-                  icon: Icons.translate_rounded,
+                  icon: const AppIcon('translate_rounded'),
                   title: l10n.language,
                   subtitle: l10n.languageName,
                   isLast: true,
@@ -147,9 +160,10 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: LayoutConstants.spacingLg),
             SettingsGroup(
               title: l10n.player,
+              icon: const AppIcon('play_arrow', size: 20),
               children: [
                 SettingsTile(
-                  icon: Icons.smart_display_rounded,
+                  icon: const AppIcon('smart_display_rounded'),
                   title: l10n.defaultPlayer,
                   subtitle: getPlayerDisplayName(
                     playerSettings.preferredPlayer,
@@ -163,7 +177,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 if (isTouchDevice) ...[
                   SettingsTile(
-                    icon: Icons.swipe_vertical_rounded,
+                    icon: const AppIcon('swipe_vertical_rounded'),
                     title: l10n.leftGesture,
                     subtitle: getGestureLabel(playerSettings.leftGesture, l10n),
                     onTap: () => showGestureDialog(
@@ -174,7 +188,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   SettingsTile(
-                    icon: Icons.swipe_vertical_rounded,
+                    icon: const AppIcon('swipe_vertical_rounded'),
                     title: l10n.rightGesture,
                     subtitle: getGestureLabel(
                       playerSettings.rightGesture,
@@ -188,7 +202,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   SettingsTile(
-                    icon: Icons.touch_app_rounded,
+                    icon: const AppIcon('touch_app_rounded'),
                     title: l10n.doubleTapToSeek,
                     subtitle: playerSettings.doubleTapEnabled
                         ? l10n.enabled
@@ -204,7 +218,7 @@ class SettingsScreen extends ConsumerWidget {
                         .setDoubleTapEnabled(!playerSettings.doubleTapEnabled),
                   ),
                   SettingsTile(
-                    icon: Icons.swipe_rounded,
+                    icon: const AppIcon('swipe_rounded'),
                     title: l10n.swipeToSeek,
                     subtitle: playerSettings.swipeSeekEnabled
                         ? l10n.enabled
@@ -221,7 +235,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
                 SettingsTile(
-                  icon: Icons.av_timer_rounded,
+                  icon: const AppIcon('av_timer_rounded'),
                   title: l10n.seekDuration,
                   subtitle: formatSeekDuration(
                     playerSettings.seekDuration,
@@ -234,7 +248,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 SettingsTile(
-                  icon: Icons.timer_outlined,
+                  icon: const AppIcon('timer_outlined'),
                   title: l10n.bufferDepth,
                   subtitle: formatReadahead(
                     playerSettings.readaheadSeconds,
@@ -247,7 +261,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 SettingsTile(
-                  icon: Icons.aspect_ratio_rounded,
+                  icon: const AppIcon('aspect_ratio_rounded'),
                   title: l10n.defaultResizeMode,
                   subtitle: getResizeModeLabel(
                     playerSettings.defaultResizeMode,
@@ -260,7 +274,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 SettingsTile(
-                  icon: Icons.high_quality_rounded,
+                  icon: const AppIcon('high_quality_rounded'),
                   title: l10n.hardwareDecoding,
                   subtitle: playerSettings.hardwareDecoding
                       ? '${l10n.enabled} (${l10n.recommended})'
@@ -276,7 +290,7 @@ class SettingsScreen extends ConsumerWidget {
                       .setHardwareDecoding(!playerSettings.hardwareDecoding),
                 ),
                 SettingsTile(
-                  icon: Icons.wifi_rounded,
+                  icon: const AppIcon('wifi_rounded'),
                   title: l10n.wifiQualityPreference,
                   subtitle: qualityPreferenceLabel(
                     playerSettings.wifiQuality,
@@ -293,7 +307,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 SettingsTile(
-                  icon: Icons.signal_cellular_alt_rounded,
+                  icon: const AppIcon('signal_cellular_alt_rounded'),
                   title: l10n.mobileQualityPreference,
                   subtitle: qualityPreferenceLabel(
                     playerSettings.mobileQuality,
@@ -310,7 +324,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 SettingsTile(
-                  icon: Icons.filter_list_rounded,
+                  icon: const AppIcon('quality'),
                   title: 'Quality Filter Mode',
                   subtitle: _qualityFilterModeLabel(
                     playerSettings.qualityFilterMode,
@@ -330,9 +344,10 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: LayoutConstants.spacingLg),
             SettingsGroup(
               title: l10n.accounts,
+              icon: const AppIcon('account_circle_rounded', size: 20),
               children: [
                 SettingsTile(
-                  icon: Icons.account_circle_rounded,
+                  icon: const AppIcon('account_circle_rounded'),
                   title: 'Manage Accounts',
                   subtitle: 'Configure Subtitles and Tracking Services',
                   isLast: true,
@@ -356,7 +371,7 @@ class SettingsScreen extends ConsumerWidget {
                   title: l10n.network,
                   children: [
                     SettingsTile(
-                      icon: Icons.dns_rounded,
+                      icon: const AppIcon('dns_rounded'),
                       title: l10n.dnsOverHttps,
                       subtitle: dohState.enabled
                           ? '${l10n.on} (${getDohProviderLabel(dohState.provider, dohState.customUrl, l10n)})'
@@ -377,7 +392,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     if (dohState.enabled)
                       SettingsTile(
-                        icon: Icons.cloud_rounded,
+                        icon: const AppIcon('cloud_rounded'),
                         title: l10n.dohProvider,
                         subtitle: getDohProviderLabel(
                           dohState.provider,
@@ -388,7 +403,7 @@ class SettingsScreen extends ConsumerWidget {
                       ),
 
                     SettingsTile(
-                      icon: Icons.alt_route_rounded,
+                      icon: const AppIcon('github-proxy'),
                       title: l10n.githubProxy,
                       subtitle: l10n.githubProxySubtitle,
                       trailing: Switch(
@@ -417,7 +432,7 @@ class SettingsScreen extends ConsumerWidget {
               title: l10n.extensions,
               children: [
                 SettingsTile(
-                  icon: Icons.extension_rounded,
+                  icon: const AppIcon('extension_rounded'),
                   title: l10n.manageExtensions,
                   subtitle: l10n.installRemoveProviders,
                   isLast: true,
@@ -430,13 +445,13 @@ class SettingsScreen extends ConsumerWidget {
               title: l10n.appData,
               children: [
                 SettingsTile(
-                  icon: Icons.restore_rounded,
+                  icon: const AppIcon('restore_rounded'),
                   title: l10n.resetDataKeepExtensions,
                   subtitle: l10n.resetDataSubtitle,
                   onTap: () => showResetDataDialog(context, ref),
                 ),
                 SettingsTile(
-                  icon: Icons.delete_forever_rounded,
+                  icon: const AppIcon('delete_forever_rounded'),
                   title: l10n.factoryReset,
                   subtitle: l10n.factoryResetSubtitle,
                   isLast: true,
@@ -447,9 +462,10 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: LayoutConstants.spacingLg),
             SettingsGroup(
               title: l10n.developer,
+              icon: const AppIcon('developer', size: 20),
               children: [
                 SettingsTile(
-                  icon: Icons.developer_mode_rounded,
+                  icon: const AppIcon('developer_mode_rounded'),
                   title: l10n.developerOptions,
                   subtitle: l10n.developerOptionsSubtitle,
                   isLast: true,
@@ -462,39 +478,11 @@ class SettingsScreen extends ConsumerWidget {
               title: l10n.about,
               children: [
                 SettingsTile(
-                  icon: Icons.person_outline_rounded,
-                  title: l10n.developer,
-                  subtitle: l10n.developedBy('Akash'),
-                  onTap: () => showDeveloperDialog(context),
-                ),
-                SettingsTile(
-                  icon: Icons.forum_outlined,
-                  title: l10n.discord,
-                  subtitle: l10n.discordSubtitle,
-                  onTap: () => launchUrl(
-                    Uri.parse('https://discord.gg/73XGA8Mxn9'),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                ),
-                SettingsTile(
-                  icon: Icons.send_rounded,
-                  title: l10n.telegram,
-                  subtitle: l10n.telegramSubtitle,
-                  onTap: () => launchUrl(
-                    Uri.parse('https://t.me/+Ez5Vsv2pUUFjZmNl'),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                ),
-                SettingsTile(
-                  icon: Icons.info_outline_rounded,
-                  title: l10n.version,
-                  subtitle: versionAsync.when(
-                    data: (v) => v,
-                    loading: () => l10n.loading,
-                    error: (err, stack) => l10n.unknown,
-                  ),
-                  trailing: const SizedBox.shrink(),
+                  icon: const AppIcon('developer'),
+                  title: l10n.about,
+                  subtitle: l10n.developer,
                   isLast: true,
+                  onTap: () => const AboutRoute().go(context),
                 ),
               ],
             ),

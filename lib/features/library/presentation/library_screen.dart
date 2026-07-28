@@ -7,6 +7,7 @@ import '../../../core/providers/device_info_provider.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'widgets/bookmarks_tab.dart';
 import 'widgets/downloads_tab.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -111,18 +112,31 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.library),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(
-              text: AppLocalizations.of(context)!.downloads,
-              icon: const Icon(Icons.download_for_offline_rounded),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: TabBar(
+            controller: _tabController,
+            indicatorSize: TabBarIndicatorSize.label,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.primary,
             ),
-            Tab(
-              text: AppLocalizations.of(context)!.bookmarks,
-              icon: const Icon(Icons.bookmark_rounded),
+            unselectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.normal,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-          ],
+            tabs: [
+              Tab(
+                text: AppLocalizations.of(context)!.downloads,
+                icon: const AppIcon('download_for_offline_rounded'),
+              ),
+              Tab(
+                text: AppLocalizations.of(context)!.bookmarks,
+                icon: const AppIcon('bookmark_rounded'),
+              ),
+            ],
+          ),
         ),
       ),
       body: PageView(
@@ -148,7 +162,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           children: [
             _TabChip(
               label: l10n.downloads,
-              icon: Icons.download_for_offline_rounded,
+              icon: const AppIcon('download_for_offline_rounded', size: 16),
               selected: _tabController.index == 0,
               onTap: () => _tabController.animateTo(0),
               theme: theme,
@@ -156,7 +170,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             const SizedBox(width: 8),
             _TabChip(
               label: l10n.bookmarks,
-              icon: Icons.bookmark_rounded,
+              icon: const AppIcon('bookmark_rounded', size: 16),
               selected: _tabController.index == 1,
               onTap: () => _tabController.animateTo(1),
               theme: theme,
@@ -170,7 +184,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
 class _TabChip extends StatefulWidget {
   final String label;
-  final IconData icon;
+  final Widget icon;
   final bool selected;
   final VoidCallback onTap;
   final ThemeData theme;
@@ -224,30 +238,16 @@ class _TabChipState extends State<_TabChip> {
             decoration: BoxDecoration(
               color: widget.selected
                   ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                  : theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.3,
-                    ),
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(LayoutConstants.radiusPill),
               border: showHighlight
                   ? Border.all(color: theme.colorScheme.primary, width: 2)
-                  : (widget.selected
-                        ? Border.all(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.3,
-                            ),
-                          )
-                        : Border.all(color: Colors.transparent, width: 1)),
+                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  widget.icon,
-                  size: 16,
-                  color: widget.selected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
+                widget.icon,
                 const SizedBox(width: 6),
                 Text(
                   widget.label,

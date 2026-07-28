@@ -1,5 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../features/settings/presentation/player_settings_provider.dart';
 import '../domain/entity/multimedia_item.dart';
 

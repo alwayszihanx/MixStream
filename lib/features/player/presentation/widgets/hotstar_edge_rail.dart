@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/widgets/app_icon.dart';
 import 'hotstar_player_style.dart';
 
 class HotstarEdgeRail extends StatelessWidget {
-  final IconData icon;
+  final String iconName;
   final double value;
   final String label;
   final bool isBoosted;
@@ -10,7 +11,7 @@ class HotstarEdgeRail extends StatelessWidget {
 
   const HotstarEdgeRail({
     super.key,
-    required this.icon,
+    required this.iconName,
     required this.value,
     required this.label,
     required this.isBoosted,
@@ -38,7 +39,7 @@ class HotstarEdgeRail extends StatelessWidget {
       height: railHeight,
       child: Column(
         children: [
-          Icon(icon, color: Colors.white, size: iconSize),
+          AppIcon(iconName, color: Colors.white, size: iconSize),
           SizedBox(height: gap),
           Expanded(
             child: Center(

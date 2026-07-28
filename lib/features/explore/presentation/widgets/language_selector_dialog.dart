@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/explore_language_provider.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class LanguageSelectorDialog extends ConsumerWidget {
   const LanguageSelectorDialog({super.key});
@@ -42,8 +43,7 @@ class LanguageSelectorDialog extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.translate,
+                    AppIcon('translate',
                       color: theme.colorScheme.primary,
                       size: 24,
                     ),
@@ -59,10 +59,7 @@ class LanguageSelectorDialog extends ConsumerWidget {
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      icon: AppIcon('close', color: theme.colorScheme.onSurfaceVariant,),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -171,8 +168,7 @@ class LanguageSelectorDialog extends ConsumerWidget {
                                 ),
                               ),
                               if (isSelected)
-                                Icon(
-                                  Icons.check_circle,
+                                AppIcon('check_circle',
                                   color: theme.colorScheme.primary,
                                   size: 20,
                                 ),

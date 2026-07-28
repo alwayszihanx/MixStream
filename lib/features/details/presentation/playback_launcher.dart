@@ -16,8 +16,9 @@ import 'details_controller.dart';
 import '../../../core/services/download_service.dart';
 import '../../../shared/widgets/loading_dialog.dart';
 import '../../../core/utils/app_utils.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 part 'playback_launcher.g.dart';
 
@@ -109,7 +110,7 @@ class PlaybackLauncher {
 
     try {
       final manager = _ref.read(extensionManagerProvider.notifier);
-      SkyStreamProvider? provider;
+      MixStreamProvider? provider;
       if (item.provider != null) {
         try {
           final val = item.provider!;
@@ -276,7 +277,7 @@ class PlaybackLauncher {
                     final host = Uri.tryParse(stream.url)?.host ?? '';
 
                     return ListTile(
-                      leading: const Icon(Icons.play_circle_outline),
+                      leading: const AppIcon('play_circle_outline'),
                       title: Text(label),
                       subtitle: host.isNotEmpty ? Text(host) : null,
                       onTap: () {

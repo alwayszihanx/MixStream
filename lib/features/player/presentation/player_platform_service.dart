@@ -9,7 +9,7 @@ import 'package:window_manager/window_manager.dart';
 class PlayerPlatformService {
   Future<void> enterPip(bool isPlaying) async {
     try {
-      const platform = MethodChannel('dev.akash.skystream.player/pip');
+      const platform = MethodChannel('io.alwayszihan.mixstream.player/pip');
       await platform.invokeMethod('enterPip', {'isPlaying': isPlaying});
     } catch (e) {
       if (kDebugMode) debugPrint("PIP Error: $e");
@@ -19,7 +19,7 @@ class PlayerPlatformService {
   void syncPipState(bool isPlaying) {
     if (Platform.isAndroid) {
       const MethodChannel(
-        'dev.akash.skystream.player/pip',
+        'io.alwayszihan.mixstream.player/pip',
       ).invokeMethod('setPipState', {'isPlaying': isPlaying});
     }
   }

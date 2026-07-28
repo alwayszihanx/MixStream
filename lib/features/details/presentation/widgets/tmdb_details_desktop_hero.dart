@@ -6,9 +6,8 @@ import '../../../../shared/widgets/thumbnail_error_placeholder.dart';
 import '../../../../core/models/tmdb_details.dart';
 import '../../../../core/storage/history_repository.dart';
 import 'provider_search_section.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
-/// Desktop hero: backdrop, gradients, and first column (logo, metadata, overview, sources).
-/// [child] is the rest of the scroll content (seasons, cast, trailers, stats, etc.).
 class TmdbDetailsDesktopHero extends ConsumerWidget {
   const TmdbDetailsDesktopHero({
     super.key,
@@ -26,9 +25,6 @@ class TmdbDetailsDesktopHero extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final scaffoldColor = theme.scaffoldBackgroundColor;
-    final textColor = theme.colorScheme.onSurface;
-    final textSecondary = theme.colorScheme.onSurface.withValues(alpha: 0.7);
 
     final title = data.title;
     final overview = data.overview;
@@ -44,285 +40,212 @@ class TmdbDetailsDesktopHero extends ConsumerWidget {
     final certification = data.certification;
     final director = data.director;
     final backdropImageUrl = data.backdropImageUrl;
+    final posterUrl = data.posterImageUrl;
 
-    return Stack(
-      fit: StackFit.expand,
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final heroHeight = screenWidth * 0.45;
+
+    return Column(
       children: [
-        Positioned.fill(
-          child: ShaderMask(
-            shaderCallback: (rect) {
-              return LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  scaffoldColor,
-                  scaffoldColor.withValues(alpha: 0.85),
-                  scaffoldColor.withValues(alpha: 0.55),
-                  scaffoldColor.withValues(alpha: 0.25),
-                  scaffoldColor.withValues(alpha: 0.08),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-              ).createShader(rect);
-            },
-            blendMode: BlendMode.dstOut,
-            child: CachedNetworkImage(
-              imageUrl: backdropImageUrl,
-              fit: BoxFit.cover,
-              alignment: Alignment.centerRight,
-              // Bound decoded bitmap; H29 makes desktop/TV fetch `original`
-              // backdrops which can be 3840 px wide.
-              memCacheWidth:
-                  (MediaQuery.sizeOf(context).width *
-                          MediaQuery.devicePixelRatioOf(context))
-                      .round(),
-              errorWidget: (_, _, _) =>
-                  ThumbnailErrorPlaceholder(label: title, isBackdrop: true),
-            ),
-          ),
-        ),
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  scaffoldColor,
-                  scaffoldColor.withValues(alpha: 0.85),
-                  scaffoldColor.withValues(alpha: 0.55),
-                  scaffoldColor.withValues(alpha: 0.25),
-                  scaffoldColor.withValues(alpha: 0.08),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+        // ── Hero backdrop ──
+        SizedBox(
+          height: heroHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: backdropImageUrl,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                memCacheWidth: (screenWidth * MediaQuery.devicePixelRatioOf(context)).round(),
+                errorWidget: (_, _, _) => ThumbnailErrorPlaceholder(label: title, isBackdrop: true),
               ),
-            ),
-          ),
-        ),
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  scaffoldColor,
-                  scaffoldColor.withValues(alpha: 0.85),
-                  scaffoldColor.withValues(alpha: 0.55),
-                  scaffoldColor.withValues(alpha: 0.25),
-                  scaffoldColor.withValues(alpha: 0.08),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.1, 0.2, 0.28, 0.35, 0.4],
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        theme.scaffoldBackgroundColor,
+                        theme.scaffoldBackgroundColor.withValues(alpha: 0.7),
+                        Colors.transparent,
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.3, 0.6, 1.0],
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
-        Positioned.fill(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 60),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: MediaQuery.sizeOf(context).width * 0.6,
+
+        // ── Poster + info row ──
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 48),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Poster
+              Transform.translate(
+                offset: const Offset(0, -60),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: AspectRatio(
+                    aspectRatio: 2 / 3,
+                    child: SizedBox(
+                      width: 180,
+                      child: CachedNetworkImage(
+                        imageUrl: posterUrl,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, _, _) => ThumbnailErrorPlaceholder(label: title),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 32),
+              // Info
+              Expanded(
+                child: Transform.translate(
+                  offset: const Offset(0, -20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (logoUrl != null)
-                        CachedNetworkImage(
-                          imageUrl: logoUrl,
-                          height: 200,
-                          alignment: Alignment.centerLeft,
-                          fit: BoxFit.contain,
-                          placeholder: (_, _) => Text(
-                            title,
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 56,
-                              fontWeight: FontWeight.bold,
-                              height: 1.1,
-                            ),
-                          ),
-                        )
-                      else
-                        Text(
-                          title,
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 56,
-                            fontWeight: FontWeight.bold,
-                            height: 1.1,
-                          ),
-                        ),
-                      const SizedBox(height: 12),
+                      // Progress bar
                       Consumer(
                         builder: (context, ref, _) {
-                          final historyRepo = ref.watch(
-                            historyRepositoryProvider,
-                          );
-                          final pos = historyRepo.getPosition(
-                            data.id.toString(),
-                          );
-                          final dur = historyRepo.getDuration(
-                            data.id.toString(),
-                          );
-
+                          final historyRepo = ref.watch(historyRepositoryProvider);
+                          final pos = historyRepo.getPosition(data.id.toString());
+                          final dur = historyRepo.getDuration(data.id.toString());
                           if (pos > 0 && dur > 0) {
                             final progress = (pos / dur).clamp(0.0, 1.0);
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 400,
-                                  height: 6,
-                                  clipBehavior: Clip.antiAlias,
-                                  decoration: BoxDecoration(
-                                    color: textColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(3),
-                                  ),
-                                  child: LinearProgressIndicator(
-                                    value: progress,
-                                    backgroundColor: Colors.transparent,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      theme.colorScheme.primary,
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: LinearProgressIndicator(
+                                      value: progress,
+                                      minHeight: 4,
+                                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                                      valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  "${(progress * 100).toInt()}% watched",
-                                  style: TextStyle(
-                                    color: theme.colorScheme.primary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "${(progress * 100).toInt()}% watched",
+                                    style: TextStyle(
+                                      color: theme.colorScheme.primary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             );
                           }
                           return const SizedBox.shrink();
                         },
                       ),
-                      const SizedBox(height: 12),
+                      // Title
+                      if (logoUrl != null)
+                        CachedNetworkImage(
+                          imageUrl: logoUrl,
+                          height: 80,
+                          alignment: Alignment.centerLeft,
+                          fit: BoxFit.contain,
+                          placeholder: (_, _) => _buildTitle(theme, title),
+                          errorWidget: (_, _, _) => _buildTitle(theme, title),
+                        )
+                      else
+                        _buildTitle(theme, title),
+                      const SizedBox(height: 10),
+                      // Metadata
                       Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
+                        spacing: 16,
+                        runSpacing: 6,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           _buildTmdbLogo(),
-                          _buildTopBadge(
-                            context,
+                          _buildTopBadge(context,
                             source == 'anilist'
-                                ? (isMovie ? "MOVIE" : "ANIME")
-                                : (isMovie ? "MOVIE" : "TV SHOW"),
+                                ? (isMovie ? "ANIME" : "ANIME")
+                                : (isMovie ? "MOVIE" : "SERIES"),
                           ),
                           if (year.isNotEmpty)
-                            _buildIconInfo(
-                              context,
-                              Icons.calendar_today_rounded,
-                              year,
-                              textColor,
-                            ),
-                          _buildIconInfo(
-                            context,
-                            Icons.star_rounded,
-                            rating,
-                            const Color(0xFF01B4E4),
-                          ),
-                          if (durationText.isNotEmpty)
-                            _buildIconInfo(
-                              context,
-                              Icons.timer_outlined,
-                              durationText,
-                              textColor,
-                            ),
-                          if (certification.isNotEmpty)
-                            _buildBorderedInfo(
-                              context,
-                              certification,
-                              textColor,
-                            ),
-                          if (director != "Unknown")
-                            _buildIconInfo(
-                              context,
-                              isMovie
-                                  ? Icons.movie_creation_outlined
-                                  : Icons.person_outline,
-                              isMovie
-                                  ? "Director: $director"
-                                  : "Creator: $director",
-                              textColor,
-                            ),
+                            _metaText(context, year),
+                          Text('•', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.3))),
+                          Icon(Icons.star_rounded, size: 16, color: const Color(0xFF01B4E4)),
+                          const SizedBox(width: 2),
+                          Text(rating, style: TextStyle(color: const Color(0xFF01B4E4), fontWeight: FontWeight.bold, fontSize: 13)),
+                          if (durationText.isNotEmpty) ...[
+                            Text('•', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.3))),
+                            _metaText(context, durationText),
+                          ],
+                          if (certification.isNotEmpty) ...[
+                            Text('•', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.3))),
+                            _metaText(context, certification),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
+                      // Overview
                       Text(
                         overview,
-                        maxLines: 4,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 16,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                           height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         genreText,
                         style: TextStyle(
-                          color: textSecondary.withValues(alpha: 0.5),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                          fontSize: 13,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 20),
+                      // Sources header
                       Row(
                         children: [
-                          Icon(
-                            Icons.extension,
-                            color: theme.colorScheme.primary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
+                          AppIcon('extension', color: theme.colorScheme.primary, size: 18),
+                          const SizedBox(width: 6),
                           Text(
                             "Available Sources",
                             style: TextStyle(
-                              color: textColor,
-                              fontSize: 18,
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withValues(
-                                alpha: 0.2,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
+                              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(3),
                             ),
                             child: Text(
                               "BETA",
                               style: TextStyle(
                                 color: theme.colorScheme.primary,
-                                fontSize: 10,
+                                fontSize: 9,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       Container(
-                        constraints: const BoxConstraints(
-                          maxWidth: 600,
-                          maxHeight: 220,
-                        ),
+                        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 220),
                         child: ProviderSearchSection(
                           query: title,
                           compact: true,
@@ -331,113 +254,90 @@ class TmdbDetailsDesktopHero extends ConsumerWidget {
                           imdbId: data.imdbId,
                         ),
                       ),
+                      if (director != "Unknown") ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          isMovie ? "Director: $director" : "Creator: $director",
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                child,
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+
+        const SizedBox(height: 32),
+
+        // ── Content below ──
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 48),
+          child: child,
+        ),
+
+        const SizedBox(height: 48),
       ],
     );
   }
 
+  Widget _buildTitle(ThemeData theme, String title) {
+    return Text(
+      title,
+      style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _metaText(BuildContext context, String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
+
   Widget _buildTmdbLogo() {
-    final isAnilist = source == 'anilist';
-    if (isAnilist) {
+    if (source == 'anilist') {
       return Container(
-        width: 32,
-        height: 32,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
           color: const Color(0xFF02A9FF).withValues(alpha: 0.15),
           shape: BoxShape.circle,
         ),
-        padding: const EdgeInsets.all(6),
-        child: SvgPicture.asset(
-          'assets/images/anilist_icon.svg',
-          fit: BoxFit.contain,
-        ),
+        padding: const EdgeInsets.all(5),
+        child: SvgPicture.asset('assets/images/anilist_icon.svg', fit: BoxFit.contain),
       );
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF01B4E4), // TMDB Blue
-        borderRadius: BorderRadius.circular(4),
+        color: const Color(0xFF01B4E4),
+        borderRadius: BorderRadius.circular(3),
       ),
-      child: const Text(
-        "TMDB",
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w900,
-          fontSize: 10,
-        ),
-      ),
+      child: const Text("TMDB", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 9)),
     );
   }
 
   Widget _buildTopBadge(BuildContext context, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-          width: 0.5,
-        ),
+        borderRadius: BorderRadius.circular(3),
       ),
       child: Text(
         label,
         style: TextStyle(
           color: Theme.of(context).colorScheme.primary,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIconInfo(
-    BuildContext context,
-    IconData icon,
-    String text,
-    Color color,
-  ) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color.withValues(alpha: 0.5)),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            color: color.withValues(alpha: 0.8),
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBorderedInfo(BuildContext context, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        border: Border.all(color: color.withValues(alpha: 0.1)),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color.withValues(alpha: 0.7),
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: FontWeight.bold,
         ),
       ),

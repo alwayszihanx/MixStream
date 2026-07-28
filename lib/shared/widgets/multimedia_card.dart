@@ -12,6 +12,7 @@ class MultimediaCard extends StatelessWidget {
   final String heroTag;
   final bool isPortrait;
   final FocusNode? focusNode;
+  final String? badgeText;
 
   const MultimediaCard({
     super.key,
@@ -21,20 +22,16 @@ class MultimediaCard extends StatelessWidget {
     required this.heroTag,
     this.isPortrait = true,
     this.focusNode,
+    this.badgeText,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isDesktop = context.isDesktop;
     final cardWidth = isDesktop
         ? (isPortrait ? 200.0 : 300.0)
         : (isPortrait ? 130.0 : 200.0);
-    // No explicit memCacheWidth here. The TMDB source is w500 which is
-    // already close to displayed width × DPR (e.g. 200 dp × 3 DPR = 600 px,
-    // 300 dp × 3 = 900 px). Forcing a smaller memCacheWidth blurs the image
-    // on hi-DPR phones; letting CNI decode at the source size keeps it crisp
-    // without bloating the cache (the cache cap in main.dart bounds total
-    // memory regardless).
 
     return RepaintBoundary(
       child: CardsWrapper(
@@ -45,35 +42,65 @@ class MultimediaCard extends StatelessWidget {
           width: cardWidth,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Hero(
-                  tag: heroTag,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: CachedNetworkImage(
-                      imageUrl: imageUrl ?? '',
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      placeholder: (context, url) =>
-                          ShimmerPlaceholder(borderRadius: 12),
-                      errorWidget: (_, _, _) =>
-                          ThumbnailErrorPlaceholder(label: title),
-                    ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: AspectRatio(
+                  aspectRatio: isPortrait ? 2 / 3 : 16 / 9,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Hero(
+                        tag: heroTag,
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl ?? '',
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              ShimmerPlaceholder(borderRadius: 4),
+                          errorWidget: (_, _, _) =>
+                              ThumbnailErrorPlaceholder(label: title),
+                        ),
+                      ),
+                      if (badgeText != null)
+                        Positioned(
+                          top: 6,
+                          left: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              badgeText!,
+                              style: TextStyle(
+                                color: theme.colorScheme.onPrimary,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.8),
-                  fontSize: isDesktop ? 22 : 14,
-                  fontWeight: FontWeight.w500,
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: isDesktop ? 13 : 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],

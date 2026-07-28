@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class TrackingAuthDialog extends StatefulWidget {
   final String providerName;
@@ -115,7 +116,7 @@ class _TrackingAuthDialogState extends State<TrackingAuthDialog> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Icon(Icons.copy, color: theme.colorScheme.onSecondaryContainer),
+                AppIcon('copy', color: theme.colorScheme.onSecondaryContainer),
               ],
             ),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/widgets/app_icon.dart';
 import '../player_gesture_handler.dart';
 import 'hotstar_edge_rail.dart';
 
@@ -85,7 +86,7 @@ class PlayerOSDVolumeOverlay extends ConsumerWidget {
           showOSD: state.showOSD,
           osdValue: state.osdValue,
           osdLabel: state.osdLabel,
-          osdIcon: state.osdIcon,
+          osdIconName: state.osdIconName,
           osdAlignment: state.osdAlignment,
           supportsVolumeBoost: handler.supportsVolumeBoost,
         ),
@@ -98,7 +99,7 @@ class PlayerOsdOverlay extends StatelessWidget {
   final bool showOSD;
   final double? osdValue;
   final String osdLabel;
-  final IconData osdIcon;
+  final String osdIconName;
   final Alignment osdAlignment;
   final bool supportsVolumeBoost;
 
@@ -107,7 +108,7 @@ class PlayerOsdOverlay extends StatelessWidget {
     required this.showOSD,
     required this.osdValue,
     required this.osdLabel,
-    required this.osdIcon,
+    required this.osdIconName,
     required this.osdAlignment,
     required this.supportsVolumeBoost,
   });
@@ -127,7 +128,7 @@ class PlayerOsdOverlay extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 42),
           child: HotstarEdgeRail(
-            icon: osdIcon,
+            iconName: osdIconName,
             value: osdValue!,
             label: osdLabel,
             isBoosted: showBoostState,
@@ -150,7 +151,7 @@ class PlayerOsdOverlay extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(osdIcon, color: Colors.white, size: 24),
+              AppIcon(osdIconName, color: Colors.white, size: 24),
               const SizedBox(width: 12),
               Text(
                 osdLabel,

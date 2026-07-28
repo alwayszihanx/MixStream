@@ -10,6 +10,7 @@ import '../../../../shared/widgets/custom_widgets.dart';
 import '../../../settings/presentation/player_settings_provider.dart';
 import 'hotstar_player_style.dart';
 import '../../../skip/data/skip_service.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 /// A self-contained progress bar widget that uses StreamBuilder to avoid
 /// rebuilding the parent widget on every position update.
@@ -157,7 +158,7 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.circle, color: Colors.red, size: 7),
+                AppIcon('circle', color: Colors.red, size: 7),
                 SizedBox(width: 5),
                 Text(
                   'LIVE',
@@ -495,6 +496,7 @@ class PlayerPlayPauseButton extends StatelessWidget {
       onPressed: onPressed ?? () => player.playOrPause(),
       showFocusHighlight: isTv,
       shape: const CircleBorder(),
+      padding: EdgeInsets.zero,
       child: Container(
         width: size,
         height: size,
@@ -504,8 +506,8 @@ class PlayerPlayPauseButton extends StatelessWidget {
             : null,
         child: isSpinning
             ? const _PlayerSpinner()
-            : Icon(
-                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            : AppIcon(
+                isPlaying ? 'pause_rounded' : 'play_arrow_rounded',
                 color: Colors.white,
                 size: size * 0.88,
               ),

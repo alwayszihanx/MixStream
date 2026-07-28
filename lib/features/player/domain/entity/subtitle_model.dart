@@ -49,7 +49,7 @@ abstract class SubtitleProvider {
   String get idPrefix;
 
   static const Map<String, String> commonHeaders = {
-    'User-Agent': 'SkyStream v2.2.1',
+    'User-Agent': 'MixStream v2.2.1',
     'Accept': 'application/json',
   };
 

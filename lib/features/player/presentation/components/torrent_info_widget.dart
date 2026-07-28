@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/torrent_status.dart';
 import '../../../../core/widgets/marquee_widget.dart';
+import '../../../../shared/widgets/app_icon.dart';
 import '../widgets/hotstar_player_style.dart';
 
 /// Compact, responsive torrent download-stats card. Self-contained: it sizes
@@ -43,8 +44,8 @@ class TorrentInfoWidget extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.downloading_rounded,
+                const AppIcon(
+                  'downloading_rounded',
                   color: HotstarPlayerStyle.accent,
                   size: 16,
                 ),
@@ -71,7 +72,7 @@ class TorrentInfoWidget extends StatelessWidget {
               children: [
                 Expanded(
                   child: _Stat(
-                    icon: Icons.download_rounded,
+                    icon: const AppIcon('download_rounded'),
                     value: s.speedString,
                     label: 'Speed',
                     compact: compact,
@@ -80,7 +81,7 @@ class TorrentInfoWidget extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _Stat(
-                    icon: Icons.people_alt_rounded,
+                    icon: const AppIcon('people_alt_rounded'),
                     value: '${s.seeds} / ${s.peers}',
                     label: 'Seeds / Peers',
                     compact: compact,
@@ -136,7 +137,7 @@ class TorrentInfoWidget extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  final IconData icon;
+  final Widget icon;
   final String value;
   final String label;
   final bool compact;
@@ -152,7 +153,7 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: HotstarPlayerStyle.secondaryText, size: 16),
+        icon,
         const SizedBox(width: 6),
         Expanded(
           child: Column(

@@ -20,6 +20,11 @@ class RepositoryService {
       return fixedUrl;
     }
 
+    // Known shortcodes
+    if (fixedUrl == 'mixplug' || fixedUrl == 'mixplugs') {
+      return 'https://raw.githubusercontent.com/alwayszihanx/Mixplug/main/plugins/repo.json';
+    }
+
     // Shortcode (Alphanumeric) -> cutt.ly
     if (RegExp(r'^[a-zA-Z0-9!_-]+$').hasMatch(fixedUrl)) {
       try {
@@ -158,7 +163,7 @@ class RepositoryService {
       final normalizedUrl = _normalizeUrl(url);
       final tempDir = Directory.systemTemp;
       final tempFile = File(
-        '${tempDir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.sky',
+        '${tempDir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.mix',
       );
 
       await _dio.download(normalizedUrl, tempFile.path);

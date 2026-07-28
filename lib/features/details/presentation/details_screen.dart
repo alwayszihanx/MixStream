@@ -8,10 +8,10 @@ import '../../../shared/widgets/thumbnail_error_placeholder.dart';
 import '../../../core/utils/image_fallbacks.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:skystream/core/utils/layout_constants.dart';
-import 'package:skystream/core/utils/responsive_breakpoints.dart';
+import 'package:mixstream/core/utils/layout_constants.dart';
+import 'package:mixstream/core/utils/responsive_breakpoints.dart';
 
-import 'package:skystream/shared/widgets/custom_widgets.dart';
+import 'package:mixstream/shared/widgets/custom_widgets.dart';
 
 import '../../library/presentation/library_provider.dart';
 import '../../library/presentation/library_state.dart';
@@ -22,7 +22,8 @@ import "widgets/details_desktop_hero.dart";
 import "widgets/premium_details_widgets.dart";
 import "../../../shared/widgets/expandable_text.dart";
 import "../../../shared/widgets/loading_indicator.dart";
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 class DetailsScreen extends ConsumerStatefulWidget {
   final MultimediaItem item;
@@ -100,15 +101,18 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
       );
     }
 
-    // ── Mobile: SliverAppBar-based layout (unchanged) ──
+    final theme = Theme.of(context);
+
+    // ── Mobile: Disney+ style hero ──
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
             expandedHeight: LayoutConstants.detailsExpandedHeightMobile,
             stretch: true,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            backgroundColor: theme.scaffoldBackgroundColor,
             flexibleSpace: FlexibleSpaceBar(
               stretchModes: const [
                 StretchMode.zoomBackground,
@@ -129,57 +133,32 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                           '',
                       fit: BoxFit.cover,
                       alignment: Alignment.topCenter,
-                      // Bound decoded bitmap; plugin backdrops are often at
-                      // source resolution. Without this, 4K-source posters
-                      // burn ~33 MB per detail page.
                       memCacheWidth:
                           (MediaQuery.sizeOf(context).width *
                                   MediaQuery.devicePixelRatioOf(context))
                               .round(),
                       placeholder: (context, url) =>
-                          Container(color: Theme.of(context).dividerColor),
+                          Container(color: theme.dividerColor),
                       errorWidget: (_, _, _) => ThumbnailErrorPlaceholder(
                         label: item.title,
                         isBackdrop: true,
                       ),
                     ),
                   ),
-                  // 1. Legibility Scrim: Fixed dark-tinted overlay at the bottom of the backdrop
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.65),
-                        ],
-                        stops: const [0.5, 1.0],
-                      ),
-                    ),
-                  ),
-                  // 2. Blend-into-page transition: Theme-aware eased fade to surface
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Theme.of(
-                            context,
-                          ).scaffoldBackgroundColor.withValues(alpha: 0.0),
-                          Theme.of(
-                            context,
-                          ).scaffoldBackgroundColor.withValues(alpha: 0.15),
-                          Theme.of(
-                            context,
-                          ).scaffoldBackgroundColor.withValues(alpha: 0.45),
-                          Theme.of(
-                            context,
-                          ).scaffoldBackgroundColor.withValues(alpha: 0.8),
-                          Theme.of(context).scaffoldBackgroundColor,
-                        ],
-                        stops: const [0.0, 0.5, 0.75, 0.9, 1.0],
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            theme.scaffoldBackgroundColor,
+                            theme.scaffoldBackgroundColor.withValues(alpha: 0.7),
+                            Colors.transparent,
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.3, 0.6, 1.0],
+                        ),
                       ),
                     ),
                   ),
@@ -194,20 +173,17 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                 shape: const CircleBorder(),
                 backgroundColor: Colors.black45,
                 onPressed: () => context.pop(),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
-                ),
+                child: AppIcon('arrow_back_rounded', color: Colors.white,),
               ),
             ),
             actions: [
               Focus(
                 descendantsAreTraversable: false,
                 child: IconButton(
-                  icon: Icon(
+                  icon: AppIcon(
                     isBookmarked
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
+                        ? 'bookmark_rounded'
+                        : 'bookmark_border_rounded',
                     color: isBookmarked
                         ? Theme.of(context).colorScheme.primary
                         : Colors.white,
@@ -265,7 +241,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
         elevation: 0,
         // Back button — D-pad reachable (Up from Play)
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const AppIcon('arrow_back_rounded'),
           onPressed: () => context.pop(),
           style: IconButton.styleFrom(
             backgroundColor: isDark ? Colors.black45 : Colors.white54,
@@ -275,10 +251,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
         actions: [
           // Bookmark — D-pad reachable
           IconButton(
-            icon: Icon(
+            icon: AppIcon(
               isBookmarked
-                  ? Icons.bookmark_rounded
-                  : Icons.bookmark_border_rounded,
+                  ? 'bookmark_rounded'
+                  : 'bookmark_border_rounded',
               color: isBookmarked
                   ? Theme.of(context).colorScheme.primary
                   : textColor,
@@ -439,8 +415,11 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                         else
                           Text(
                             item.title,
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         const SizedBox(height: 8),
                         MetadataBar(
@@ -465,16 +444,19 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
               const SizedBox(height: 24),
               Text(
                 l10n.synopsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               ExpandableText(
                 text: item.description ?? l10n.noDescription,
                 maxLines: 4,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  fontSize: 14,
                   height: 1.5,
                 ),
               ),

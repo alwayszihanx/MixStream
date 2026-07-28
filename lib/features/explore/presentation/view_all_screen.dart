@@ -10,6 +10,7 @@ import '../../../../shared/widgets/shimmer_placeholder.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../../../core/utils/image_utils.dart';
 import 'controllers/view_all_controller.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 enum ViewAllCategory {
   popularMovies,
@@ -141,7 +142,7 @@ class _ViewAllScreenState extends ConsumerState<ViewAllScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const AppIcon('arrow_back_rounded'),
           onPressed: () => context.pop(),
         ),
         elevation: 0,
@@ -186,6 +187,9 @@ class _ViewAllScreenState extends ConsumerState<ViewAllScreen> {
               title: itemTitle,
               heroTag: uniqueTag,
               isPortrait: _isPortrait,
+              badgeText: item.score != null
+                  ? item.score!.toStringAsFixed(1)
+                  : null,
               onTap: () {
                 if (widget.onTap != null) {
                   widget.onTap!(item);

@@ -10,9 +10,10 @@ import '../../../../shared/widgets/desktop_scroll_wrapper.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
 import '../../../../core/models/tmdb_details.dart';
 import '../tmdb_details_controller.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class MovieSeasonsList extends ConsumerStatefulWidget {
   final int movieId;
@@ -128,10 +129,7 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                       ).colorScheme.surfaceContainer,
                       underline: const SizedBox(),
                       style: TextStyle(color: widget.textColor),
-                      icon: Icon(
-                        Icons.arrow_drop_down,
-                        color: widget.textColor,
-                      ),
+                      icon: AppIcon('arrow_drop_down', color: widget.textColor,),
                       items: widget.seasons.map<DropdownMenuItem<int>>((s) {
                         final num = s.seasonNumber;
                         final count = s.episodeCount;
@@ -547,8 +545,8 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                               color: Theme.of(context).colorScheme.onSurface,
                               fontWeight: FontWeight.bold,
                             ),
-                            icon: Icon(
-                              Icons.keyboard_arrow_down_rounded,
+                            icon: AppIcon(
+                              'keyboard_arrow_down_rounded',
                               color: Theme.of(
                                 context,
                               ).colorScheme.onSurfaceVariant,

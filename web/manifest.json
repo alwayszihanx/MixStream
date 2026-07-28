@@ -1,6 +1,6 @@
 {
-    "name": "SkyStream",
-    "short_name": "SkyStream",
+    "name": "MixStream",
+    "short_name": "MixStream",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#000000",

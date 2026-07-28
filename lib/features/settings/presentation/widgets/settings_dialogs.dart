@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../shared/widgets/custom_widgets.dart';
 import '../../../../core/services/external_player_service.dart';
 import '../../../../core/network/doh_service.dart';
 import '../../../../core/storage/settings_repository.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/utils/app_utils.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -13,7 +13,8 @@ import '../player_settings_provider.dart';
 import '../../../../core/utils/stream_quality_sorter.dart';
 import '../general_settings_provider.dart';
 import '../../../../core/providers/locale_provider.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 /// Returns a localized label for a player gesture.
 String getGestureLabel(PlayerGesture gesture, AppLocalizations l10n) {
@@ -428,7 +429,7 @@ void showDefaultPlayerDialog(
                 title: Text(l10n.internalPlayer),
                 subtitle: Text(l10n.builtInPlayer),
                 leading: const Radio<String?>(value: null),
-                trailing: const Icon(Icons.play_circle_filled_rounded),
+                trailing: const AppIcon('play_circle_filled_rounded'),
                 onTap: () {
                   ref
                       .read(playerSettingsProvider.notifier)
@@ -441,7 +442,7 @@ void showDefaultPlayerDialog(
                 return ListTile(
                   title: Text(player.displayName),
                   leading: Radio<String?>(value: player.id),
-                  trailing: Icon(player.icon),
+                  trailing: AppIcon(player.iconName),
                   onTap: () {
                     ref
                         .read(playerSettingsProvider.notifier)
@@ -586,10 +587,7 @@ void showDohProviderDialog(BuildContext context, WidgetRef ref) {
                           decoration: InputDecoration(
                             labelText: l10n.customDohUrlLabel,
                             hintText: 'https://...',
-                            prefixIcon: const Icon(
-                              Icons.link_rounded,
-                              size: 20,
-                            ),
+                            prefixIcon: AppIcon('link_rounded', size: 20,),
                           ),
                           keyboardType: TextInputType.url,
                         ),
@@ -677,6 +675,58 @@ void showThemeDialog(
           onPressed: () => Navigator.pop<void>(context),
           child: Text(
             l10n.cancel,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+void showThemeConfigDialog(BuildContext context, WidgetRef ref) {
+  final currentIndex = ref.read(appThemeConfigProvider);
+  showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      surfaceTintColor: Colors.transparent,
+      title: const Text('Color Theme'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: allThemes.length,
+          itemBuilder: (context, index) {
+            final theme = allThemes[index];
+            final isSelected = index == currentIndex;
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundColor: theme.primaryDark,
+                radius: 14,
+              ),
+              title: Text(
+                theme.displayName,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              trailing: isSelected
+                  ? AppIcon('check', color: theme.primaryDark)
+                  : null,
+              onTap: () {
+                ref.read(appThemeConfigProvider.notifier).setThemeConfig(index);
+                Navigator.pop<void>(context);
+              },
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop<void>(context),
+          child: Text(
+            'Cancel',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -830,162 +880,7 @@ void showLanguageDialog(
   );
 }
 
-/// Shows a beautiful dialog with information about the developer.
-void showDeveloperDialog(BuildContext context) {
-  final l10n = AppLocalizations.of(context)!;
-  final colorScheme = Theme.of(context).colorScheme;
 
-  showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      surfaceTintColor: Colors.transparent,
-      contentPadding: const EdgeInsets.all(24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Profile Picture
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: colorScheme.primary.withValues(alpha: 0.2),
-                  width: 4,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: Image.network(
-                  'https://avatars.githubusercontent.com/u/74624467?v=4',
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(child: AppLoadingIndicator());
-                  },
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.person_rounded, size: 50),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Name and Title
-            Text(
-              'Akash',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Fullstack & Flutter Developer',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Social Links
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _SocialButton(
-                  svgUrl:
-                      'https://raw.githubusercontent.com/simple-icons/simple-icons/11.10.0/icons/github.svg',
-                  color: const Color(
-                    0xFF909692,
-                  ), // GitHub Official Black/Dark Grey
-                  onTap: () => launchUrl(
-                    Uri.parse('https://github.com/akashdh11'),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                ),
-                _SocialButton(
-                  svgUrl:
-                      'https://raw.githubusercontent.com/simple-icons/simple-icons/11.10.0/icons/linkedin.svg',
-                  color: const Color(0xFF2d65bc), // LinkedIn Official Blue
-                  onTap: () => launchUrl(
-                    Uri.parse('https://www.linkedin.com/in/akashdh11'),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                ),
-                _SocialButton(
-                  svgUrl:
-                      'https://raw.githubusercontent.com/simple-icons/simple-icons/11.10.0/icons/discord.svg',
-                  color: const Color(0xFF5865F2), // Discord Blurple
-                  onTap: () => launchUrl(
-                    Uri.parse('https://discord.gg/73XGA8Mxn9'),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                ),
-                _SocialButton(
-                  svgUrl:
-                      'https://raw.githubusercontent.com/simple-icons/simple-icons/11.10.0/icons/telegram.svg',
-                  color: const Color(0xFF5baae3), // Telegram Official Blue
-                  onTap: () => launchUrl(
-                    Uri.parse('https://t.me/+Ez5Vsv2pUUFjZmNl'),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop<void>(context),
-          child: Text(l10n.close),
-        ),
-      ],
-    ),
-  );
-}
-
-class _SocialButton extends StatelessWidget {
-  final String svgUrl;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _SocialButton({
-    required this.svgUrl,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Material(
-      color: color.withValues(alpha: 0.15),
-      shape: const CircleBorder(),
-      child: IconButton(
-        icon: SvgPicture.network(
-          svgUrl,
-          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-          width: 24,
-          height: 24,
-          placeholderBuilder: (context) => AppLoadingIndicator(
-            color: color.withValues(alpha: 0.5),
-            constraints: BoxConstraints.tight(const Size(24, 24)),
-          ),
-        ),
-        onPressed: onTap,
-        tooltip: l10n.openLink,
-      ),
-    );
-  }
-}
 
 /// Shows a dialog to pick a [QualityPreference] for [title] (Wi-Fi or Mobile).
 void showQualityDialog(
@@ -1037,8 +932,8 @@ void showQualityDialog(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.info_outline_rounded,
+                  AppIcon(
+                    'info_outline_rounded',
                     size: 14,
                     color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                   ),
@@ -1129,8 +1024,8 @@ void showQualityFilterModeDialog(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.info_outline_rounded,
+                  AppIcon(
+                    'info_outline_rounded',
                     size: 14,
                     color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                   ),
@@ -1179,7 +1074,7 @@ void showOpenSubtitlesAuthDialog(
             surfaceTintColor: Colors.transparent,
             title: Row(
               children: [
-                const Icon(Icons.subtitles_rounded, color: Colors.blue),
+                AppIcon('subtitles_rounded', color: Colors.blue),
                 const SizedBox(width: 12),
                 Text(l10n.openSubtitles),
               ],
@@ -1203,7 +1098,7 @@ void showOpenSubtitlesAuthDialog(
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: l10n.username,
-                      prefixIcon: const Icon(Icons.person_outline, size: 20),
+                      prefixIcon: AppIcon('person_outline', size: 20),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1212,11 +1107,11 @@ void showOpenSubtitlesAuthDialog(
                     obscureText: isObscure,
                     decoration: InputDecoration(
                       labelText: l10n.password,
-                      prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                      prefixIcon: AppIcon('lock_outline', size: 20),
                       suffixIcon: ExcludeFocus(
                         child: IconButton(
-                          icon: Icon(
-                            isObscure ? Icons.visibility_off : Icons.visibility,
+                          icon: AppIcon(
+                            isObscure ? 'visibility_off' : 'visibility',
                             size: 20,
                           ),
                           onPressed: () =>
@@ -1233,7 +1128,7 @@ void showOpenSubtitlesAuthDialog(
                       ),
                       mode: LaunchMode.externalApplication,
                     ),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                    icon: AppIcon('open_in_new_rounded', size: 16),
                     label: Text(l10n.noAccountRegister),
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -1244,10 +1139,10 @@ void showOpenSubtitlesAuthDialog(
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(
+                        AppIcon(
                           verifyResult!
-                              ? Icons.check_circle_outline_rounded
-                              : Icons.error_outline_rounded,
+                              ? 'check_circle_outline_rounded'
+                              : 'error_outline_rounded',
                           color: verifyResult! ? Colors.green : Colors.red,
                           size: 16,
                         ),
@@ -1298,10 +1193,7 @@ void showOpenSubtitlesAuthDialog(
                                 maxHeight: 16,
                               ),
                             )
-                          : const Icon(
-                              Icons.check_circle_outline_rounded,
-                              size: 18,
-                            ),
+                          : AppIcon('check_circle_outline_rounded', size: 18,),
                       label: Text(l10n.testConnection),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1383,7 +1275,7 @@ void showSubDlAuthDialog(
             surfaceTintColor: Colors.transparent,
             title: const Row(
               children: [
-                Icon(Icons.vpn_key_rounded, color: Colors.orange),
+                AppIcon('vpn_key_rounded', color: Colors.orange),
                 SizedBox(width: 12),
                 Text('SubDL API Key'),
               ],
@@ -1407,7 +1299,7 @@ void showSubDlAuthDialog(
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: l10n.apiKey,
-                      prefixIcon: const Icon(Icons.key_rounded, size: 20),
+                      prefixIcon: AppIcon('key_rounded', size: 20),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -1437,7 +1329,7 @@ void showSubDlAuthDialog(
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: l10n.email,
-                      prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                      prefixIcon: AppIcon('email_outlined', size: 20),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1446,11 +1338,11 @@ void showSubDlAuthDialog(
                     obscureText: isObscure,
                     decoration: InputDecoration(
                       labelText: l10n.password,
-                      prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                      prefixIcon: AppIcon('lock_outline', size: 20),
                       suffixIcon: ExcludeFocus(
                         child: IconButton(
-                          icon: Icon(
-                            isObscure ? Icons.visibility_off : Icons.visibility,
+                          icon: AppIcon(
+                            isObscure ? 'visibility_off' : 'visibility',
                             size: 20,
                           ),
                           onPressed: () =>
@@ -1498,7 +1390,7 @@ void showSubDlAuthDialog(
                                 maxHeight: 16,
                               ),
                             )
-                          : const Icon(Icons.download_rounded, size: 18),
+                          : AppIcon('download_rounded', size: 18),
                       label: Text(l10n.fetchMyApiKey),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1517,7 +1409,7 @@ void showSubDlAuthDialog(
                       Uri.parse('https://subdl.com/panel/api'),
                       mode: LaunchMode.externalApplication,
                     ),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                    icon: AppIcon('open_in_new_rounded', size: 16),
                     label: Text(l10n.noAccountRegister),
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -1528,10 +1420,10 @@ void showSubDlAuthDialog(
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(
+                        AppIcon(
                           fetchError != null || verifyKeyResult == false
-                              ? Icons.error_outline_rounded
-                              : Icons.check_circle_outline_rounded,
+                              ? 'error_outline_rounded'
+                              : 'check_circle_outline_rounded',
                           color: fetchError != null || verifyKeyResult == false
                               ? Colors.red
                               : Colors.green,
@@ -1588,10 +1480,7 @@ void showSubDlAuthDialog(
                                 maxHeight: 16,
                               ),
                             )
-                          : const Icon(
-                              Icons.check_circle_outline_rounded,
-                              size: 18,
-                            ),
+                          : AppIcon('check_circle_outline_rounded', size: 18,),
                       label: Text(l10n.testConnection),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1668,7 +1557,7 @@ void showSubSourceAuthDialog(
             surfaceTintColor: Colors.transparent,
             title: const Row(
               children: [
-                Icon(Icons.vpn_key_rounded, color: Colors.blue),
+                AppIcon('vpn_key_rounded', color: Colors.blue),
                 SizedBox(width: 12),
                 Text('SubSource API Key'),
               ],
@@ -1691,7 +1580,7 @@ void showSubSourceAuthDialog(
                     autofocus: true,
                     decoration: InputDecoration(
                       labelText: l10n.apiKeyOptionalOverride,
-                      prefixIcon: const Icon(Icons.key_rounded, size: 20),
+                      prefixIcon: AppIcon('key_rounded', size: 20),
                       hintText: l10n.enterKeyToOverrideDefault,
                     ),
                   ),
@@ -1701,7 +1590,7 @@ void showSubSourceAuthDialog(
                       Uri.parse('https://subsource.net/dashboard/profile'),
                       mode: LaunchMode.externalApplication,
                     ),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                    icon: AppIcon('open_in_new_rounded', size: 16),
                     label: Text(l10n.getApiKeyFromProfile),
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -1712,10 +1601,10 @@ void showSubSourceAuthDialog(
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(
+                        AppIcon(
                           verifyResult!
-                              ? Icons.check_circle_outline_rounded
-                              : Icons.error_outline_rounded,
+                              ? 'check_circle_outline_rounded'
+                              : 'error_outline_rounded',
                           color: verifyResult! ? Colors.green : Colors.red,
                           size: 16,
                         ),
@@ -1761,10 +1650,7 @@ void showSubSourceAuthDialog(
                                 maxHeight: 16,
                               ),
                             )
-                          : const Icon(
-                              Icons.check_circle_outline_rounded,
-                              size: 18,
-                            ),
+                          : AppIcon('check_circle_outline_rounded', size: 18,),
                       label: Text(l10n.testConnection),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),

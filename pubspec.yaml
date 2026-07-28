@@ -1,4 +1,4 @@
-name: skystream
+name: mixstream
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 2.6.0+1
+version: 3.4.6+1
 
 environment:
   sdk: ^3.11.4
@@ -100,6 +100,7 @@ dependencies:
   # Platform keychain/keystore for OAuth tokens (Trakt/Simkl/MAL/AniList).
   # Falls back to encrypted Hive on Linux/Windows where libsecret is missing.
   flutter_secure_storage: ^9.2.2
+  flutter_launcher_icons: ^0.14.4
 
 
 dev_dependencies:
@@ -133,6 +134,7 @@ flutter:
   assets:
     - assets/plugins/
     - assets/images/
+    - assets/Icons/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

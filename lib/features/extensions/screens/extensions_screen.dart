@@ -7,7 +7,8 @@ import '../../../shared/widgets/custom_widgets.dart';
 import '../providers/extensions_controller.dart';
 import '../widgets/plugin_settings_dialog.dart';
 import '../../../shared/widgets/loading_indicator.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 class ExtensionsScreen extends ConsumerStatefulWidget {
   const ExtensionsScreen({super.key});
@@ -170,9 +171,7 @@ class _ExtensionsScreenState extends ConsumerState<ExtensionsScreen> {
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: ListTile(
-                        leading: Icon(
-                          Icons.add_circle_outline,
-                          color: Theme.of(context).colorScheme.primary,
+                        leading: AppIcon('add_circle_outline', color: Theme.of(context).colorScheme.primary,
                         ),
                         title: Text(
                           l10n.addRepo,
@@ -223,9 +222,7 @@ class _ExtensionsScreenState extends ConsumerState<ExtensionsScreen> {
         ),
         title: Row(
           children: [
-            Icon(
-              Icons.check_circle_outline,
-              color: Theme.of(context).colorScheme.primary,
+            AppIcon('check_circle_outline', color: Theme.of(context).colorScheme.primary,
               size: 24,
             ),
             const SizedBox(width: LayoutConstants.spacingSm),
@@ -313,9 +310,7 @@ class _ExtensionsScreenState extends ConsumerState<ExtensionsScreen> {
         ),
         title: Row(
           children: [
-            Icon(
-              Icons.extension,
-              color: Theme.of(context).colorScheme.primary,
+            AppIcon('extension', color: Theme.of(context).colorScheme.primary,
               size: 24,
             ),
             const SizedBox(width: LayoutConstants.spacingSm),
@@ -530,10 +525,10 @@ class _ExtensionsScreenState extends ConsumerState<ExtensionsScreen> {
                 else ...[
                   // Download-all / all-installed indicator.
                   TextButton.icon(
-                    icon: Icon(
+                    icon: AppIcon(
                       allInstalled
-                          ? Icons.check_circle_outline
-                          : Icons.download,
+                          ? 'check_circle_outline'
+                          : 'download',
                       color: allInstalled
                           ? Theme.of(context).colorScheme.primary
                           : null,
@@ -568,7 +563,7 @@ class _ExtensionsScreenState extends ConsumerState<ExtensionsScreen> {
                   ),
                   const SizedBox(width: LayoutConstants.spacingSm),
                   TextButton.icon(
-                    icon: const Icon(Icons.delete_outline),
+                    icon: const AppIcon('delete_outline'),
                     style: TextButton.styleFrom(foregroundColor: Colors.red),
                     label: Text(l10n.delete),
                     onPressed: () => _confirmDeleteRepo(context, ref, repo),
@@ -730,9 +725,7 @@ class _PluginTileState extends ConsumerState<_PluginTile> {
             ).colorScheme.tertiary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            Icons.bug_report,
-            color: Theme.of(context).colorScheme.tertiary,
+          child: AppIcon('bug_report', color: Theme.of(context).colorScheme.tertiary,
             size: 20,
           ),
         ),
@@ -794,9 +787,7 @@ class _PluginTileState extends ConsumerState<_PluginTile> {
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(
-          Icons.extension_outlined,
-          color: Theme.of(context).colorScheme.primary,
+        child: AppIcon('extension_outlined', color: Theme.of(context).colorScheme.primary,
           size: 20,
         ),
       ),
@@ -824,7 +815,7 @@ class _PluginTileState extends ConsumerState<_PluginTile> {
                 // Update button
                 if (isInstalled && updateAvailable != null)
                   IconButton(
-                    icon: const Icon(Icons.download, color: Colors.green),
+                    icon: AppIcon('download', color: Colors.green),
                     tooltip: l10n.updateTo(updateAvailable.version.toString()),
                     onPressed: () {
                       ref
@@ -839,7 +830,7 @@ class _PluginTileState extends ConsumerState<_PluginTile> {
                         (installedPlugin.providers?.isNotEmpty ?? false)))
                   IconButton(
                     focusNode: _settingsFocusNode,
-                    icon: const Icon(Icons.settings),
+                    icon: const AppIcon('settings'),
                     tooltip: l10n.settings,
                     onPressed: () {
                       showDialog<void>(
@@ -857,9 +848,7 @@ class _PluginTileState extends ConsumerState<_PluginTile> {
                 // Install / delete button
                 if (isInstalled)
                   IconButton(
-                    icon: Icon(
-                      Icons.delete,
-                      color: Theme.of(context).colorScheme.error,
+                    icon: AppIcon('delete', color: Theme.of(context).colorScheme.error,
                     ),
                     tooltip: l10n.delete,
                     onPressed: () {
@@ -870,7 +859,7 @@ class _PluginTileState extends ConsumerState<_PluginTile> {
                   )
                 else
                   IconButton(
-                    icon: const Icon(Icons.download),
+                    icon: const AppIcon('download'),
                     tooltip: l10n.install,
                     onPressed: () {
                       ref

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/router/app_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+
 import '../../../../core/utils/layout_constants.dart';
 import '../../../../shared/widgets/cards_wrapper.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
@@ -401,34 +400,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
               )
             : _buildSlideForIndex(height, _currentSlide, isDesktop: isDesktop),
 
-        // Progress bar indicators
-        if (widget.movies.length > 1)
-          Positioned(
-            bottom: 20,
-            left: 0,
-            right: 0,
-            child: RepaintBoundary(child: _buildProgressIndicators()),
-          ),
       ],
-    );
-  }
-
-  Widget _buildProgressIndicators() {
-    return ValueListenableBuilder<int>(
-      valueListenable: _currentIndexNotifier,
-      builder: (context, currentIndex, _) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            for (final entry in widget.movies.asMap().entries)
-              _ProgressDot(
-                key: ValueKey('hcd_${entry.key}'),
-                isActive: currentIndex == entry.key,
-                fillController: _fillController,
-              ),
-          ],
-        );
-      },
     );
   }
 
@@ -583,52 +555,48 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
                   end: Alignment.bottomCenter,
                   colors: isDesktop
                       ? [
-                          Colors.black.withValues(alpha: 0.2),
+                          Colors.black.withValues(alpha: 0.25),
                           Colors.transparent,
-                          Colors.black.withValues(alpha: 0.45),
-                          Colors.black.withValues(alpha: 0.75),
+                          Colors.black.withValues(alpha: 0.5),
+                          Colors.black.withValues(alpha: 0.8),
                         ]
                       : [
-                          Colors.black.withValues(alpha: 0.3),
+                          Colors.black.withValues(alpha: 0.35),
                           Colors.transparent,
-                          Colors.black.withValues(alpha: 0.4),
-                          Colors.black.withValues(alpha: 0.8),
+                          Colors.black.withValues(alpha: 0.45),
+                          Colors.black.withValues(alpha: 0.85),
                         ],
                   stops: isDesktop
-                      ? const [0.0, 0.35, 0.75, 1.0]
-                      : const [0.0, 0.4, 0.6, 1.0],
+                      ? const [0.0, 0.3, 0.65, 1.0]
+                      : const [0.0, 0.35, 0.55, 1.0],
                 ),
               ),
             ),
           ),
 
-          // 2.5. Fixed Bottom Feather (eased page transition scrim)
+          // 2.5. Bottom gradient
           Positioned(
-            bottom: -1,
+            bottom: 0,
             left: 0,
             right: 0,
-            height: 120,
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      scaffoldColor.withValues(alpha: 0.0),
-                      scaffoldColor.withValues(alpha: 0.15),
-                      scaffoldColor.withValues(alpha: 0.45),
-                      scaffoldColor.withValues(alpha: 0.8),
-                      scaffoldColor,
-                    ],
-                    stops: const [0.0, 0.5, 0.75, 0.9, 1.0],
-                  ),
+            height: 140,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.6),
+                    Colors.black.withValues(alpha: 0.9),
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
                 ),
               ),
             ),
           ),
 
-          // 3. Content
+          // 3. Title
           Positioned(
             left: 24,
             right: 24,
@@ -636,21 +604,8 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
             child: Transform.translate(
               offset: Offset(0, contentOffset),
               child: opacity >= 0.999
-                  ? _buildCarouselContent(
-                      isDesktop: isDesktop,
-                      movie: movie,
-                      theme: theme,
-                      context: context,
-                    )
-                  : Opacity(
-                      opacity: opacity,
-                      child: _buildCarouselContent(
-                        isDesktop: isDesktop,
-                        movie: movie,
-                        theme: theme,
-                        context: context,
-                      ),
-                    ),
+                  ? _buildTitle(title)
+                  : Opacity(opacity: opacity, child: _buildTitle(title)),
             ),
           ),
         ],
@@ -658,271 +613,21 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
     );
   }
 
-  Widget _buildCarouselContent({
-    required bool isDesktop,
-    required MultimediaItem movie,
-    required ThemeData theme,
-    required BuildContext context,
-  }) {
-    final logoUrl = movie.logoUrl;
-    final title = movie.title;
-    final year = movie.year?.toString() ?? '';
-    final genres = movie.tags?.join(' • ') ?? '';
-    final provider = movie.provider;
-
-    String? type;
-    final mType = movie.mediaType.toLowerCase();
-    if (mType == 'movie') {
-      type = "Movie";
-    } else if (mType == 'series' || mType == 'tv') {
-      type = "TV Show";
-    } else if (mType == 'anime') {
-      type = "Anime";
-    } else if (mType == 'livestream') {
-      type = "Live Stream";
-    } else {
-      type = mType.isNotEmpty
-          ? mType[0].toUpperCase() + mType.substring(1)
-          : null;
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: isDesktop
-          ? CrossAxisAlignment.start
-          : CrossAxisAlignment.center,
-      children: [
-        if (logoUrl != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: LayoutConstants.spacingLg),
-            child: _buildLogo(logoUrl, title, isDesktop: isDesktop),
-          )
-        else
-          _buildTitleFallback(title, isDesktop: isDesktop),
-        Wrap(
-          alignment: isDesktop ? WrapAlignment.start : WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8.0,
-          runSpacing: 4.0,
-          children: [
-            if (provider != null && provider.isNotEmpty) ...[
-              _buildMiniBadge(
-                context,
-                provider.toUpperCase(),
-                isProvider: true,
-              ),
-            ],
-            if (type != null) ...[_buildMiniBadge(context, type.toUpperCase())],
-            if (genres.isNotEmpty) ...[
-              Text(
-                genres,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-            if (year.isNotEmpty) ...[
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.calendar_today_rounded,
-                    size: 10,
-                    color: Colors.white.withValues(alpha: 0.6),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    year,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLogo(String logoUrl, String title, {bool isDesktop = false}) {
-    if (logoUrl.toLowerCase().endsWith('.svg')) {
-      return SvgPicture.network(
-        logoUrl,
-        height: 140,
-        width: 300,
-        fit: BoxFit.contain,
-        placeholderBuilder: (context) =>
-            const SizedBox(height: 140, width: 300),
-        errorBuilder: (context, error, stackTrace) =>
-            _buildTitleFallback(title, isDesktop: isDesktop),
-      );
-    }
-    return CachedNetworkImage(
-      imageUrl: logoUrl,
-      height: 140,
-      width: 300,
-      fit: BoxFit.contain,
-      alignment: Alignment.bottomCenter,
-      placeholder: (context, url) => const SizedBox(height: 140, width: 300),
-      errorWidget: (context, url, error) =>
-          _buildTitleFallback(title, isDesktop: isDesktop),
-    );
-  }
-
-  Widget _buildTitleFallback(String title, {bool isDesktop = false}) {
+  Widget _buildTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: LayoutConstants.spacingXs),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Text(
-        title.toUpperCase(),
-        textAlign: isDesktop ? TextAlign.left : TextAlign.center,
-        maxLines: isDesktop ? 2 : 3,
+        title,
+        textAlign: TextAlign.left,
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 40,
-          fontFamily: 'RobotoCondensed',
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.0,
-          shadows: [Shadow(color: Colors.black, blurRadius: 10)],
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
         ),
       ),
-    );
-  }
-
-  Widget _buildMiniBadge(
-    BuildContext context,
-    String label, {
-    bool isProvider = false,
-  }) {
-    final theme = Theme.of(context);
-    final color = isProvider
-        ? theme.colorScheme.primary
-        : theme.colorScheme.secondary;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.5), width: 0.5),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontSize: 8,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-}
-
-/// A single progress dot whose width animates with spring physics.
-///
-/// When [isActive] toggles the dot springs between inactive (11 px) and active
-/// (35 px) width. The active dot also renders a fill bar driven by
-/// [fillController] that grows from 0 % → 100 % over the auto-advance interval.
-///
-/// Each dot manages its own [AnimationController] for the spring width
-/// transition — only two dots tick per toggle. The fill bar is a separate
-/// [AnimatedBuilder] that exists only on the active dot, so per-frame fill
-/// rebuilds are limited to exactly one dot.
-class _ProgressDot extends StatefulWidget {
-  final bool isActive;
-  final AnimationController fillController;
-
-  const _ProgressDot({
-    super.key,
-    required this.isActive,
-    required this.fillController,
-  });
-
-  @override
-  State<_ProgressDot> createState() => _ProgressDotState();
-}
-
-class _ProgressDotState extends State<_ProgressDot>
-    with SingleTickerProviderStateMixin {
-  static const double _activeWidth = 35.0;
-  static const double _inactiveWidth = 11.0;
-  static const double _height = 4.0;
-
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this);
-    _controller.value = widget.isActive ? 1.0 : 0.0;
-  }
-
-  @override
-  void didUpdateWidget(_ProgressDot old) {
-    super.didUpdateWidget(old);
-    if (widget.isActive != old.isActive) {
-      _animateToTarget();
-    }
-  }
-
-  void _animateToTarget() {
-    _controller.animateWith(
-      SpringSimulation(
-        const SpringDescription(mass: 1, stiffness: 300, damping: 30),
-        _controller.value,
-        widget.isActive ? 1.0 : 0.0,
-        0,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final t = _controller.value;
-        final width = _inactiveWidth + (_activeWidth - _inactiveWidth) * t;
-
-        return Container(
-          width: width,
-          height: _height,
-          margin: const EdgeInsets.symmetric(horizontal: 3.0),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            color: Colors.white.withValues(alpha: widget.isActive ? 0.3 : 0.2),
-          ),
-          child: widget.isActive
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: AnimatedBuilder(
-                    animation: widget.fillController,
-                    builder: (context, _) {
-                      return Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          width: _activeWidth * widget.fillController.value,
-                          height: _height,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      );
-                    },
-                  ),
-                )
-              : null,
-        );
-      },
     );
   }
 }

@@ -27,7 +27,7 @@ Future<_InstallResult> _installPluginIsolate(_InstallArgs args) async {
 
   final jsonFile = archive.findFile('plugin.json');
   if (jsonFile == null) {
-    throw Exception('Invalid .sky: Missing plugin.json (V2 Standard required)');
+    throw Exception('Invalid .mix: Missing plugin.json (V2 Standard required)');
   }
 
   final jsonContent = utf8.decode(jsonFile.content as List<int>);
@@ -130,7 +130,7 @@ class PluginStorageService {
     return dir;
   }
 
-  /// Installs a plugin from a .sky (Zip) file.
+  /// Installs a plugin from a .mix (Zip) file.
   ///
   /// 1. Reads the zip.
   /// 2. Extracts `plugin.json`.
@@ -146,7 +146,7 @@ class PluginStorageService {
     String? explicitRepoId,
   ) async {
     if (kDebugMode) {
-      debugPrint("PluginStorageService: Installing .sky from $filePath");
+      debugPrint("PluginStorageService: Installing .mix from $filePath");
     }
     final file = File(filePath);
     if (!await file.exists()) throw Exception("Plugin file not found");

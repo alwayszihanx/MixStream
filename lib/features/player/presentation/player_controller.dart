@@ -2074,7 +2074,7 @@ class PlayerController extends Notifier<PlayerState> {
     return false;
   }
 
-  SkyStreamProvider? _resolveProvider() {
+  MixStreamProvider? _resolveProvider() {
     final activeState = ref.read(activeProviderProvider);
     final manager = ref.read(extensionManagerProvider.notifier);
 

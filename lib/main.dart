@@ -10,6 +10,7 @@ import 'package:window_manager/window_manager.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'shared/widgets/custom_widgets.dart';
 import 'core/storage/storage_service.dart';
 import 'core/network/doh_service.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -21,7 +22,7 @@ import 'core/widgets/update_dialog.dart';
 import 'core/services/download_service.dart';
 import 'core/services/notification_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
 import 'core/providers/locale_provider.dart';
 import 'core/network/cloudflare_bypass.dart';
 import 'package:dpad/dpad.dart';
@@ -29,6 +30,7 @@ import 'core/config/tmdb_config.dart';
 import 'core/providers/device_info_provider.dart';
 import 'shared/widgets/loading_indicator.dart';
 import 'features/settings/presentation/general_settings_provider.dart';
+import './shared/widgets/app_icon.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -173,8 +175,6 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> with WindowListener {
-  bool _isFullScreen = false;
-
   @override
   void initState() {
     super.initState();
@@ -201,67 +201,26 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener {
 
   @override
   void onWindowEnterFullScreen() {
-    setState(() {
-      _isFullScreen = true;
-    });
+    setState(() {});
   }
 
   @override
   void onWindowLeaveFullScreen() {
-    setState(() {
-      _isFullScreen = false;
-    });
+    setState(() {});
   }
 
   Future<void> _updateFullScreenState() async {
-    final isFull = await windowManager.isFullScreen();
     if (mounted) {
-      setState(() {
-        _isFullScreen = isFull;
-      });
+      setState(() {});
     }
   }
 
   KeyEventResult _handleEarlyKeyEvent(KeyEvent event) {
     final primaryFocus = FocusManager.instance.primaryFocus;
-    if (primaryFocus == null) {
-      return KeyEventResult.ignored;
-    }
-
+    if (primaryFocus == null) return KeyEventResult.ignored;
     final context = primaryFocus.context;
-    if (context == null || !context.mounted) {
-      return KeyEventResult.ignored;
-    }
-
-    final renderObject = context.findRenderObject();
-    if (renderObject == null) {
-      return KeyEventResult.ignored;
-    }
-
-    RenderObject? current = renderObject;
-    bool isLaidOut = true;
-    while (current != null) {
-      if (current is RenderBox && !current.hasSize) {
-        isLaidOut = false;
-        break;
-      }
-      final parent = current.parent;
-      if (parent is RenderObject) {
-        current = parent;
-      } else {
-        break;
-      }
-    }
-
-    if (!isLaidOut) {
-      if (kDebugMode) {
-        debugPrint(
-          '[FocusGuard] Consumed key event ${event.logicalKey.keyLabel} because primary focus context or its ancestor is not laid out.',
-        );
-      }
-      return KeyEventResult.handled;
-    }
-
+    if (context == null || !context.mounted) return KeyEventResult.ignored;
+    if (context.findRenderObject() == null) return KeyEventResult.handled;
     return KeyEventResult.ignored;
   }
 
@@ -368,24 +327,27 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener {
       }
     });
 
+    final themeConfig = ref.read(appThemeConfigProvider.notifier).currentConfig;
+
     return DynamicColorBuilder(
       builder: (lightDynamic, darkDynamic) {
-        ColorScheme? darkScheme;
-        if (darkDynamic != null) {
-          darkScheme = darkDynamic;
-        }
-
         final materialApp = MaterialApp.router(
           scaffoldMessengerKey: ref
               .read(notificationServiceProvider)
               .messengerKey,
-          title: 'SkyStream',
+          title: 'MixStream',
           debugShowCheckedModeBanner: false,
           themeMode: themeMode,
-          theme: lightDynamic != null
-              ? AppTheme.createLightTheme(lightDynamic)
-              : AppTheme.createLightTheme(null),
-          darkTheme: AppTheme.createDarkTheme(darkScheme),
+          theme: AppTheme.createTheme(
+            config: themeConfig,
+            brightness: Brightness.light,
+            dynamicScheme: themeConfig.isDynamic ? lightDynamic : null,
+          ),
+          darkTheme: AppTheme.createTheme(
+            config: themeConfig,
+            brightness: Brightness.dark,
+            dynamicScheme: themeConfig.isDynamic ? darkDynamic : null,
+          ),
           routerConfig: appRouter,
           locale: locale,
           localizationsDelegates: const [
@@ -453,7 +415,7 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener {
           rootWidget = PlatformMenuBar(
             menus: <PlatformMenuItem>[
               PlatformMenu(
-                label: 'SkyStream',
+                label: 'MixStream',
                 menus: <PlatformMenuItem>[
                   if (PlatformProvidedMenuItem.hasMenu(PlatformProvidedMenuItemType.about))
                     const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.about),
@@ -559,8 +521,8 @@ class LaunchErrorApp extends StatelessWidget {
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
+                    const AppIcon(
+                      'error_outline',
                       size: 64,
                       color: Colors.white,
                     ),
@@ -580,35 +542,26 @@ class LaunchErrorApp extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.refresh),
-                      label: Text(l10n?.retry ?? 'Retry'),
+                    CustomButton(
+                      icon: const AppIcon('refresh'),
+                      label: l10n?.retry ?? 'Retry',
                       onPressed: () => AppUtils.restartApp(context),
+                      isPrimary: true,
                     ),
                     const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white),
-                      ),
-                      icon: const Icon(Icons.delete_forever),
-                      label: Text(l10n?.factoryReset ?? 'Factory Reset'),
+                    CustomButton(
+                      icon: const AppIcon('delete_forever'),
+                      label: l10n?.factoryReset ?? 'Factory Reset',
                       onPressed: () async {
                         await storageService.deleteAllData();
                         if (context.mounted) await AppUtils.restartApp(context);
                       },
                     ),
                     const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.orange),
-                      ),
-                      icon: const Icon(Icons.restore),
-                      label: Text(
-                        l10n?.resetDataKeepExtensions ??
-                            'Reset Data (Keep Extensions)',
-                      ),
+                    CustomButton(
+                      icon: const AppIcon('restore'),
+                      label: l10n?.resetDataKeepExtensions ??
+                          'Reset Data (Keep Extensions)',
                       onPressed: () async {
                         await storageService.clearPreferences();
                         if (context.mounted) await AppUtils.restartApp(context);
@@ -780,10 +733,10 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
                             await windowManager.setFullScreen(!_isFullScreen);
                             await _updateStates();
                           },
-                          child: Icon(
+                          child: AppIcon(
                             _isFullScreen
-                                ? Icons.fullscreen_exit_rounded
-                                : Icons.fullscreen_rounded,
+                                ? 'fullscreen_exit_rounded'
+                                : 'fullscreen_rounded',
                             color: iconColor,
                             size: 16,
                           ),
@@ -884,123 +837,81 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
   }
 }
 
-class _PinButton extends StatefulWidget {
+class _PinButton extends StatelessWidget {
   final bool isActive;
   final VoidCallback onPressed;
 
   const _PinButton({required this.isActive, required this.onPressed});
 
   @override
-  State<_PinButton> createState() => _PinButtonState();
-}
-
-class _PinButtonState extends State<_PinButton> {
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final hoverColor = isDark
-        ? Colors.white.withValues(alpha: 0.15)
-        : const Color(
-            0xFFE4D9C8,
-          ); // Darker warm neutral tan hover background (#E4D9C8)
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onPressed,
+    return CustomButton(
+      onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(6),
-        hoverColor: hoverColor,
-        splashColor: hoverColor.withValues(alpha: 0.2),
-        child: SizedBox(
-          width: 32,
-          height: Platform.isMacOS ? 28 : 32,
-          child: Icon(
-            widget.isActive ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-            color: widget.isActive
-                ? theme.colorScheme.primary
-                : (isDark
-                      ? Colors.white.withValues(alpha: 0.5)
-                      : const Color(0xFF5C5C5C).withValues(alpha: 0.6)),
-            size: 16,
-          ),
+      ),
+      child: SizedBox(
+        width: 32,
+        height: Platform.isMacOS ? 28 : 32,
+        child: AppIcon(
+          isActive ? 'push_pin_rounded' : 'push_pin_outlined',
+          color: isActive
+              ? theme.colorScheme.primary
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.5)
+                    : const Color(0xFF5C5C5C).withValues(alpha: 0.6)),
+          size: 16,
         ),
       ),
     );
   }
 }
 
-class _TitleBarButton extends StatefulWidget {
+class _TitleBarButton extends StatelessWidget {
   final Widget child;
   final VoidCallback onPressed;
 
   const _TitleBarButton({required this.child, required this.onPressed});
 
   @override
-  State<_TitleBarButton> createState() => _TitleBarButtonState();
-}
-
-class _TitleBarButtonState extends State<_TitleBarButton> {
-  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hoverColor = isDark
-        ? Colors.white.withValues(alpha: 0.15)
-        : const Color(
-            0xFFE4D9C8,
-          ); // Darker warm neutral tan hover background (#E4D9C8)
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onPressed,
+    return CustomButton(
+      onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(6),
-        hoverColor: hoverColor,
-        splashColor: hoverColor.withValues(alpha: 0.2),
-        child: SizedBox(width: 32, height: 32, child: widget.child),
       ),
+      child: SizedBox(width: 32, height: 32, child: child),
     );
   }
 }
 
-class _CloseButton extends StatefulWidget {
+class _CloseButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const _CloseButton({required this.onPressed});
 
   @override
-  State<_CloseButton> createState() => _CloseButtonState();
-}
-
-class _CloseButtonState extends State<_CloseButton> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Material(
-      color: Colors.transparent,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        child: InkWell(
-          onTap: widget.onPressed,
-          borderRadius: BorderRadius.circular(6),
-          hoverColor: Colors.red.withValues(alpha: 0.8),
-          splashColor: Colors.red,
-          child: SizedBox(
-            width: 32,
-            height: 32,
-            child: Icon(
-              Icons.close_rounded,
-              color: _isHovered
-                  ? Colors.white
-                  : (isDark
-                        ? Colors.white.withValues(alpha: 0.85)
-                        : const Color(0xFF5C5C5C)),
-              size: 16,
-            ),
-          ),
+    return CustomButton(
+      onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: SizedBox(
+        width: 32,
+        height: 32,
+        child: AppIcon(
+          'close_rounded',
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.85)
+              : const Color(0xFF5C5C5C),
+          size: 16,
         ),
       ),
     );

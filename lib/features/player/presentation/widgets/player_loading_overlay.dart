@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../player_controller.dart';
 import '../../../../shared/widgets/custom_widgets.dart';
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class PlayerLoadingOverlay extends StatelessWidget {
   final VoidCallback onDoubleTap;
@@ -93,13 +94,9 @@ class PlayerLoadingOverlay extends StatelessWidget {
                 ),
                 child: CustomButton(
                   onPressed: onBack,
-                  child: const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 34,
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: const AppIcon('arrow_back', color: Colors.white, size: 34),
                   ),
                 ),
               ),
@@ -252,7 +249,7 @@ class _LoadingCard extends StatelessWidget {
                       if (onSkip != null)
                         _ActionButton(
                           label: l10n.skip,
-                          icon: Icons.fast_forward_rounded,
+                          icon: const AppIcon('fast_forward_rounded', size: 18),
                           onPressed: onSkip,
                           primary: true,
                           isTv: isTv,
@@ -262,7 +259,7 @@ class _LoadingCard extends StatelessWidget {
                       if (phase.showGoLive && onGoLive != null)
                         _ActionButton(
                           label: l10n.goLive,
-                          icon: Icons.live_tv,
+                          icon: const AppIcon('live_tv', size: 18),
                           onPressed: onGoLive,
                           primary: false,
                           isTv: isTv,
@@ -273,7 +270,7 @@ class _LoadingCard extends StatelessWidget {
                           onBack != null)
                         _ActionButton(
                           label: l10n.goBack,
-                          icon: Icons.arrow_back_rounded,
+                          icon: const AppIcon('arrow_back_rounded', size: 18),
                           onPressed: onBack,
                           primary: false,
                           isTv: isTv,
@@ -312,7 +309,7 @@ class _PhaseIndicator extends StatelessWidget {
     const size = 42.0;
 
     if (phase.kind == PlaybackUiPhaseKind.error) {
-      return Icon(Icons.error_outline, color: Colors.red.shade300, size: size);
+      return AppIcon('error_outline', color: Colors.red.shade300, size: size);
     }
 
     return const SizedBox(
@@ -328,7 +325,7 @@ class _PhaseIndicator extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   final String label;
-  final IconData icon;
+  final Widget icon;
   final VoidCallback? onPressed;
   final bool primary;
   final bool isTv;
@@ -347,7 +344,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final child = Row(
       mainAxisSize: MainAxisSize.min,
-      children: [Icon(icon, size: 18), const SizedBox(width: 8), Text(label)],
+      children: [icon, const SizedBox(width: 8), Text(label)],
     );
 
     return CustomButton(
@@ -355,10 +352,8 @@ class _ActionButton extends StatelessWidget {
       isPrimary: primary,
       onPressed: onPressed,
       isOutlined: !primary,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: child,
-      ),
+      padding: ButtonDesign.padding,
+      child: child,
     );
   }
 }
@@ -517,29 +512,25 @@ class _SourceAttemptRow extends StatelessWidget {
         );
       case SourceAttemptStatus.failed:
         return (
-          Icon(Icons.close_rounded, size: 16, color: Colors.red.shade300),
+          AppIcon('close_rounded', size: 16, color: Colors.red.shade300),
           Colors.red.shade300,
           l10n.failed,
         );
       case SourceAttemptStatus.selected:
         return (
-          const Icon(Icons.radio_button_checked, size: 16, color: Colors.white),
+          AppIcon('radio_button_checked', size: 16, color: Colors.white),
           Colors.white,
           l10n.selected,
         );
       case SourceAttemptStatus.playing:
         return (
-          Icon(Icons.check_circle, size: 16, color: Colors.green.shade300),
+          AppIcon('check_circle', size: 16, color: Colors.green.shade300),
           Colors.green.shade300,
           l10n.playing,
         );
       case SourceAttemptStatus.pending:
         return (
-          const Icon(
-            Icons.radio_button_unchecked,
-            size: 16,
-            color: Colors.white54,
-          ),
+          AppIcon('radio_button_unchecked', size: 16, color: Colors.white54),
           Colors.white70,
           l10n.pending,
         );

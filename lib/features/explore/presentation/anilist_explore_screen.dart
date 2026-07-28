@@ -8,6 +8,7 @@ import '../../../../core/utils/responsive_breakpoints.dart';
 import '../../../../shared/widgets/shimmer_placeholder.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
 import 'view_all_screen.dart';
+import '../../../shared/widgets/app_icon.dart';
 
 class AnilistExploreScreen extends ConsumerStatefulWidget {
   final ScrollController scrollController;
@@ -71,9 +72,7 @@ class _AnilistExploreScreenState extends ConsumerState<AnilistExploreScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.error_outline_rounded,
-                        size: 48,
+                      AppIcon('error_outline_rounded', size: 48,
                         color: Theme.of(context).colorScheme.error,
                       ),
                       const SizedBox(height: 16),
@@ -88,7 +87,7 @@ class _AnilistExploreScreenState extends ConsumerState<AnilistExploreScreen> {
                       TextButton.icon(
                         onPressed: () =>
                             ref.invalidate(anilistHeroAnimeProvider),
-                        icon: const Icon(Icons.refresh),
+                        icon: const AppIcon('refresh'),
                         label: const Text("Retry"),
                       ),
                     ],

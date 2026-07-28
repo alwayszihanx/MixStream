@@ -19,7 +19,7 @@ jobs:
   sync-source:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout SkyStream
+      - name: Checkout MixStream
         uses: actions/checkout@v5
         with:
           ref: ${{ github.head_ref || github.ref_name }}

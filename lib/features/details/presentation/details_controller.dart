@@ -176,7 +176,7 @@ class DetailsController extends _$DetailsController {
         return;
       }
 
-      SkyStreamProvider? provider;
+      MixStreamProvider? provider;
       if (item.provider != null) {
         try {
           provider = manager.getAllProviders().firstWhere(

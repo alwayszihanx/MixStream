@@ -1,15 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:skystream/core/domain/entity/multimedia_item.dart';
-import 'package:skystream/core/services/download_service.dart';
-import 'package:skystream/shared/widgets/custom_widgets.dart';
+import 'package:mixstream/core/domain/entity/multimedia_item.dart';
+import 'package:mixstream/core/services/download_service.dart';
+import 'package:mixstream/shared/widgets/custom_widgets.dart';
 import 'package:collection/collection.dart';
 import '../../../library/presentation/downloads_provider.dart';
 import '../playback_launcher.dart';
 import '../details_controller.dart';
 import '../downloaded_file_provider.dart';
-import 'package:skystream/l10n/generated/app_localizations.dart';
+import 'package:mixstream/l10n/generated/app_localizations.dart';
+import '../../../../shared/widgets/app_icon.dart';
 
 class DownloadManagementDialog extends HookConsumerWidget {
   final MultimediaItem item;
@@ -74,8 +75,8 @@ class DownloadManagementDialog extends HookConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.delete_outline_rounded,
+                const AppIcon(
+                  'delete_outline_rounded',
                   color: Colors.red,
                   size: 20,
                 ),
@@ -96,7 +97,7 @@ class DownloadManagementDialog extends HookConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.play_arrow_rounded, size: 20),
+                AppIcon('play_arrow_rounded', size: 20),
                 const SizedBox(width: 8),
                 Text(l10n.playNow),
               ],
