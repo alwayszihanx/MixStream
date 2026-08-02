@@ -1,0 +1,16 @@
+{
+  "packageName": "dev.akash.stars.template",
+  "name": "template",
+  "version": 1,
+  "baseUrl": "https://example.com",
+  "description": "template plugin for mixstream-plugins",
+  "authors": [
+    "Developer"
+  ],
+  "languages": [
+    "en"
+  ],
+  "categories": [
+    "Others"
+  ]
+}
