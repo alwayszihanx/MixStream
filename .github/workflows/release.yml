@@ -360,26 +360,15 @@ jobs:
           codesign --force --deep --sign - "$APP_PATH"
 
       # CRITICAL: Use -y flag to preserve symlinks! (macOS frameworks)
-      - name: Generate DMG, PKG and Zip
+      - name: Generate DMG
         run: |
           VERSION="${{ needs.version.outputs.version }}"
           cd build/macos/Build/Products/Release
 
-          # .app application bundle (zipped, symlinks preserved)
-          zip -ry "../../../../../MixStream-macOS-${{ matrix.arch }}-${VERSION}.app.zip" MixStream.app
-
-          # Create DMG
           mkdir -p dmg_temp
           cp -R MixStream.app dmg_temp/
           ln -s /Applications dmg_temp/Applications
           hdiutil create -volname "MixStream" -srcfolder dmg_temp -ov -format UDZO "../../../../../MixStream-macOS-${{ matrix.arch }}-${VERSION}.dmg"
-
-          # Create PKG
-          pkgbuild --component MixStream.app \
-            --install-location /Applications \
-            --identifier io.alwayszihan.mixstream \
-            --version "$VERSION" \
-            "../../../../../MixStream-macOS-${{ matrix.arch }}-${VERSION}.pkg"
 
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
@@ -491,63 +480,6 @@ jobs:
             Move-Item $_.FullName "MixStream-Windows-${{ matrix.arch }}-Setup-${Version}.exe" -Force
           }
 
-      # ---- .msi installer (WiX Toolset) ----
-      - name: Install WiX Toolset
-        shell: pwsh
-        run: choco install wixtoolset -y --no-progress
-
-      - name: Build MSI
-        shell: pwsh
-        run: |
-          $Version = "${{ needs.version.outputs.version }}".TrimStart('v')
-          $ReleaseDir = "build\windows\${{ matrix.arch }}\runner\Release"
-          $WiXBin = Get-ChildItem "C:\Program Files (x86)\WiX Toolset*\bin" | Select-Object -First 1
-          $env:Path += ";$($WiXBin.FullName)"
-
-          heat dir "$ReleaseDir" -gg -srd -cg MixStreamComponents -dr INSTALLDIR -var var.ReleaseDir -out build\files.wxs
-          candle -dAppVersion=$Version -dReleaseDir=$ReleaseDir -ext WixUIExtension windows\packaging\msi\mixstream.wxs build\files.wxs -out build\mixstream.wixobj
-          light -b "$ReleaseDir" -ext WixUIExtension build\mixstream.wixobj -o "MixStream-Windows-${{ matrix.arch }}-${Version}.msi"
-
-      # ---- .msix package (fastforge) ----
-      - name: Install MSIX Packaging SDK
-        shell: pwsh
-        run: choco install msix-packaging-sdk -y --no-progress --ignore-checksums
-
-      - name: Build MSIX
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          $Version = "${{ needs.version.outputs.version }}".TrimStart('v')
-          $env:Path += ";$env:USERPROFILE\.pub-cache\bin"
-          dart pub global activate fastforge
-
-          # Generate a self-signed certificate for the MSIX
-          $CertPass = [Convert]::ToBase64String((1..24 | ForEach-Object { Get-Random -Maximum 256 })) -replace '[^a-zA-Z0-9]', ''
-          $Cert = New-SelfSignedCertificate -Type Custom -Subject "CN=MixStream" -KeyUsage DigitalSignature -KeyExportPolicy Exportable -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(3)
-          $PfxPath = Join-Path $env:RUNNER_TEMP "mixstream-msix.pfx"
-          Export-PfxCertificate -Cert $Cert -FilePath $PfxPath -Password (ConvertTo-SecureString $CertPass -AsPlainText -Force) | Out-Null
-
-          $Config = @(
-            'display_name: MixStream'
-            "msix_version: $Version.0"
-            'architecture: ${{ matrix.arch }}'
-            "certificate_path: $($PfxPath -replace '\\', '\\')"
-            "certificate_password: $CertPass"
-            'logo_path: ..\..\..\..\icon.png'
-          )
-          New-Item -ItemType Directory -Path windows\packaging\msix -Force | Out-Null
-          Set-Content -Path windows\packaging\msix\make_config.yaml -Value $Config -Encoding utf8
-
-          fastforge package --platform windows --targets msix --flutter-build-args=dart-define-from-file=dart-defines.json
-          Get-ChildItem dist -Recurse -Filter *.msix | Move-Item -Destination "MixStream-Windows-${{ matrix.arch }}-${Version}.msix" -Force
-
-      # ---- .zip archive ----
-      - name: Compress Release (ZIP)
-        shell: pwsh
-        run: |
-          $Version = "${{ needs.version.outputs.version }}"
-          Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "MixStream-Windows-${{ matrix.arch }}-${Version}.zip"
-
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
         with:
@@ -588,7 +520,7 @@ jobs:
       - name: Install Linux Dependencies
         run: |
           sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::ForceIPv4=true update
-          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::ForceIPv4=true install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev libasound2-dev libsecret-1-dev xz-utils makeself rpm
+          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::ForceIPv4=true install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev libasound2-dev libsecret-1-dev xz-utils rpm
 
       - name: Install Flutter Dependencies
         run: |
@@ -623,11 +555,11 @@ jobs:
       - name: Build Linux Bundle
         run: flutter build linux --release --dart-define-from-file=dart-defines.json
 
-      - name: Build .deb / .rpm / .AppImage (fastforge)
+      - name: Build .deb / .rpm (fastforge)
         run: |
           export PATH="$PATH:$HOME/.pub-cache/bin"
           dart pub global activate fastforge
-          fastforge package --platform linux --targets deb,rpm,appimage --flutter-build-args=dart-define-from-file=dart-defines.json
+          fastforge package --platform linux --targets deb,rpm --flutter-build-args=dart-define-from-file=dart-defines.json
 
       - name: Rename fastforge Packages to MixStream-*
         run: |
@@ -638,29 +570,13 @@ jobs:
           for f in dist/*/*.rpm; do
             [ -f "$f" ] && mv "$f" "MixStream-Linux-${{ matrix.arch }}-${VERSION}.rpm"
           done
-          for f in dist/*/*.AppImage; do
-            [ -f "$f" ] && mv "$f" "MixStream-Linux-${{ matrix.arch }}-${VERSION}.AppImage"
-          done
 
-      # ---- .tar.gz / .tar.xz / .run from the raw bundle ----
-      - name: Build tar.gz / tar.xz / .run
+      # ---- .tar.xz from the raw bundle ----
+      - name: Build tar.xz
         run: |
           VERSION="${{ needs.version.outputs.version }}"
           cd build/linux/${{ matrix.arch }}/release/bundle
-          tar -czvf "../../../../../MixStream-Linux-${{ matrix.arch }}-${VERSION}.tar.gz" .
           tar -cJvf "../../../../../MixStream-Linux-${{ matrix.arch }}-${VERSION}.tar.xz" .
-          makeself --nocomp --notemp . "../../../../../MixStream-Linux-${{ matrix.arch }}-${VERSION}.run" "MixStream Installer" ./mixstream
-
-      # ---- .snap (best-effort: snapcraft needs LXD, often unavailable on CI) ----
-      - name: Build Snap (best-effort)
-        continue-on-error: true
-        run: |
-          VERSION="${{ needs.version.outputs.version }}"
-          sudo apt-get -y install snapd || true
-          sudo snap install snapcraft --classic || sudo snap install core22 || true
-          export PATH="$PATH:/snap/bin"
-          cd build/linux/${{ matrix.arch }}/release/bundle
-          snapcraft pack || echo "WARN: snap build failed, skipping"
 
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
