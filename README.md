@@ -101,6 +101,19 @@ Download the latest APK from the **[Releases page](https://github.com/alwaysziha
 
 ### 🐧 Linux
 
+**⚡ One-command install (app + all MixPlug plugins):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/alwayszihanx/MixStream/main/installer.sh | sudo bash
+```
+
+This installs MixStream **and** automatically installs all plugins from the MixPlug repository, so extensions are ready on first launch.
+
+**🗑️ One-command uninstall:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/alwayszihanx/MixStream/main/uninstaller.sh | sudo bash
+```
 
 The installer automatically uses the local bundle if available, or downloads it from GitHub Releases.
 

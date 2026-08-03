@@ -45,8 +45,8 @@ jobs:
         run: |
           VERSION=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1)
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
-      
-      - name: Create Dummy Assets Dir
+
+      - name: Create Dummy Assets Dir (no bundled plugins)
         run: mkdir -p assets/plugins/
 
   create_release:
@@ -64,6 +64,30 @@ jobs:
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  shortcode:
+    name: Installer Scripts
+    needs: [version, create_release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Prepare Installer Scripts
+        run: |
+          chmod +x installer.sh uninstaller.sh
+      - name: Upload Installer Scripts
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ needs.version.outputs.version }}
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: |
+            installer.sh
+            uninstaller.sh
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   android:
     name: Android Build
     needs: [version, create_release]
@@ -79,7 +103,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      
+
       - name: Install Dependencies
         run: |
           flutter pub get
@@ -90,15 +114,29 @@ jobs:
       # These are only needed for macOS, Windows, and Linux
       - name: Strip Desktop Binaries
         run: rm -f packages/flutter_torrent_server/assets/torrserver/TorrServer-*
-        
-      - name: Decode Keystore
-        if: env.ANDROID_KEYSTORE_BASE64 != ''
+
+      # Generate our own keystore if no ANDROID_KEYSTORE_BASE64 secret is set.
+      # The keystore is created fresh per build with a random password.
+      - name: Generate Own Keystore
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.jks
-          echo "storePassword=$ANDROID_STORE_PASSWORD" > android/key.properties
-          echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
-          echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
-          echo "storeFile=release.jks" >> android/key.properties
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            KS_PASS="$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 24)"
+            keytool -genkeypair -v \
+              -keystore android/app/release.jks \
+              -alias mixstream -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KS_PASS" -keypass "$KS_PASS" \
+              -dname "CN=MixStream, OU=MixStream, O=MixStream, L=Internet, S=Internet, C=US"
+            echo "storePassword=$KS_PASS" > android/key.properties
+            echo "keyPassword=$KS_PASS" >> android/key.properties
+            echo "keyAlias=mixstream" >> android/key.properties
+            echo "storeFile=release.jks" >> android/key.properties
+          else
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.jks
+            echo "storePassword=$ANDROID_STORE_PASSWORD" > android/key.properties
+            echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
+            echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
+            echo "storeFile=release.jks" >> android/key.properties
+          fi
 
       - name: Generate dart-defines file
         shell: bash
@@ -117,37 +155,35 @@ jobs:
           }
           JSON_EOF
 
-      - name: Build Split APKs
+      - name: Build Split APKs (armeabi-v7a, arm64-v8a, x86_64)
         run: flutter build apk --release --split-per-abi --dart-define-from-file=dart-defines.json
+
+      # x86 (32-bit) was removed from recent Flutter versions.
+      # Attempt it anyway; skip gracefully if the toolchain doesn't support it.
+      - name: Build x86 APK (best-effort)
+        run: |
+          flutter build apk --release --target-platform android-x86 --dart-define-from-file=dart-defines.json || echo "WARN: x86 not supported by this Flutter version, skipping"
 
       - name: Build Universal APK
         run: flutter build apk --release --dart-define-from-file=dart-defines.json
 
-      - name: Build Debug APK
-        run: flutter build apk --debug --dart-define-from-file=dart-defines.json
-
-      - name: Rename APKs
+      - name: Rename APKs (MixStream-*)
         run: |
           VERSION="${{ needs.version.outputs.version }}"
           cd build/app/outputs/flutter-apk/
-          
+
           # Universal Release
           if [ -f "app-release.apk" ]; then
-            mv "app-release.apk" "../../../../mixstream-android-universal-${VERSION}.apk"
+            mv "app-release.apk" "../../../../MixStream-Android-universal-${VERSION}.apk"
           fi
-          
-          # Universal Debug
-          if [ -f "app-debug.apk" ]; then
-            mv "app-debug.apk" "../../../../mixstream-android-debug-${VERSION}.apk"
-          fi
-          
+
           # Splits
           for f in app-*-release.apk; do
             if [ -f "$f" ]; then
               # Extract ABI: app-<abi>-release.apk -> <abi>
               abi="${f#app-}"
               abi="${abi%-release.apk}"
-              mv "$f" "../../../../mixstream-android-${abi}-${VERSION}.apk"
+              mv "$f" "../../../../MixStream-Android-${abi}-${VERSION}.apk"
             fi
           done
 
@@ -157,7 +193,7 @@ jobs:
           tag: ${{ needs.version.outputs.version }}
           allowUpdates: true
           replacesArtifacts: true
-          artifacts: "*.apk"
+          artifacts: "MixStream-Android-*"
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -176,7 +212,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          
+
       - name: Install Dependencies
         run: |
           flutter pub get
@@ -202,30 +238,43 @@ jobs:
 
       - name: Build iOS (No Codesign)
         run: |
+          VERSION="${{ needs.version.outputs.version }}"
           flutter build ios --release --no-codesign --dart-define-from-file=dart-defines.json
           mkdir -p Payload
           mv build/ios/iphoneos/Runner.app Payload/
-          zip -r mixstream-ios-unsigned-${{ needs.version.outputs.version }}.ipa Payload
-          
+          zip -r "MixStream-iOS-${VERSION}.ipa" Payload
+
+      - name: Build Xcode Archive (No Codesign)
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/Runner.xcarchive \
+            -destination generic/platform=iOS \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+          zip -ry "MixStream-iOS-${VERSION}.xcarchive.zip" build/Runner.xcarchive
+
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ needs.version.outputs.version }}
           allowUpdates: true
           replacesArtifacts: true
-          artifacts: "mixstream-ios-unsigned-${{ needs.version.outputs.version }}.ipa"
+          artifacts: |
+            MixStream-iOS-*
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
   macos:
-    name: macOS Build
+    name: macOS Build (${{ matrix.arch }})
     needs: [version, create_release]
     if: ${{ github.event.inputs.build_macos == 'true' }}
     runs-on: macos-latest
     strategy:
       matrix:
-        arch: [arm64, x64]
         include:
           - arch: arm64
             torrserver_binary: TorrServer-darwin-arm64
@@ -233,6 +282,9 @@ jobs:
           - arch: x64
             torrserver_binary: TorrServer-darwin-amd64
             xcode_arch: x86_64
+          - arch: universal
+            torrserver_binary: TorrServer-darwin-amd64
+            xcode_arch: "arm64 x86_64"
     steps:
       - uses: actions/checkout@v5
       - name: Select Latest Xcode
@@ -242,7 +294,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          
+
       - name: Install Dependencies
         run: |
           flutter config --enable-macos-desktop
@@ -254,11 +306,13 @@ jobs:
       - name: Strip Unused Binaries
         run: |
           cd packages/flutter_torrent_server/assets/torrserver
-          ls -la
-          # Keep only the binary for this architecture
-          find . -type f ! -name "${{ matrix.torrserver_binary }}" -delete
-          ls -la
-          
+          # For universal builds keep the arm64 binary (works via Rosetta fallback)
+          KEEP="${{ matrix.torrserver_binary }}"
+          if [ "${{ matrix.arch }}" = "universal" ]; then
+            KEEP="TorrServer-darwin-arm64"
+          fi
+          find . -type f ! -name "$KEEP" -delete
+
       - name: Generate dart-defines file
         shell: bash
         run: |
@@ -276,13 +330,9 @@ jobs:
           }
           JSON_EOF
 
-      # Build for a single architecture to reduce app size from ~430MB (universal) to ~270MB
       - name: Build macOS (${{ matrix.arch }})
         run: |
-          # First, generate the Xcode project with flutter
           flutter build macos --release --config-only --dart-define-from-file=dart-defines.json
-          
-          # Build using xcodebuild with single architecture
           cd macos
           xcodebuild -workspace Runner.xcworkspace \
             -configuration Release \
@@ -292,50 +342,44 @@ jobs:
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             build
-      
+
       # Re-sign all frameworks to fix media_kit MPV crash (Issue #830)
-      # The frameworks built in CI have code signing issues that cause
-      # assertion failures in mpv_render_context_create
       - name: Re-sign Frameworks
         run: |
-          APP_PATH="build/macos/Build/Products/Release/mixstream.app"
+          APP_PATH="build/macos/Build/Products/Release/MixStream.app"
           FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
-          
-          echo "Re-signing frameworks..."
+
           find "$FRAMEWORKS_PATH" -name "*.framework" -type d | while read framework; do
-            echo "Signing: $framework"
             codesign --force --deep --sign - "$framework"
           done
-          
-          # Also sign any dylibs
+
           find "$FRAMEWORKS_PATH" -name "*.dylib" -type f | while read dylib; do
-            echo "Signing: $dylib"
             codesign --force --sign - "$dylib"
           done
-          
-          # Sign the main app
-          echo "Signing app..."
+
           codesign --force --deep --sign - "$APP_PATH"
-          
-          echo "Done re-signing."
-        
-      # CRITICAL: Use -y flag to preserve symlinks!
-      # macOS frameworks contain symlinks (e.g., Mpv.framework/Mpv -> Versions/A/Mpv)
-      # Without -y, zip stores the file content instead of the symlink,
-      # causing MPV's internal config to fail with assertion errors.
-      - name: Generate DMG and Zip
+
+      # CRITICAL: Use -y flag to preserve symlinks! (macOS frameworks)
+      - name: Generate DMG, PKG and Zip
         run: |
           VERSION="${{ needs.version.outputs.version }}"
           cd build/macos/Build/Products/Release
-          
+
+          # .app application bundle (zipped, symlinks preserved)
+          zip -ry "../../../../../MixStream-macOS-${{ matrix.arch }}-${VERSION}.app.zip" MixStream.app
+
           # Create DMG
           mkdir -p dmg_temp
-          cp -R mixstream.app dmg_temp/
+          cp -R MixStream.app dmg_temp/
           ln -s /Applications dmg_temp/Applications
-          hdiutil create -volname "MixStream" -srcfolder dmg_temp -ov -format UDZO "../../../../../mixstream-macos-${{ matrix.arch }}-${VERSION}.dmg"
-          
-          # Fallback ZIP
-          zip -ry "../../../../../mixstream-macos-${{ matrix.arch }}-${VERSION}.zip" mixstream.app
+          hdiutil create -volname "MixStream" -srcfolder dmg_temp -ov -format UDZO "../../../../../MixStream-macOS-${{ matrix.arch }}-${VERSION}.dmg"
+
+          # Create PKG
+          pkgbuild --component MixStream.app \
+            --install-location /Applications \
+            --identifier io.alwayszihan.mixstream \
+            --version "$VERSION" \
+            "../../../../../MixStream-macOS-${{ matrix.arch }}-${VERSION}.pkg"
 
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
@@ -344,8 +388,7 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
           artifacts: |
-            mixstream-macos-${{ matrix.arch }}-${{ needs.version.outputs.version }}.dmg
-            mixstream-macos-${{ matrix.arch }}-${{ needs.version.outputs.version }}.zip
+            MixStream-macOS-${{ matrix.arch }}-*
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -363,7 +406,7 @@ jobs:
             torrserver_binary: TorrServer-windows-amd64.exe
     steps:
       - uses: actions/checkout@v5
-      
+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -428,6 +471,7 @@ jobs:
       - name: Build Windows
         run: flutter build windows --release --dart-define-from-file=dart-defines.json
 
+      # ---- .exe installer (Inno Setup) ----
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup -y --no-progress
@@ -439,11 +483,70 @@ jobs:
           $AppDir = "..\..\..\build\windows\${{ matrix.arch }}\runner\Release"
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=$Version /DAppArch=${{ matrix.arch }} /DAppDir=$AppDir windows\packaging\exe\setup.iss
 
+      - name: Rename EXE to MixStream-*
+        shell: pwsh
+        run: |
+          $Version = "${{ needs.version.outputs.version }}"
+          Get-ChildItem windows\packaging\exe\Output\*.exe | ForEach-Object {
+            Move-Item $_.FullName "MixStream-Windows-${{ matrix.arch }}-Setup-${Version}.exe" -Force
+          }
+
+      # ---- .msi installer (WiX Toolset) ----
+      - name: Install WiX Toolset
+        shell: pwsh
+        run: choco install wixtoolset -y --no-progress
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          $Version = "${{ needs.version.outputs.version }}".TrimStart('v')
+          $ReleaseDir = "build\windows\${{ matrix.arch }}\runner\Release"
+          $WiXBin = Get-ChildItem "C:\Program Files (x86)\WiX Toolset*\bin" | Select-Object -First 1
+          $env:Path += ";$($WiXBin.FullName)"
+
+          heat dir "$ReleaseDir" -gg -srd -cg MixStreamComponents -dr INSTALLDIR -var var.ReleaseDir -out build\files.wxs
+          candle -dAppVersion=$Version -dReleaseDir=$ReleaseDir -ext WixUIExtension windows\packaging\msi\mixstream.wxs build\files.wxs -out build\mixstream.wixobj
+          light -b "$ReleaseDir" -ext WixUIExtension build\mixstream.wixobj -o "MixStream-Windows-${{ matrix.arch }}-${Version}.msi"
+
+      # ---- .msix package (fastforge) ----
+      - name: Install MSIX Packaging SDK
+        shell: pwsh
+        run: choco install msix-packaging-sdk -y --no-progress --ignore-checksums
+
+      - name: Build MSIX
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $Version = "${{ needs.version.outputs.version }}".TrimStart('v')
+          $env:Path += ";$env:USERPROFILE\.pub-cache\bin"
+          dart pub global activate fastforge
+
+          # Generate a self-signed certificate for the MSIX
+          $CertPass = [Convert]::ToBase64String((1..24 | ForEach-Object { Get-Random -Maximum 256 })) -replace '[^a-zA-Z0-9]', ''
+          $Cert = New-SelfSignedCertificate -Type Custom -Subject "CN=MixStream" -KeyUsage DigitalSignature -KeyExportPolicy Exportable -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(3)
+          $PfxPath = Join-Path $env:RUNNER_TEMP "mixstream-msix.pfx"
+          Export-PfxCertificate -Cert $Cert -FilePath $PfxPath -Password (ConvertTo-SecureString $CertPass -AsPlainText -Force) | Out-Null
+
+          $Config = @(
+            'display_name: MixStream'
+            "msix_version: $Version.0"
+            'architecture: ${{ matrix.arch }}'
+            "certificate_path: $($PfxPath -replace '\\', '\\')"
+            "certificate_password: $CertPass"
+            'logo_path: ..\..\..\..\icon.png'
+          )
+          New-Item -ItemType Directory -Path windows\packaging\msix -Force | Out-Null
+          Set-Content -Path windows\packaging\msix\make_config.yaml -Value $Config -Encoding utf8
+
+          fastforge package --platform windows --targets msix --flutter-build-args=dart-define-from-file=dart-defines.json
+          Get-ChildItem dist -Recurse -Filter *.msix | Move-Item -Destination "MixStream-Windows-${{ matrix.arch }}-${Version}.msix" -Force
+
+      # ---- .zip archive ----
       - name: Compress Release (ZIP)
         shell: pwsh
         run: |
           $Version = "${{ needs.version.outputs.version }}"
-          Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "mixstream-windows-${{ matrix.arch }}-$Version.zip"
+          Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "MixStream-Windows-${{ matrix.arch }}-${Version}.zip"
 
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
@@ -452,14 +555,13 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
           artifacts: |
-            windows/packaging/exe/Output/*.exe
-            mixstream-windows-${{ matrix.arch }}-${{ needs.version.outputs.version }}.zip
+            MixStream-Windows-${{ matrix.arch }}-*
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
   linux:
-    name: Linux Build
+    name: Linux Build (${{ matrix.arch }})
     needs: [version, create_release]
     if: ${{ github.event.inputs.build_linux == 'true' }}
     runs-on: ${{ matrix.os }}
@@ -486,8 +588,8 @@ jobs:
       - name: Install Linux Dependencies
         run: |
           sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::ForceIPv4=true update
-          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::ForceIPv4=true install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev libasound2-dev libsecret-1-dev
-          
+          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::ForceIPv4=true install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev libasound2-dev libsecret-1-dev xz-utils makeself rpm
+
       - name: Install Flutter Dependencies
         run: |
           flutter config --enable-linux-desktop
@@ -499,10 +601,8 @@ jobs:
       - name: Strip Unused Binaries
         run: |
           cd packages/flutter_torrent_server/assets/torrserver
-          ls -la
           find . -type f ! -name "${{ matrix.torrserver_binary }}" -delete
-          ls -la
-          
+
       - name: Generate dart-defines file
         shell: bash
         run: |
@@ -520,22 +620,47 @@ jobs:
           }
           JSON_EOF
 
-      - name: Build Linux Packages
+      - name: Build Linux Bundle
+        run: flutter build linux --release --dart-define-from-file=dart-defines.json
+
+      - name: Build .deb / .rpm / .AppImage (fastforge)
         run: |
-          VERSION="${{ needs.version.outputs.version }}"
           export PATH="$PATH:$HOME/.pub-cache/bin"
           dart pub global activate fastforge
+          fastforge package --platform linux --targets deb,rpm,appimage --flutter-build-args=dart-define-from-file=dart-defines.json
 
-          # Build .deb (AppImage is currently disabled due to tool-level file collision bugs)
-          fastforge package --platform linux --targets deb --flutter-build-args=dart-define-from-file=dart-defines.json
+      - name: Rename fastforge Packages to MixStream-*
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          for f in dist/*/*.deb; do
+            [ -f "$f" ] && mv "$f" "MixStream-Linux-${{ matrix.arch }}-${VERSION}.deb"
+          done
+          for f in dist/*/*.rpm; do
+            [ -f "$f" ] && mv "$f" "MixStream-Linux-${{ matrix.arch }}-${VERSION}.rpm"
+          done
+          for f in dist/*/*.AppImage; do
+            [ -f "$f" ] && mv "$f" "MixStream-Linux-${{ matrix.arch }}-${VERSION}.AppImage"
+          done
 
-          # Rename .deb file to match tar.gz convention
-          mv dist/*/*.deb "mixstream-linux-${{ matrix.arch }}-${VERSION}.deb"
-
-          # Generate the standard .tar.gz bundle as well
-          flutter build linux --release --dart-define-from-file=dart-defines.json
+      # ---- .tar.gz / .tar.xz / .run from the raw bundle ----
+      - name: Build tar.gz / tar.xz / .run
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
           cd build/linux/${{ matrix.arch }}/release/bundle
-          tar -czvf "../../../../../mixstream-linux-${{ matrix.arch }}-${VERSION}.tar.gz" .
+          tar -czvf "../../../../../MixStream-Linux-${{ matrix.arch }}-${VERSION}.tar.gz" .
+          tar -cJvf "../../../../../MixStream-Linux-${{ matrix.arch }}-${VERSION}.tar.xz" .
+          makeself --nocomp --notemp . "../../../../../MixStream-Linux-${{ matrix.arch }}-${VERSION}.run" "MixStream Installer" ./mixstream
+
+      # ---- .snap (best-effort: snapcraft needs LXD, often unavailable on CI) ----
+      - name: Build Snap (best-effort)
+        continue-on-error: true
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          sudo apt-get -y install snapd || true
+          sudo snap install snapcraft --classic || sudo snap install core22 || true
+          export PATH="$PATH:/snap/bin"
+          cd build/linux/${{ matrix.arch }}/release/bundle
+          snapcraft pack || echo "WARN: snap build failed, skipping"
 
       - name: Upload Release Assets
         uses: ncipollo/release-action@v1
@@ -544,8 +669,7 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
           artifacts: |
-            mixstream-linux-${{ matrix.arch }}-${{ needs.version.outputs.version }}.tar.gz
-            mixstream-linux-${{ matrix.arch }}-${{ needs.version.outputs.version }}.deb
+            MixStream-Linux-${{ matrix.arch }}-*
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           token: ${{ secrets.GITHUB_TOKEN }}

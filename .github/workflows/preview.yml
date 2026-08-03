@@ -61,15 +61,28 @@ jobs:
       # Remove desktop TorrServer binaries to reduce APK size
       - name: Strip Desktop Binaries
         run: rm -f packages/flutter_torrent_server/assets/torrserver/TorrServer-*
-        
-      - name: Decode Keystore
-        if: env.ANDROID_KEYSTORE_BASE64 != ''
+
+      # Generate our own keystore if no ANDROID_KEYSTORE_BASE64 secret is set.
+      - name: Generate Own Keystore
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.jks
-          echo "storePassword=$ANDROID_STORE_PASSWORD" > android/key.properties
-          echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
-          echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
-          echo "storeFile=release.jks" >> android/key.properties
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            KS_PASS="$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 24)"
+            keytool -genkeypair -v \
+              -keystore android/app/release.jks \
+              -alias mixstream -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KS_PASS" -keypass "$KS_PASS" \
+              -dname "CN=MixStream, OU=MixStream, O=MixStream, L=Internet, S=Internet, C=US"
+            echo "storePassword=$KS_PASS" > android/key.properties
+            echo "keyPassword=$KS_PASS" >> android/key.properties
+            echo "keyAlias=mixstream" >> android/key.properties
+            echo "storeFile=release.jks" >> android/key.properties
+          else
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.jks
+            echo "storePassword=$ANDROID_STORE_PASSWORD" > android/key.properties
+            echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
+            echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
+            echo "storeFile=release.jks" >> android/key.properties
+          fi
 
       - name: Generate dart-defines file
         shell: bash
@@ -142,13 +155,13 @@ jobs:
           flutter build ios --release --no-codesign --dart-define-from-file=dart-defines.json
           mkdir -p Payload
           mv build/ios/iphoneos/Runner.app Payload/
-          zip -r mixstream-ios-unsigned.ipa Payload
+          zip -r MixStream-iOS-preview.ipa Payload
           
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: mixstream-ios-unsigned.ipa
+          path: MixStream-iOS-preview.ipa
           retention-days: 7
 
   macos:
@@ -223,7 +236,7 @@ jobs:
       # Re-sign all frameworks to fix media_kit MPV crash (Issue #830)
       - name: Re-sign Frameworks
         run: |
-          APP_PATH="build/macos/Build/Products/Release/mixstream.app"
+          APP_PATH="build/macos/Build/Products/Release/MixStream.app"
           FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
           
           echo "Re-signing frameworks..."
@@ -247,20 +260,20 @@ jobs:
           
           # Create DMG
           mkdir -p dmg_temp
-          cp -R mixstream.app dmg_temp/
+          cp -R MixStream.app dmg_temp/
           ln -s /Applications dmg_temp/Applications
-          hdiutil create -volname "MixStream" -srcfolder dmg_temp -ov -format UDZO "../../../../../mixstream-macos-${{ matrix.arch }}-preview.dmg"
+          hdiutil create -volname "MixStream" -srcfolder dmg_temp -ov -format UDZO "../../../../../MixStream-macOS-${{ matrix.arch }}-preview.dmg"
           
           # Fallback ZIP
-          zip -ry "../../../../../mixstream-macos-${{ matrix.arch }}-preview.zip" mixstream.app
+          zip -ry "../../../../../MixStream-macOS-${{ matrix.arch }}-preview.zip" MixStream.app
 
       - name: Upload macOS Build
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
           path: |
-            mixstream-macos-${{ matrix.arch }}-preview.dmg
-            mixstream-macos-${{ matrix.arch }}-preview.zip
+            MixStream-macOS-${{ matrix.arch }}-preview.dmg
+            MixStream-macOS-${{ matrix.arch }}-preview.zip
           retention-days: 7
 
   windows:
@@ -354,7 +367,7 @@ jobs:
       - name: Compress Release
         shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "mixstream-windows-${{ matrix.arch }}-preview.zip"
+          Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "MixStream-Windows-${{ matrix.arch }}-preview.zip"
 
       - name: Upload Windows Build
         uses: actions/upload-artifact@v4
@@ -362,7 +375,7 @@ jobs:
           name: windows-${{ matrix.arch }}
           path: |
             windows/packaging/exe/Output/*.exe
-            mixstream-windows-${{ matrix.arch }}-preview.zip
+            MixStream-Windows-${{ matrix.arch }}-preview.zip
           retention-days: 7
 
   linux:
@@ -434,18 +447,18 @@ jobs:
           fastforge package --platform linux --targets deb --flutter-build-args=dart-define-from-file=dart-defines.json
 
           # Rename .deb file to match tar.gz convention
-          mv dist/*/*.deb "mixstream-linux-${{ matrix.arch }}-preview.deb"
+          mv dist/*/*.deb "MixStream-Linux-${{ matrix.arch }}-preview.deb"
 
           # Generate the standard .tar.gz bundle as well
           flutter build linux --release --dart-define-from-file=dart-defines.json
           cd build/linux/${{ matrix.arch }}/release/bundle
-          tar -czvf "../../../../../mixstream-linux-${{ matrix.arch }}-preview.tar.gz" .
+          tar -czvf "../../../../../MixStream-Linux-${{ matrix.arch }}-preview.tar.gz" .
 
       - name: Upload Linux Build
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}
           path: |
-            mixstream-linux-${{ matrix.arch }}-preview.tar.gz
-            mixstream-linux-${{ matrix.arch }}-preview.deb
+            MixStream-Linux-${{ matrix.arch }}-preview.tar.gz
+            MixStream-Linux-${{ matrix.arch }}-preview.deb
           retention-days: 7

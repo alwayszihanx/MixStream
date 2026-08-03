@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*"
+           Name="MixStream"
+           Language="1033"
+           Version="$(var.AppVersion)"
+           Manufacturer="MixStream"
+           UpgradeCode="D74DCCE7-8795-4C47-887D-FB1ECBA27B5A">
+    <Package InstallerVersion="200"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Manufacturer="MixStream"
+             Description="MixStream - Stream movies, TV shows and anime"
+             Comments="MixStream Installer"
+             Keywords="Installer,MSI,MixStream" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <Media Id="1" Cabinet="mixstream.cab" EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="$(var.AppIcon)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLDIR" Name="MixStream" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="MixStream" />
+      </Directory>
+      <Directory Id="DesktopFolder" Name="DesktopFolder" />
+    </Directory>
+
+    <Feature Id="MixStreamFeature" Title="MixStream" Level="1">
+      <ComponentGroupRef Id="MixStreamComponents" />
+      <ComponentRef Id="MixStreamShortcut" />
+    </Feature>
+
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="MixStreamShortcut" Guid="*">
+        <Shortcut Id="MixStreamStartMenuShortcut"
+                  Name="MixStream"
+                  Description="Launch MixStream"
+                  Target="[INSTALLDIR]mixstream.exe"
+                  WorkingDirectory="INSTALLDIR"
+                  Icon="AppIcon" />
+        <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\MixStream" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+    <UIRef Id="WixUI_InstallDir" />
+  </Product>
+</Wix>
