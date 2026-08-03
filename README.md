@@ -101,15 +101,6 @@ Download the latest APK from the **[Releases page](https://github.com/alwaysziha
 
 ### 🐧 Linux
 
-**One-command install:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/alwayszihanx/mixstream/main/installer.sh | sudo bash
-```
-
-**One-command uninstall:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/alwayszihanx/mixstream/main/uninstaller.sh | sudo bash
-```
 
 The installer automatically uses the local bundle if available, or downloads it from GitHub Releases.
 
