@@ -71,9 +71,9 @@
 | **Android**    | ✅                |
 | **Windows**    | ✅                |
 | **Linux**      | ✅                |
-| **Android TV** | ⏳ Coming soon    |
-| **iOS**        | ⏳ Coming soon    |
-| **macOS**      | ⏳ Coming soon    |
+| **Android TV** | ✅                |
+| **iOS**         |✅ [ Sideloading] |
+| **macOS**      |✅                |
 
 ## 🎨 Screenshots
 
