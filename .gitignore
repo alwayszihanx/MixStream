@@ -78,14 +78,15 @@ key.properties
 # Project Specific
 *.g.dart
 *.sky
-assets/plugins/
+assets/plugins/*
 # Torrent Server Binaries (re-downloadable via scripts/download_torrserver.sh)
 packages/flutter_torrent_server/go_src/.gradle/
 /coverage/
-plugins/
-keystore/
-mixstream-plugins/
-mixstream-tools/
+/plugins/
+/keystore/
+/mixstream-plugins/
+/mixstream-tools/
 tree-shaking-test*.js
+!assets/plugins/.gitkeep
 
 node_modules/

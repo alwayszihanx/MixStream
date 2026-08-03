@@ -1,0 +1,20 @@
+display_name: MixStream
+package_name: mixstream
+description: A modern, media streaming client.
+maintainer:
+  name: alwayszihan
+  email: alwayszihan@proton.me
+summary: A modern media streaming client with plugin-based extension support.
+license: GPL-3.0-or-later
+url: https://github.com/alwayszihanx/MixStream
+depends:
+  - gtk3
+  - mpv-libs
+  - alsa-lib
+  - xz-libs
+icon: ios/Runner/Assets.xcassets/AppIcon.appiconset/AppIcon~ios-marketing.png
+categories:
+  - Video
+  - AudioVideo
+  - Player
+generic_name: Media Player
