@@ -124,19 +124,6 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
-## 🌍 Community
-
-Join us on social platforms for updates and support:
-
-<div align="center">
-  <a href="https://t.me/+Ez5Vsv2pUUFjZmNl">
-    <img src="https://img.shields.io/badge/Telegram-Channel-blue?style=for-the-badge&logo=telegram" />
-  </a>
-  <br><br>
-  <a href="https://discord.gg/73XGA8Mxn9">
-    <img src="https://img.shields.io/discord/73XGA8Mxn9?color=5865F2&labelColor=4752C4&logo=discord&logoColor=white&style=for-the-badge" />
-  </a>
-</div>
 
 ## 📚 Learn More
 
