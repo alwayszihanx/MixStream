@@ -20,7 +20,6 @@ import 'download_progress_dialog.dart';
 import 'download_management_dialog.dart';
 import 'episode_card.dart';
 import 'package:mixstream/core/providers/device_info_provider.dart';
-import 'package:mixstream/core/utils/responsive_breakpoints.dart';
 import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../../shared/widgets/app_icon.dart';
 
@@ -104,16 +103,10 @@ class DetailsActionButtons extends HookConsumerWidget {
 
     final playFocusNode = useFocusNode();
     final isTv = ref.watch(deviceProfileProvider).asData?.value.isTv ?? false;
-    final isMobile = context.isMobile;
 
     final isWifiFuture = useMemoized(() => isOnWifi());
     final isWifiSnapshot = useFuture(isWifiFuture);
     final onWifi = isWifiSnapshot.data ?? true;
-
-    final btnPadding = EdgeInsets.symmetric(
-      vertical: isMobile ? 10 : 6,
-      horizontal: LayoutConstants.spacingMd,
-    );
 
     final pos = targetEpisode != null
         ? historyRepo.getEpisodePosition(
@@ -153,7 +146,7 @@ class DetailsActionButtons extends HookConsumerWidget {
       focusNode: playFocusNode,
       autofocus: true,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(LayoutConstants.radiusMd),
+        borderRadius: BorderRadius.circular(12),
       ),
       onPressed:
           (details != null &&
@@ -171,14 +164,14 @@ class DetailsActionButtons extends HookConsumerWidget {
             }
           : null,
       child: Padding(
-        padding: btnPadding,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: isLaunching
               ? [
                   const SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: 18,
+                    height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: Colors.white,
@@ -188,9 +181,16 @@ class DetailsActionButtons extends HookConsumerWidget {
                   Text(AppLocalizations.of(context)!.resolving),
                 ]
               : [
-                  const AppIcon('play_arrow_rounded'),
+                  const AppIcon('play_arrow_rounded', size: 20),
                   const SizedBox(width: LayoutConstants.spacingXs),
-                  Text(playLabel),
+                  Text(
+                    playLabel,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
         ),
       ),
@@ -236,9 +236,12 @@ class DetailsActionButtons extends HookConsumerWidget {
         child: CustomButton(
           isPrimary: false,
           isOutlined: true,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           onPressed: () {},
           child: Padding(
-            padding: btnPadding,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             child: Row(
               children: [
                 const AppIcon('hd_rounded', size: 20),
@@ -301,7 +304,7 @@ class DetailsActionButtons extends HookConsumerWidget {
             isPrimary: false,
             isOutlined: true,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(LayoutConstants.radiusMd),
+              borderRadius: BorderRadius.circular(12),
             ),
             onPressed: () {
               DownloadManagementDialog.show(
@@ -314,13 +317,13 @@ class DetailsActionButtons extends HookConsumerWidget {
               );
             },
             child: Padding(
-              padding: btnPadding,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const AppIcon('download_done_sharp', color: Colors.green),
+                  const AppIcon('download_done_sharp', color: Colors.green, size: 18),
                   const SizedBox(width: LayoutConstants.spacingXs),
-                  Text(AppLocalizations.of(context)!.downloaded),
+                  Text(AppLocalizations.of(context)!.downloaded, style: const TextStyle(fontSize: 13)),
                 ],
               ),
             ),
@@ -329,7 +332,7 @@ class DetailsActionButtons extends HookConsumerWidget {
             isPrimary: false,
             isOutlined: true,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(LayoutConstants.radiusMd),
+              borderRadius: BorderRadius.circular(12),
             ),
             onPressed: isDownloading
                 ? () => DownloadProgressDialog.show(
@@ -347,19 +350,19 @@ class DetailsActionButtons extends HookConsumerWidget {
                         );
                   },
             child: Padding(
-              padding: btnPadding,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: isDownloading
                     ? [
                         SizedBox(
-                          width: 20,
-                          height: 20,
+                          width: 18,
+                          height: 18,
                           child:
                               downloadProgressData?.status == TaskStatus.paused
                               ? AppIcon(
                                   'pause_rounded',
-                                  size: 18,
+                                  size: 16,
                                   color: Theme.of(context).colorScheme.primary,
                                 )
                               : CircularProgressIndicator(
@@ -376,12 +379,13 @@ class DetailsActionButtons extends HookConsumerWidget {
                               : downloadProgress > 0
                               ? '${(downloadProgress * 100).toInt()}%'
                               : AppLocalizations.of(context)!.starting,
+                          style: const TextStyle(fontSize: 13),
                         ),
                       ]
                     : [
-                        const AppIcon('download_rounded'),
+                        const AppIcon('download_rounded', size: 18),
                         const SizedBox(width: LayoutConstants.spacingXs),
-                        Text(AppLocalizations.of(context)!.download),
+                        Text(AppLocalizations.of(context)!.download, style: const TextStyle(fontSize: 13)),
                       ],
               ),
             ),
@@ -661,7 +665,7 @@ class SliverDetailsEpisodeList extends ConsumerWidget {
   }
 }
 
-class DetailsEpisodeFilterBar extends ConsumerWidget {
+class DetailsEpisodeFilterBar extends ConsumerStatefulWidget {
   final String itemUrl;
   final int totalEpisodes;
   final int batchSize;
@@ -674,8 +678,31 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final detailsState = ref.watch(detailsControllerProvider(itemUrl));
+  ConsumerState<DetailsEpisodeFilterBar> createState() => _DetailsEpisodeFilterBarState();
+}
+
+class _DetailsEpisodeFilterBarState extends ConsumerState<DetailsEpisodeFilterBar>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _sortController;
+
+  @override
+  void initState() {
+    super.initState();
+    _sortController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _sortController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final detailsState = ref.watch(detailsControllerProvider(widget.itemUrl));
     final int selectedIndex = detailsState.selectedRangeIndex;
     final bool isAscending = detailsState.isAscending;
     final DubStatus selectedDub = detailsState.selectedDubStatus;
@@ -686,7 +713,7 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
         ? allEpisodes
         : allEpisodes.where((e) => e.dubStatus == selectedDub).toList();
 
-    final int batchCount = (filteredEpisodes.length / batchSize).ceil();
+    final int batchCount = (filteredEpisodes.length / widget.batchSize).ceil();
 
     final hasDub = allEpisodes.any((e) => e.dubStatus == DubStatus.dubbed);
     final hasSub = allEpisodes.any((e) => e.dubStatus == DubStatus.subbed);
@@ -702,7 +729,7 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
             _buildLanguageToggle(context, ref, selectedDub),
             const SizedBox(width: 8),
           ],
-          if (filteredEpisodes.length > batchSize) ...[
+          if (filteredEpisodes.length > widget.batchSize) ...[
             Focus(
               child: Builder(
                 builder: (context) {
@@ -735,8 +762,8 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         items: List.generate(batchCount, (index) {
-                          final start = index * batchSize + 1;
-                          final end = ((index + 1) * batchSize).clamp(
+                          final start = index * widget.batchSize + 1;
+                          final end = ((index + 1) * widget.batchSize).clamp(
                             1,
                             filteredEpisodes.length,
                           );
@@ -749,7 +776,7 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
                           if (val != null) {
                             ref
                                 .read(
-                                  detailsControllerProvider(itemUrl).notifier,
+                                  detailsControllerProvider(widget.itemUrl).notifier,
                                 )
                                 .setRangeIndex(val);
                           }
@@ -771,17 +798,29 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
-                onTap: () => ref
-                    .read(detailsControllerProvider(itemUrl).notifier)
-                    .toggleSort(),
+                onTap: () {
+                  _sortController.forward().then((_) => _sortController.reverse());
+                  ref
+                      .read(detailsControllerProvider(widget.itemUrl).notifier)
+                      .toggleSort();
+                },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: AppIcon(
-                    'swap_vert_rounded',
-                    size: 22,
-                    color: isAscending
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  child: AnimatedBuilder(
+                    animation: _sortController,
+                    builder: (context, child) {
+                      return Transform.rotate(
+                        angle: _sortController.value * 3.14159,
+                        child: child,
+                      );
+                    },
+                    child: AppIcon(
+                      'swap_vert_rounded',
+                      size: 22,
+                      color: isAscending
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),
@@ -810,7 +849,7 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
             label: AppLocalizations.of(context)!.sub,
             isSelected: selected == DubStatus.subbed,
             onTap: () => ref
-                .read(detailsControllerProvider(itemUrl).notifier)
+                .read(detailsControllerProvider(widget.itemUrl).notifier)
                 .setDubStatus(DubStatus.subbed),
           ),
           const SizedBox(width: 4),
@@ -818,7 +857,7 @@ class DetailsEpisodeFilterBar extends ConsumerWidget {
             label: AppLocalizations.of(context)!.dub,
             isSelected: selected == DubStatus.dubbed,
             onTap: () => ref
-                .read(detailsControllerProvider(itemUrl).notifier)
+                .read(detailsControllerProvider(widget.itemUrl).notifier)
                 .setDubStatus(DubStatus.dubbed),
           ),
         ],
@@ -842,7 +881,38 @@ class _LanguageButton extends StatefulWidget {
   State<_LanguageButton> createState() => _LanguageButtonState();
 }
 
-class _LanguageButtonState extends State<_LanguageButton> {
+class _LanguageButtonState extends State<_LanguageButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _selectController;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      value: widget.isSelected ? 1.0 : 0.0,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_LanguageButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected) {
+      if (widget.isSelected) {
+        _selectController.forward();
+      } else {
+        _selectController.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _selectController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -851,54 +921,129 @@ class _LanguageButtonState extends State<_LanguageButton> {
       isPrimary: widget.isSelected,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Text(
-        widget.label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: widget.isSelected ? cs.primary : cs.onSurfaceVariant,
-          fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.normal,
+      child: AnimatedBuilder(
+        animation: _selectController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: 1.0 + (_selectController.value * 0.05),
+            child: child,
+          );
+        },
+        child: Text(
+          widget.label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: widget.isSelected ? cs.primary : cs.onSurfaceVariant,
+            fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
       ),
     );
   }
 }
 
-class DetailsChip extends StatelessWidget {
+class DetailsChip extends StatefulWidget {
   final String label;
 
   const DetailsChip({super.key, required this.label});
 
   @override
+  State<DetailsChip> createState() => _DetailsChipState();
+}
+
+class _DetailsChipState extends State<DetailsChip>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pressController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+      upperBound: 1.0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pressController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+    return GestureDetector(
+      onTapDown: (_) => _pressController.forward(),
+      onTapUp: (_) => _pressController.reverse(),
+      onTapCancel: () => _pressController.reverse(),
+      child: AnimatedBuilder(
+        animation: _pressController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: 1.0 - (_pressController.value * 0.05),
+            child: child,
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Color.lerp(
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.primaryContainer,
+              _pressController.value * 0.3,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Theme.of(context).dividerColor),
+          ),
+          child: Text(
+            widget.label,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+          ),
+        ),
       ),
     );
   }
 }
 
-class DetailsProviderChip extends ConsumerWidget {
+class DetailsProviderChip extends ConsumerStatefulWidget {
   final String providerName;
 
   const DetailsProviderChip({super.key, required this.providerName});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DetailsProviderChip> createState() => _DetailsProviderChipState();
+}
+
+class _DetailsProviderChipState extends ConsumerState<DetailsProviderChip>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pressController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+      upperBound: 1.0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pressController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     bool isDebug = false;
-    String displayName = providerName;
+    String displayName = widget.providerName;
     try {
       final manager = ref.read(extensionManagerProvider.notifier);
       final p = manager.getAllProviders().firstWhere(
-        (p) => p.packageName == providerName || p.name == providerName,
+        (p) => p.packageName == widget.providerName || p.name == widget.providerName,
       );
       displayName = p.name;
       if (p.isDebug) {
@@ -908,60 +1053,74 @@ class DetailsProviderChip extends ConsumerWidget {
       if (kDebugMode) debugPrint('DetailsProviderChip.build: $e');
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-          width: 0.5,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon(
-            'extension_rounded',
-            size: 14,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            displayName.toUpperCase(),
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
+    return GestureDetector(
+      onTapDown: (_) => _pressController.forward(),
+      onTapUp: (_) => _pressController.reverse(),
+      onTapCancel: () => _pressController.reverse(),
+      child: AnimatedBuilder(
+        animation: _pressController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: 1.0 - (_pressController.value * 0.08),
+            child: child,
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+              width: 0.5,
             ),
           ),
-          if (isDebug) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.redAccent.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppIcon(
+                'extension_rounded',
+                size: 14,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              child: const Text(
-                'DEBUG',
+              const SizedBox(width: 4),
+              Text(
+                displayName.toUpperCase(),
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
                 ),
               ),
-            ),
-          ],
-        ],
+              if (isDebug) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'DEBUG',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

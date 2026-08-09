@@ -149,6 +149,7 @@ class _ContinueWatchingSectionState
                     vertical: 8,
                   ),
                   scrollDirection: Axis.horizontal,
+                  physics: const PageScrollPhysics(),
                   itemCount: widget.items.length,
                   itemExtent: width + spacing,
                   itemBuilder: (context, index) {

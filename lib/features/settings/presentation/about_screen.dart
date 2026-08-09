@@ -33,19 +33,19 @@ class AboutScreen extends ConsumerWidget {
             ),
             children: [
               _DeveloperHeader(colorScheme: colorScheme, textTheme: textTheme),
-              SizedBox(height: LayoutConstants.spacingXxl),
+              const SizedBox(height: LayoutConstants.spacingXxl),
               _AppInfoSection(ref: ref),
-              SizedBox(height: LayoutConstants.spacingXxl),
+              const SizedBox(height: LayoutConstants.spacingXxl),
               _BiographySection(colorScheme: colorScheme, textTheme: textTheme),
-              SizedBox(height: LayoutConstants.spacingXxl),
+              const SizedBox(height: LayoutConstants.spacingXxl),
               _SkillsSection(colorScheme: colorScheme, textTheme: textTheme),
-              SizedBox(height: LayoutConstants.spacingXxl),
+              const SizedBox(height: LayoutConstants.spacingXxl),
               _SpecializationsSection(colorScheme: colorScheme, textTheme: textTheme),
-              SizedBox(height: LayoutConstants.spacingXxl),
+              const SizedBox(height: LayoutConstants.spacingXxl),
               _ContactInfoSection(colorScheme: colorScheme, textTheme: textTheme),
-              SizedBox(height: LayoutConstants.spacingXxl),
+              const SizedBox(height: LayoutConstants.spacingXxl),
               _ActionButtonsSection(colorScheme: colorScheme),
-              SizedBox(height: LayoutConstants.spacingXxl),
+              const SizedBox(height: LayoutConstants.spacingXxl),
             ],
           ),
         ),
@@ -150,7 +150,7 @@ class _DeveloperHeader extends StatelessWidget {
                 'assets/images/developer.png',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
-                    AppIcon('developer', size: 60),
+                    const AppIcon('developer', size: 60),
               ),
             ),
           ),
@@ -674,17 +674,17 @@ class _ActionButtonsSection extends StatelessWidget {
   }
 
   void _shareApp(BuildContext context) {
-    final text = 'Check out MixStream!\nhttps://github.com/alwayszihanx/MixStream';
-    Clipboard.setData(ClipboardData(text: text));
+    const text = 'Check out MixStream!\nhttps://github.com/alwayszihanx/MixStream';
+    Clipboard.setData(const ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Link copied to clipboard')),
+      const SnackBar(content: Text('Link copied to clipboard')),
     );
   }
 
   Future<void> _copyVersion(BuildContext context) async {
     final info = await PackageInfo.fromPlatform();
     final version = '${info.version}+${info.buildNumber}';
-    Clipboard.setData(ClipboardData(text: version));
+    await Clipboard.setData(ClipboardData(text: version));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Version $version copied to clipboard')),

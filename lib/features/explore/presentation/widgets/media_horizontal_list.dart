@@ -163,15 +163,39 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  widget.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: isDesktop ? 20 : 16,
-                    fontWeight: FontWeight.bold,
-                    color: cs.onSurface,
-                  ),
+                child: Row(
+                  children: [
+                    // Disney-style brand gradient accent bar
+                    Container(
+                      width: 4,
+                      height: isDesktop ? 18 : 14,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            cs.primary,
+                            cs.tertiary,
+                            cs.secondary,
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: isDesktop ? 20 : 16,
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (isDesktop) ...[
@@ -200,7 +224,7 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                       ),
                     ).push<void>(context);
                   },
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: LayoutConstants.spacingSm,
@@ -235,15 +259,16 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                   ? LayoutConstants.spacingLg
                   : LayoutConstants.spacingSm;
 
+              final double sidePadding = isDesktop
+                  ? LayoutConstants.dashboardContentPadding
+                  : LayoutConstants.spacingMd;
+
               return ListView.builder(
                 controller: _scrollController,
                 clipBehavior: Clip.none,
-                padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop
-                      ? LayoutConstants.dashboardContentPadding
-                      : LayoutConstants.spacingMd,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: sidePadding),
                 scrollDirection: Axis.horizontal,
+                physics: const PageScrollPhysics(),
                 itemCount: widget.mediaList.length,
                 itemExtent: cardWidth + spacing,
                 itemBuilder: (context, index) {
@@ -261,9 +286,8 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                       title: itemTitle,
                       heroTag: uniqueTag,
                       isPortrait: _isPortrait,
-                      badgeText: item.score != null
-                          ? item.score!.toStringAsFixed(1)
-                          : null,
+                      badgeText: item.score?.toStringAsFixed(1),
+                      rating: item.score?.toStringAsFixed(1),
                       onTap: () {
                         if (widget.onTap != null) {
                           widget.onTap!(item);

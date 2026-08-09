@@ -176,7 +176,7 @@ class ExploreHeaderBar extends ConsumerWidget {
                 ),
               );
             },
-            borderRadius: BorderRadius.circular(50),
+            borderRadius: BorderRadius.circular(12),
             child: Consumer(
               builder: (context, ref, _) {
                 final filters = ref.watch(exploreFilterProvider);

@@ -132,9 +132,8 @@ class _SearchResultSectionState extends ConsumerState<SearchResultSection> {
                           focusNode: rIndex == 0
                               ? widget.firstCardFocusNode
                               : null,
-                          badgeText: item.score != null
-                              ? item.score!.toStringAsFixed(1)
-                              : null,
+                          badgeText: item.score?.toStringAsFixed(1),
+                          rating: item.score?.toStringAsFixed(1),
                           onTap: () => DetailsRoute(
                             $extra: DetailsRouteExtra(item: item),
                           ).push<void>(context),

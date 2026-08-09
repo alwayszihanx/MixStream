@@ -233,11 +233,11 @@ class _ContinueWatchingCardState extends ConsumerState<ContinueWatchingCard> {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(12),
       child: SizedBox(
         width: widget.width,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(12),
           child: Stack(
             children: [
               Positioned.fill(

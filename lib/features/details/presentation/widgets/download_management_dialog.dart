@@ -97,7 +97,7 @@ class DownloadManagementDialog extends HookConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppIcon('play_arrow_rounded', size: 20),
+                const AppIcon('play_arrow_rounded', size: 20),
                 const SizedBox(width: 8),
                 Text(l10n.playNow),
               ],

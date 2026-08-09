@@ -26,12 +26,21 @@ class CardsWrapper extends StatefulWidget {
 }
 
 class _CardsWrapperState extends State<CardsWrapper>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // Lazily-built. Hundreds of cards live offscreen in long rails and never
   // get focused or hovered — creating an AnimationController for each one
   // up front wastes vsync registrations and Tween allocations.
   AnimationController? _controller;
   Animation<double>? _scaleAnimation;
+
+  // Press depth: scale to 0.97 on tap down, spring back on release.
+  late AnimationController _pressController;
+  Animation<double>? _pressAnimation;
+
+  // Animated gradient border on focus.
+  late AnimationController _borderController;
+  Animation<double>? _borderAnimation;
+
   bool _isFocused = false;
   bool _isHovered = false;
   late FocusNode _node;
@@ -46,6 +55,16 @@ class _CardsWrapperState extends State<CardsWrapper>
   void initState() {
     super.initState();
     _node = widget.focusNode ?? FocusNode();
+
+    _pressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+    );
+
+    _borderController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
 
     if (widget.autoFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -66,6 +85,8 @@ class _CardsWrapperState extends State<CardsWrapper>
   @override
   void dispose() {
     _controller?.dispose();
+    _pressController.dispose();
+    _borderController.dispose();
     if (widget.focusNode == null) {
       _node.dispose();
     } else {
@@ -106,12 +127,16 @@ class _CardsWrapperState extends State<CardsWrapper>
     if (!hasFocus) {
       _selectKeyDown = false;
       _longPressTriggered = false;
+      _borderController.stop();
     }
     setState(() {
       _isFocused = hasFocus;
     });
     _updateAnimation();
     if (hasFocus) {
+      // Start the animated gradient border cycling.
+      _borderController.repeat(reverse: true);
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final ro = context.findRenderObject();
@@ -173,6 +198,27 @@ class _CardsWrapperState extends State<CardsWrapper>
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    // Lazily build press animation.
+    _pressAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.97,
+    ).animate(CurvedAnimation(
+      parent: _pressController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.elasticOut,
+    ));
+
+    // Lazily build border animation.
+    _borderAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _borderController,
+      curve: Curves.easeInOut,
+    ));
+
     return Focus(
       focusNode: _node,
       onFocusChange: _onFocusChange,
@@ -181,6 +227,8 @@ class _CardsWrapperState extends State<CardsWrapper>
             event.logicalKey == LogicalKeyboardKey.enter ||
             event.logicalKey == LogicalKeyboardKey.space) {
           if (event is KeyDownEvent) {
+            // Animate press down.
+            _pressController.forward();
             if (widget.onLongPress == null) {
               // No long-press handler — fire tap immediately.
               widget.onTap();
@@ -201,6 +249,8 @@ class _CardsWrapperState extends State<CardsWrapper>
             }
             return KeyEventResult.handled;
           } else if (event is KeyUpEvent) {
+            // Animate press release with spring.
+            _pressController.reverse();
             // Short press: no repeat was received before release → tap.
             if (_selectKeyDown && !_longPressTriggered) {
               widget.onTap();
@@ -216,29 +266,112 @@ class _CardsWrapperState extends State<CardsWrapper>
         onEnter: (_) => _onHover(true),
         onExit: (_) => _onHover(false),
         child: GestureDetector(
+          onTapDown: (_) {
+            _pressController.forward();
+          },
+          onTapUp: (_) {
+            _pressController.reverse();
+          },
+          onTapCancel: () {
+            _pressController.reverse();
+          },
           onTap: widget.onTap,
           onLongPress: widget.onLongPress,
           child: Builder(
             builder: (context) {
-              final card = Container(
-                decoration: BoxDecoration(
-                  borderRadius:
-                      widget.borderRadius ?? BorderRadius.circular(12),
-                  border:
-                      (_isFocused &&
-                          FocusManager.instance.highlightMode ==
-                              FocusHighlightMode.traditional)
-                      ? Border.all(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        )
-                      : null,
-                ),
-                child: widget.child,
-              );
+              // Build the animated gradient border.
+              Widget buildCard() {
+                final card = Container(
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        widget.borderRadius ?? BorderRadius.circular(16),
+                    border:
+                        (_isFocused &&
+                            FocusManager.instance.highlightMode ==
+                                FocusHighlightMode.traditional)
+                            ? null
+                            : null,
+                    boxShadow: [
+                      // Subtle hover shadow.
+                      if (_isHovered)
+                        BoxShadow(
+                          color: primaryColor.withValues(alpha: 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      // Focus/hover glow.
+                      if (_isHovered || _isFocused)
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  child: widget.child,
+                );
+                return card;
+              }
+
+              // Animated gradient border on focus.
+              Widget withAnimatedBorder(Widget card) {
+                if (!_isFocused ||
+                    FocusManager.instance.highlightMode !=
+                        FocusHighlightMode.traditional) {
+                  return card;
+                }
+
+                return AnimatedBuilder(
+                  animation: _borderAnimation!,
+                  builder: (context, child) {
+                    final opacity =
+                        0.3 * (0.5 + 0.5 * _borderAnimation!.value);
+                    final borderRadius =
+                        widget.borderRadius ?? BorderRadius.circular(16);
+                    return Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        borderRadius: borderRadius,
+                        gradient: LinearGradient(
+                          colors: [
+                            primaryColor.withValues(alpha: opacity),
+                            primaryColor.withValues(alpha: opacity * 0.5),
+                            primaryColor.withValues(alpha: opacity),
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: borderRadius,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: card,
+                );
+              }
+
+              final card = withAnimatedBorder(buildCard());
               final animation = _scaleAnimation;
-              if (animation == null) return card;
-              return ScaleTransition(scale: animation, child: card);
+              final pressAnim = _pressAnimation;
+
+              // Combine hover/focus scale with press scale.
+              Widget result = card;
+              if (animation != null && pressAnim != null) {
+                result = ScaleTransition(
+                  scale: animation,
+                  child: ScaleTransition(
+                    scale: pressAnim,
+                    child: card,
+                  ),
+                );
+              } else if (animation != null) {
+                result = ScaleTransition(scale: animation, child: card);
+              } else if (pressAnim != null) {
+                result = ScaleTransition(scale: pressAnim, child: card);
+              }
+
+              return result;
             },
           ),
         ),

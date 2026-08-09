@@ -140,7 +140,7 @@ class _UnifiedFilterDialogState extends ConsumerState<UnifiedFilterDialog>
                                 icon: Stack(
                                   clipBehavior: Clip.none,
                                   children: [
-                                    AppIcon('category_outlined', size: 20,),
+                                    const AppIcon('category_outlined', size: 20,),
                                     if (hasFilter)
                                       Positioned(
                                         right: -2,
@@ -173,7 +173,7 @@ class _UnifiedFilterDialogState extends ConsumerState<UnifiedFilterDialog>
                                 icon: Stack(
                                   clipBehavior: Clip.none,
                                   children: [
-                                    AppIcon('calendar_today', size: 20),
+                                    const AppIcon('calendar_today', size: 20),
                                     if (hasFilter)
                                       Positioned(
                                         right: -2,
@@ -204,7 +204,7 @@ class _UnifiedFilterDialogState extends ConsumerState<UnifiedFilterDialog>
                                 icon: Stack(
                                   clipBehavior: Clip.none,
                                   children: [
-                                    AppIcon('star_outline', size: 20),
+                                    const AppIcon('star_outline', size: 20),
                                     if (hasFilter)
                                       Positioned(
                                         right: -2,

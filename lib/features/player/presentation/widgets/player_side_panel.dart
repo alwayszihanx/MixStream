@@ -1910,7 +1910,7 @@ class _StepButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: Icon(icon, color: HotstarPlayerStyle.primaryText, size: 22),

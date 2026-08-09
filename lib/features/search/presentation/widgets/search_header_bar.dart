@@ -170,7 +170,7 @@ class _SearchScopeSwitcherState extends State<SearchScopeSwitcher>
         color: theme.colorScheme.surfaceContainerHighest.withValues(
           alpha: 0.25,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
         ),

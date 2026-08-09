@@ -42,6 +42,8 @@ class Library extends _$Library {
   }
 
   Future<void> clearAll() async {
-    // repository.clearAll() if it exists
+    final repository = ref.read(libraryRepositoryProvider);
+    await repository.clearLibrary();
+    refresh();
   }
 }

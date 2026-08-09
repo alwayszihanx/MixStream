@@ -190,7 +190,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                       ),
                     );
                   },
-                  borderRadius: BorderRadius.circular(50),
+                  borderRadius: BorderRadius.circular(12),
                   child: Consumer(
                     builder: (context, ref, _) {
                       final filters = ref.watch(
@@ -233,7 +233,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                       ),
                     );
                   },
-                  borderRadius: BorderRadius.circular(50),
+                  borderRadius: BorderRadius.circular(12),
                   child: CircleAvatar(
                     backgroundColor: Theme.of(
                       context,
@@ -441,9 +441,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         ),
       ],
       _ => [
-        SliverToBoxAdapter(
+        const SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(48),
+            padding: EdgeInsets.all(48),
             child: SizedBox.shrink(),
           ),
         ),

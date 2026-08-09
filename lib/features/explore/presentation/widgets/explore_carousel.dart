@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/router/app_router.dart';
@@ -13,6 +15,8 @@ import '../../../../core/providers/device_info_provider.dart';
 import '../../../../shared/widgets/thumbnail_error_placeholder.dart';
 import '../../../../shared/widgets/app_icon.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
+import '../../../../features/library/presentation/library_provider.dart';
+import '../../../../features/library/presentation/library_state.dart';
 
 /// Lightweight controller for the hero carousel.
 /// API-compatible with the old CarouselSliderController (nextPage/previousPage).
@@ -85,8 +89,17 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
   int? _previousSlide;
   bool _isTransitioning = false;
 
-  // Progress bar fill — also serves as the auto-advance timer (5s).
+  // Progress bar fill — also serves as the auto-advance timer. Mobile/tablet
+  // advances every 5s; desktop slides slower (8s) so the hero doesn't feel
+  // like it's rushing ahead while the user reads/tracks the content.
   late final AnimationController _fillController;
+
+  static Duration get _autoAdvanceDuration {
+    if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+      return const Duration(seconds: 12);
+    }
+    return const Duration(seconds: 5);
+  }
 
   @override
   void initState() {
@@ -95,8 +108,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
     _transitionController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
-    );
-    _transitionAnimation = CurvedAnimation(
+    );    _transitionAnimation = CurvedAnimation(
       parent: _transitionController,
       curve: Curves.fastOutSlowIn,
     );
@@ -111,7 +123,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
 
     _fillController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
+      duration: _autoAdvanceDuration,
     );
     _fillController.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
@@ -305,7 +317,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                         border: _isFocusHighlighted
                             ? Border.all(
                                 color: Theme.of(context).colorScheme.primary,
@@ -314,7 +326,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
                             : null,
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                         child: SizedBox(
                           height: heroHeight,
                           child: _buildCarouselStack(
@@ -402,13 +414,14 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
               )
             : _buildSlideForIndex(height, _currentSlide, isDesktop: isDesktop),
 
-        // Thin auto-advance segment bar (story-style dots replacement)
+        // Dot indicators — sit below the action row, centered on the dark
+        // gradient so no dot overlaps or touches a button.
         if (widget.movies.length > 1)
           Positioned(
-            left: 24,
-            right: 24,
+            left: 0,
+            right: 0,
             bottom: 14,
-            child: _buildSegmentIndicator(),
+            child: _buildDotIndicators(),
           ),
       ],
     );
@@ -602,12 +615,12 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
             ),
           ),
 
-          // 2.5. Bottom gradient
+          // 2.5. Bottom gradient (bigger — Netflix style)
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            height: 140,
+            height: 200,
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -615,10 +628,11 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.6),
-                    Colors.black.withValues(alpha: 0.9),
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.black.withValues(alpha: 0.85),
+                    Colors.black.withValues(alpha: 0.95),
                   ],
-                  stops: const [0.0, 0.5, 1.0],
+                  stops: const [0.0, 0.3, 0.65, 1.0],
                 ),
               ),
             ),
@@ -690,7 +704,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
           Positioned(
             left: 24,
             right: 24,
-            bottom: 48,
+            bottom: 84,
             child: Transform.translate(
               offset: Offset(0, contentOffset),
               child: _withEntrance(
@@ -698,6 +712,22 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
                 opacity >= 0.999
                     ? _buildTitle(title)
                     : Opacity(opacity: opacity, child: _buildTitle(title)),
+              ),
+            ),
+          ),
+
+          // 4. Action row (Bookmark / Play / Info) — Netflix style.
+          // Anchored above the dot indicators so the dots sit fully below
+          // the buttons with a clear gap, on the dark gradient.
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 46,
+            child: Transform.translate(
+              offset: Offset(0, contentOffset),
+              child: _withEntrance(
+                entranceT,
+                _buildActionRow(movie),
               ),
             ),
           ),
@@ -749,54 +779,168 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
     );
   }
 
-  Widget _buildSegmentIndicator() {
+  Widget _buildDotIndicators() {
     final count = widget.movies.length;
-    final filled = Colors.white.withValues(alpha: 0.9);
-    final idle = Colors.white.withValues(alpha: 0.25);
-    return Row(
-      children: [
-        for (var i = 0; i < count; i++) ...[
-          if (i > 0) const SizedBox(width: 4),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: SizedBox(
-                height: 3,
-                child: i < _currentSlide
-                    ? ColoredBox(color: filled)
-                    : i == _currentSlide
-                        ? AnimatedBuilder(
-                            animation: _fillController,
-                            builder: (context, _) => Align(
-                              alignment: Alignment.centerLeft,
-                              child: FractionallySizedBox(
-                                widthFactor: _fillController.value,
-                                child: ColoredBox(color: filled),
-                              ),
-                            ),
-                          )
-                        : ColoredBox(color: idle),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AnimatedBuilder(
+      animation: _currentIndexNotifier,
+      builder: (context, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(count, (i) {
+            final isActive = i == _currentIndexNotifier.value;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: isActive ? 20 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? colorScheme.primary
+                      : colorScheme.onSurface.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
-            ),
-          ),
-        ],
-      ],
+            );
+          }),
+        );
+      },
     );
   }
 
   Widget _buildTitle(String title) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        textAlign: TextAlign.left,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+      child: ShaderMask(
+        shaderCallback: (bounds) => LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Colors.white,
+            Colors.white.withValues(alpha: 0.85),
+            scheme.primary,
+            scheme.tertiary,
+          ],
+          stops: const [0.0, 0.6, 0.92, 1.0],
+        ).createShader(bounds),
+        blendMode: BlendMode.srcATop,
+        child: Text(
+          title,
+          textAlign: TextAlign.left,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionRow(MultimediaItem movie) {
+    final isBookmarked = ref.watch(
+      libraryProvider.select(
+        (state) =>
+            state is LibrarySuccess &&
+            state.items.any((i) => i.url == movie.url),
+      ),
+    );
+    final libraryNotifier = ref.read(libraryProvider.notifier);
+    return Row(
+      children: [
+        _ActionButton(
+          icon: isBookmarked ? 'bookmark_rounded' : 'bookmark_border_rounded',
+          label: isBookmarked ? 'Bookmarked' : 'Bookmark',
+          highlight: isBookmarked,
+          onTap: () {
+            if (isBookmarked) {
+              libraryNotifier.removeItem(movie.url);
+            } else {
+              libraryNotifier.addItem(movie);
+            }
+          },
+        ),
+        const SizedBox(width: 12),
+        _ActionButton(
+          icon: 'play_arrow_rounded',
+          label: 'Play',
+          isPrimary: true,
+          onTap: () => widget.onTap?.call(movie),
+        ),
+        const SizedBox(width: 12),
+        _ActionButton(
+          icon: 'info_outline_rounded',
+          label: 'Info',
+          onTap: () => widget.onTap?.call(movie),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final String icon;
+  final String label;
+  final bool isPrimary;
+  final bool highlight;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    this.isPrimary = false,
+    this.highlight = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isPrimary
+        ? Colors.black
+        : highlight
+            ? Theme.of(context).colorScheme.primary
+            : Colors.white;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isPrimary
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: isPrimary
+              ? null
+              : Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcon(
+              icon,
+              size: 18,
+              color: color,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

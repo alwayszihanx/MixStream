@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/utils/layout_constants.dart';
 import '../../../core/utils/responsive_breakpoints.dart';
 import '../../../core/providers/device_info_provider.dart';
 import '../../../core/theme/theme_provider.dart';
+import '../../../core/theme/nav_style_provider.dart';
 import '../../../shared/widgets/app_icon.dart';
 
 import '../../../core/utils/stream_quality_sorter.dart';
@@ -88,6 +90,9 @@ class SettingsScreen extends ConsumerWidget {
         platform == TargetPlatform.linux;
     final isTouchDevice = !isTv && !isDesktopOS;
 
+    final theme = Theme.of(context);
+    final currentNavStyle = ref.watch(appNavStyleProvider);
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 800),
@@ -95,8 +100,11 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: LayoutConstants.spacingLg),
           children: [
             const SizedBox(height: LayoutConstants.spacingXs),
+            _buildNavStyleSelector(context, ref, currentNavStyle, theme),
+            const SizedBox(height: LayoutConstants.spacingLg),
             SettingsGroup(
               title: l10n.general,
+              description: 'Appearance, history, and language',
               children: [
                 SettingsTile(
                   icon: const AppIcon('dark_mode_rounded'),
@@ -160,6 +168,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: LayoutConstants.spacingLg),
             SettingsGroup(
               title: l10n.extensions,
+              description: 'Install and manage content providers',
               children: [
                 SettingsTile(
                   icon: const AppIcon('extension_rounded'),
@@ -174,6 +183,7 @@ class SettingsScreen extends ConsumerWidget {
             SettingsGroup(
               title: l10n.player,
               icon: const AppIcon('play_arrow', size: 20),
+              description: 'Playback, gestures, and quality',
               children: [
                 SettingsTile(
                   icon: const AppIcon('smart_display_rounded'),
@@ -358,6 +368,7 @@ class SettingsScreen extends ConsumerWidget {
             SettingsGroup(
               title: l10n.accounts,
               icon: const AppIcon('account_circle_rounded', size: 20),
+              description: 'Subtitles and tracking services',
               children: [
                 SettingsTile(
                   icon: const AppIcon('account_circle_rounded'),
@@ -382,6 +393,7 @@ class SettingsScreen extends ConsumerWidget {
                     const DohSettings();
                 return SettingsGroup(
                   title: l10n.network,
+                  description: 'DNS, proxy, and connectivity',
                   children: [
                     SettingsTile(
                       icon: const AppIcon('dns_rounded'),
@@ -443,6 +455,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: LayoutConstants.spacingLg),
             SettingsGroup(
               title: l10n.appData,
+              description: 'Reset and clear application data',
               children: [
                 SettingsTile(
                   icon: const AppIcon('restore_rounded'),
@@ -463,6 +476,7 @@ class SettingsScreen extends ConsumerWidget {
             SettingsGroup(
               title: l10n.developer,
               icon: const AppIcon('developer', size: 20),
+              description: 'Debug and development tools',
               children: [
                 SettingsTile(
                   icon: const AppIcon('developer_mode_rounded'),
@@ -476,6 +490,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: LayoutConstants.spacingLg),
             SettingsGroup(
               title: l10n.about,
+              description: 'App version and credits',
               children: [
                 SettingsTile(
                   icon: const AppIcon('developer'),
@@ -486,6 +501,25 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 24),
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final info = snapshot.data;
+                return Center(
+                  child: Text(
+                    info != null
+                        ? '${info.appName} v${info.version}+${info.buildNumber}'
+                        : 'MixStream',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -502,4 +536,97 @@ String _qualityFilterModeLabel(QualityFilterMode mode) {
     case QualityFilterMode.atOrBelow:
       return 'Hide sources above preference';
   }
+}
+
+Widget _buildNavStyleSelector(
+  BuildContext context,
+  WidgetRef ref,
+  NavStyle currentStyle,
+  ThemeData theme,
+) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            'Navigation Style',
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              _buildNavStyleChip(
+                context,
+                ref,
+                label: 'Floating Pill',
+                style: NavStyle.floatingPill,
+                currentStyle: currentStyle,
+                theme: theme,
+              ),
+              _buildNavStyleChip(
+                context,
+                ref,
+                label: 'Bottom Bar',
+                style: NavStyle.bottomBar,
+                currentStyle: currentStyle,
+                theme: theme,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildNavStyleChip(
+  BuildContext context,
+  WidgetRef ref, {
+  required String label,
+  required NavStyle style,
+  required NavStyle currentStyle,
+  required ThemeData theme,
+}) {
+  final isSelected = currentStyle == style;
+
+  return Expanded(
+    child: GestureDetector(
+      onTap: () {
+        ref.read(appNavStyleProvider.notifier).setNavStyle(style);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurfaceVariant,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }

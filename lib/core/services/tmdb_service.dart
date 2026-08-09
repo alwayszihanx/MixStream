@@ -839,6 +839,74 @@ class TmdbService {
     } catch (_) {}
     return null;
   }
+
+  /// Enriches items that lack a score by searching TMDB for each title.
+  /// Returns new instances with score populated when a match is found.
+  /// Caps parallel requests to avoid rate limits.
+  Future<List<MultimediaItem>> enrichWithRatings(
+    List<MultimediaItem> items, {
+    String language = 'en-US',
+  }) async {
+    if (TmdbConfig.apiKey.isEmpty) return items;
+
+    final needsEnrichment = <int>[];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].score == null || items[i].score == 0) {
+        needsEnrichment.add(i);
+      }
+    }
+    if (needsEnrichment.isEmpty) return items;
+
+    final results = List<MultimediaItem>.from(items);
+    const batchSize = 5;
+
+    for (var i = 0; i < needsEnrichment.length; i += batchSize) {
+      final batch = needsEnrichment.sublist(
+        i,
+        (i + batchSize > needsEnrichment.length)
+            ? needsEnrichment.length
+            : i + batchSize,
+      );
+
+      final futures = batch.map((idx) async {
+        final item = items[idx];
+        final title = item.title;
+        if (title == null || title.isEmpty) return;
+
+        try {
+          final searchResults = await _dio.get<Map<String, dynamic>>(
+            '/search/multi',
+            queryParameters: {
+              'api_key': TmdbConfig.apiKey,
+              'query': title,
+              'language': language,
+              'include_adult': false,
+            },
+          );
+
+          if (searchResults.statusCode == 200 && searchResults.data != null) {
+            final raw = List<Map<String, dynamic>>.from(
+              searchResults.data!['results'] as List? ?? [],
+            );
+
+            for (final r in raw) {
+              final mediaType = r['media_type'];
+              if (mediaType != 'movie' && mediaType != 'tv') continue;
+              final voteAvg = (r['vote_average'] as num?)?.toDouble();
+              if (voteAvg != null && voteAvg > 0) {
+                results[idx] = results[idx].copyWith(score: voteAvg);
+                break;
+              }
+            }
+          }
+        } catch (_) {}
+      });
+
+      await Future.wait(futures);
+    }
+
+    return results;
+  }
 }
 
 class _SuggestionCacheEntry {

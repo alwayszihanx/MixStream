@@ -12,6 +12,7 @@ import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../core/providers/device_info_provider.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
 import '../../../../shared/widgets/app_icon.dart';
+import '../../../../core/providers/search_history_provider.dart';
 
 class ExploreSearchDelegate extends SearchDelegate<void> {
   ExploreSearchDelegate()
@@ -76,12 +77,22 @@ class ExploreSearchDelegate extends SearchDelegate<void> {
   Widget buildResults(BuildContext context) {
     if (query.isEmpty) return const SizedBox.shrink();
 
+    // Save search to history
+    Future.microtask(() {
+      ProviderScope.containerOf(context).read(searchHistoryProvider.notifier).add(query);
+    });
+
     return _SearchResultsGrid(query: query);
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    if (query.isEmpty) return const SizedBox.shrink();
+    if (query.isEmpty) {
+      return _SearchHistoryList(onTap: (term) {
+        query = term;
+        showSuggestions(context);
+      });
+    }
 
     return _SearchSuggestionsList(query: query);
   }
@@ -345,9 +356,8 @@ class _SearchResultsGridState extends ConsumerState<_SearchResultsGrid> {
           imageUrl: imageUrl,
           title: title,
           heroTag: uniqueTag,
-          badgeText: item.score != null
-              ? item.score!.toStringAsFixed(1)
-              : null,
+          badgeText: item.score?.toStringAsFixed(1),
+          rating: item.score?.toStringAsFixed(1),
           onTap: () {
             TmdbDetailsRoute(
               movieId: id,
@@ -359,6 +369,107 @@ class _SearchResultsGridState extends ConsumerState<_SearchResultsGrid> {
           },
         );
       },
+    );
+  }
+}
+
+class _SearchHistoryList extends ConsumerWidget {
+  final ValueChanged<String> onTap;
+
+  const _SearchHistoryList({required this.onTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(searchHistoryProvider);
+    final theme = Theme.of(context);
+
+    if (history.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AppIcon(
+              'history_rounded',
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No search history yet',
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                'Recent Searches',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  ref.read(searchHistoryProvider.notifier).clear();
+                },
+                child: Text(
+                  'Clear all',
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: history.length,
+            itemBuilder: (context, index) {
+              final term = history[index];
+              return ListTile(
+                leading: AppIcon(
+                  'history_rounded',
+                  size: 20,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                title: Text(
+                  term,
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                ),
+                trailing: IconButton(
+                  icon: AppIcon(
+                    'close_rounded',
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  onPressed: () {
+                    ref.read(searchHistoryProvider.notifier).remove(term);
+                  },
+                  visualDensity: VisualDensity.compact,
+                ),
+                onTap: () => onTap(term),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

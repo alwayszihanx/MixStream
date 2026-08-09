@@ -19,7 +19,8 @@ class SearchScreen extends ConsumerStatefulWidget {
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends ConsumerState<SearchScreen> {
+class _SearchScreenState extends ConsumerState<SearchScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final FocusNode _clearButtonFocusNode = FocusNode();
@@ -28,12 +29,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final FocusNode _firstSuggestionFocusNode = FocusNode();
   final FocusNode _firstResultFocusNode = FocusNode();
 
+  late final AnimationController _searchBarAnimController;
+  late final Animation<double> _searchBarScaleAnimation;
+
   @override
   void initState() {
     super.initState();
     // Restore any previously committed query into the text field.
     _controller.text = ref.read(searchQueryProvider);
     _controller.addListener(_onTextChanged);
+
+    _searchBarAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _searchBarScaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _searchBarAnimController, curve: Curves.easeOut),
+    );
+
+    _focusNode.addListener(_onSearchBarFocusChange);
 
     _focusNode.onKeyEvent = (node, event) {
       if (event is KeyDownEvent) {
@@ -161,6 +175,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     };
   }
 
+  void _onSearchBarFocusChange() {
+    if (_focusNode.hasFocus) {
+      _searchBarAnimController.forward();
+    } else {
+      _searchBarAnimController.reverse();
+    }
+  }
+
   void _onTextChanged() {
     if (mounted) setState(() {});
   }
@@ -169,12 +191,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void dispose() {
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
+    _focusNode.removeListener(_onSearchBarFocusChange);
     _focusNode.dispose();
     _clearButtonFocusNode.dispose();
     _moviesShowsFocusNode.dispose();
     _liveTvFocusNode.dispose();
     _firstSuggestionFocusNode.dispose();
     _firstResultFocusNode.dispose();
+    _searchBarAnimController.dispose();
     super.dispose();
   }
 
@@ -405,7 +429,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               tooltip: 'Search scope',
               onSelected: (value) {
                 ref.read(searchFilterProvider.notifier).set(value);
-                // Sync current text to search query instantly on scope switch
                 final text = _controller.text.trim();
                 ref.read(searchQueryProvider.notifier).set(text);
               },
@@ -472,106 +495,113 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         title: GestureDetector(
           onTap: () => _focusNode.requestFocus(),
           behavior: HitTestBehavior.opaque,
-          child: SizedBox(
-            height: 42,
-            child: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _controller,
-              builder: (context, value, child) {
-                final isSearching = searchResultsAsync.maybeWhen(
-                  data: (state) => state.isLoading,
-                  loading: () => true,
-                  orElse: () => false,
-                );
-
-                Widget? suffix;
-                if (isSearching) {
-                  suffix = Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: AppLoadingIndicator(
-                      color: theme.colorScheme.primary,
-                      constraints: BoxConstraints.tight(const Size(18, 18)),
-                    ),
+          child: AnimatedBuilder(
+            animation: _searchBarScaleAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _searchBarScaleAnimation.value,
+                child: child,
+              );
+            },
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: theme.colorScheme.surfaceContainerHighest,
+                border: Border.all(
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : theme.colorScheme.outlineVariant,
+                  width: 1.2,
+                ),
+              ),
+              child: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _controller,
+                builder: (context, value, child) {
+                  final isSearching = searchResultsAsync.maybeWhen(
+                    data: (state) => state.isLoading,
+                    loading: () => true,
+                    orElse: () => false,
                   );
-                } else if (value.text.isNotEmpty) {
-                  suffix = IconButton(
-                    icon: AppIcon('clear', size: 18),
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(32, 32),
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+
+                  Widget? suffix;
+                  if (isSearching) {
+                    suffix = Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: AppLoadingIndicator(
+                        color: theme.colorScheme.primary,
+                        constraints: BoxConstraints.tight(const Size(18, 18)),
+                      ),
+                    );
+                  } else if (value.text.isNotEmpty) {
+                    suffix = IconButton(
+                      icon: const AppIcon('clear', size: 18),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        _controller.clear();
+                        ref
+                            .read(searchSuggestionControllerProvider.notifier)
+                            .clear();
+                        ref.read(searchQueryProvider.notifier).set('');
+                      },
+                    );
+                  }
+
+                  return TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    autofocus: false,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: theme.colorScheme.onSurface,
                     ),
-                    onPressed: () {
-                      _controller.clear();
+                    textAlignVertical: TextAlignVertical.center,
+                    textInputAction: TextInputAction.search,
+                    onChanged: (val) {
                       ref
                           .read(searchSuggestionControllerProvider.notifier)
-                          .clear();
-                      ref.read(searchQueryProvider.notifier).set('');
+                          .onQueryChanged(val);
                     },
+                    onSubmitted: _submitSearch,
+                    decoration: InputDecoration(
+                      hintText: l10n.searchHint,
+                      border: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      filled: false,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                      ),
+                      hintStyle: TextStyle(
+                        fontSize: 15,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 14, right: 4),
+                        child: AppIcon(
+                          'search_rounded',
+                          size: 22,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 44,
+                        minHeight: 48,
+                      ),
+                      suffixIcon: suffix,
+                      suffixIconConstraints: const BoxConstraints(
+                        minWidth: 42,
+                        minHeight: 42,
+                      ),
+                    ),
                   );
-                }
-
-                return TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  autofocus: false,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  textAlignVertical: TextAlignVertical.center,
-                  textInputAction: TextInputAction.search,
-                  onChanged: (val) {
-                    ref
-                        .read(searchSuggestionControllerProvider.notifier)
-                        .onQueryChanged(val);
-                  },
-                  onSubmitted: _submitSearch,
-                  decoration: InputDecoration(
-                    hintText: l10n.searchHint,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        LayoutConstants.radiusPill,
-                      ),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        LayoutConstants.radiusPill,
-                      ),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        LayoutConstants.radiusPill,
-                      ),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                    hintStyle: TextStyle(
-                      fontSize: 13,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    prefixIcon: AppIcon(
-                      'search',
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    prefixIconConstraints: const BoxConstraints(
-                      minWidth: 44,
-                      minHeight: 42,
-                    ),
-                    suffixIcon: suffix,
-                    suffixIconConstraints: const BoxConstraints(
-                      minWidth: 42,
-                      minHeight: 42,
-                    ),
-                  ),
-                );
-              },
+                },
+              ),
             ),
           ),
         ),
@@ -691,22 +721,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AppIcon(
-              'movie_filter_rounded',
-              size: 64,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: AppIcon(
+                'search_rounded',
+                size: 56,
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.6),
+              ),
             ),
-            const SizedBox(height: LayoutConstants.spacingMd),
+            const SizedBox(height: 24),
             Text(
               l10n.searchFavoriteContent,
-              style: Theme.of(context).textTheme.bodyLarge,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.pressSearchOrEnter,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
@@ -720,22 +762,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final isWidescreen = isTv || context.isTabletOrLarger;
     final imageWidth = isWidescreen ? 320.0 : 200.0;
 
-    // No search results found: display No Results Found text and the image grouped vertically
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: AppIcon(
+              'search_off_rounded',
+              size: 48,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          const SizedBox(height: 20),
           Text(
             'No Results Found',
             style: TextStyle(
               fontFamily: nativeFont,
-              fontSize: 16.0,
-              fontWeight: FontWeight.w400,
+              fontSize: 18.0,
+              fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Image.asset(
             'assets/images/no_results.png',
             fit: BoxFit.contain,

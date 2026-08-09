@@ -19,6 +19,7 @@ class HomeSection extends ConsumerStatefulWidget {
 
 class _HomeSectionState extends ConsumerState<HomeSection> {
   final ScrollController _scrollController = ScrollController();
+  bool _isCollapsed = false;
 
   @override
   void dispose() {
@@ -38,66 +39,91 @@ class _HomeSectionState extends ConsumerState<HomeSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Text(
-            widget.title,
-            style: TextStyle(
-              fontSize: isLarge ? 20 : 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: GestureDetector(
+            onTap: () => setState(() => _isCollapsed = !_isCollapsed),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: TextStyle(
+                      fontSize: isLarge ? 20 : 17,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: _isCollapsed ? 0.5 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 22,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(
-          height: totalHeight,
-          child: DesktopScrollWrapper(
-            controller: _scrollController,
-            showButtons: isLarge, // Show nav buttons on both desktop and TV
-            child: Builder(
-              builder: (context) {
-                final double cardWidth = isLarge ? 200.0 : 130.0;
-                final double spacing = isLarge
-                    ? LayoutConstants.spacingLg
-                    : LayoutConstants.spacingSm;
+        AnimatedCrossFade(
+          firstChild: SizedBox(
+            height: totalHeight,
+            child: DesktopScrollWrapper(
+              controller: _scrollController,
+              showButtons: isLarge,
+              child: Builder(
+                builder: (context) {
+                  final double cardWidth = isLarge ? 200.0 : 130.0;
+                  final double spacing = isLarge
+                      ? LayoutConstants.spacingLg
+                      : LayoutConstants.spacingSm;
 
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: LayoutConstants.spacingMd,
-                    vertical: LayoutConstants.spacingXs,
-                  ),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: widget.items.length,
-                  itemExtent: cardWidth + spacing,
-                  itemBuilder: (context, index) {
-                    final item = widget.items[index];
-                    return Padding(
-                      padding: EdgeInsets.only(right: spacing),
-                      child: MultimediaCard(
-                        key: ValueKey(item.url),
-                        imageUrl:
-                            AppImageFallbacks.poster(
-                              item.posterUrl,
-                              label: item.title,
-                            ) ??
-                            '',
-                        title: item.title,
-                        heroTag: 'home_${item.url}_$index',
-                        badgeText: item.score != null
-                            ? item.score!.toStringAsFixed(1)
-                            : null,
-                        onTap: () => DetailsRoute(
-                          $extra: DetailsRouteExtra(item: item),
-                        ).push<void>(context),
-                      ),
-                    );
-                  },
-                );
-              },
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: LayoutConstants.spacingMd,
+                      vertical: LayoutConstants.spacingXs,
+                    ),
+                    scrollDirection: Axis.horizontal,
+                    physics: const PageScrollPhysics(),
+                    itemCount: widget.items.length,
+                    itemExtent: cardWidth + spacing,
+                    itemBuilder: (context, index) {
+                      final item = widget.items[index];
+                      return Padding(
+                        padding: EdgeInsets.only(right: spacing),
+                        child: MultimediaCard(
+                          key: ValueKey(item.url),
+                          imageUrl:
+                              AppImageFallbacks.poster(
+                                item.posterUrl,
+                                label: item.title,
+                              ) ??
+                              '',
+                          title: item.title,
+                          heroTag: 'home_${item.url}_$index',
+                          badgeText: item.score?.toStringAsFixed(1),
+                          onTap: () => DetailsRoute(
+                            $extra: DetailsRouteExtra(item: item),
+                          ).push<void>(context),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
+          secondChild: const SizedBox.shrink(),
+          crossFadeState: _isCollapsed
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
         ),
       ],
     );

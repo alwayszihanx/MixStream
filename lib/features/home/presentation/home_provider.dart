@@ -47,6 +47,7 @@ class HomeData extends _$HomeData {
 
     try {
       final items = await activeProvider.getHome();
+
       if (items.isEmpty) {
         state = const HomeSuccess({});
       } else {

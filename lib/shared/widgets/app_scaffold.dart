@@ -6,7 +6,9 @@ import 'package:mixstream/core/providers/device_info_provider.dart';
 import 'package:mixstream/core/utils/layout_constants.dart';
 import 'package:mixstream/core/utils/responsive_breakpoints.dart';
 import 'package:mixstream/shared/widgets/custom_bottom_nav.dart';
+import 'package:mixstream/shared/widgets/floating_pill_nav.dart';
 import 'package:mixstream/shared/widgets/app_sidebar.dart';
+import 'package:mixstream/core/theme/nav_style_provider.dart';
 
 import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../features/settings/presentation/general_settings_provider.dart';
@@ -98,6 +100,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
   @override
   Widget build(BuildContext context) {
     final deviceProfileAsync = ref.watch(deviceProfileProvider);
+    final navStyle = ref.watch(appNavStyleProvider);
     final defaultHome = ref.watch(
       generalSettingsProvider.select((s) => s.defaultHomeScreen),
     );
@@ -206,13 +209,30 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
               widget.navigationShell.goBranch(defaultIndex);
             }
           },
-          child: Scaffold(
-            body: widget.navigationShell,
-            bottomNavigationBar: CustomBottomNavBar(
-              currentIndex: widget.navigationShell.currentIndex,
-              onTap: (index) => _onItemTapped(index, context),
+          child: switch (navStyle) {
+            NavStyle.floatingPill => Scaffold(
+              body: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  widget.navigationShell,
+                  FloatingPillNav(
+                    currentIndex: widget.navigationShell.currentIndex,
+                    onTap: (index) => _onItemTapped(index, context),
+                  ),
+                ],
+              ),
             ),
-          ),
+            NavStyle.bottomBar => Scaffold(
+              body: widget.navigationShell,
+              bottomNavigationBar: CustomBottomNavBar(
+                currentIndex: widget.navigationShell.currentIndex,
+                onTap: (index) => _onItemTapped(index, context),
+              ),
+            ),
+            _ => Scaffold(
+              body: widget.navigationShell,
+            ),
+          },
         );
       },
       loading: () => const Scaffold(body: Center(child: AppLoadingIndicator())),

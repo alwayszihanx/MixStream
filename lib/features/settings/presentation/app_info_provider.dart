@@ -35,29 +35,29 @@ class DetailedAppInfo {
     required this.androidVersion,
   });
 
-  List<_InfoEntry> toEntries() {
+  List<InfoEntry> toEntries() {
     return [
-      _InfoEntry('App Name', appName),
-      _InfoEntry('Package Name', packageName),
-      _InfoEntry('Version Name', versionName),
-      _InfoEntry('Version Code', versionCode),
-      _InfoEntry('Build Type', buildType),
-      _InfoEntry('Target SDK', targetSdk),
-      _InfoEntry('Min SDK', minSdk),
-      _InfoEntry('Compile SDK', compileSdk),
-      _InfoEntry('Build Date', buildDate),
-      _InfoEntry('Kotlin Version', kotlinVersion),
-      _InfoEntry('Flutter Version', flutterVersion),
-      _InfoEntry('App Size', appSize),
-      _InfoEntry('Android Version', androidVersion),
+      InfoEntry('App Name', appName),
+      InfoEntry('Package Name', packageName),
+      InfoEntry('Version Name', versionName),
+      InfoEntry('Version Code', versionCode),
+      InfoEntry('Build Type', buildType),
+      InfoEntry('Target SDK', targetSdk),
+      InfoEntry('Min SDK', minSdk),
+      InfoEntry('Compile SDK', compileSdk),
+      InfoEntry('Build Date', buildDate),
+      InfoEntry('Kotlin Version', kotlinVersion),
+      InfoEntry('Flutter Version', flutterVersion),
+      InfoEntry('App Size', appSize),
+      InfoEntry('Android Version', androidVersion),
     ];
   }
 }
 
-class _InfoEntry {
+class InfoEntry {
   final String label;
   final String value;
-  const _InfoEntry(this.label, this.value);
+  const InfoEntry(this.label, this.value);
 }
 
 @riverpod

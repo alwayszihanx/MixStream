@@ -187,9 +187,8 @@ class _ViewAllScreenState extends ConsumerState<ViewAllScreen> {
               title: itemTitle,
               heroTag: uniqueTag,
               isPortrait: _isPortrait,
-              badgeText: item.score != null
-                  ? item.score!.toStringAsFixed(1)
-                  : null,
+              badgeText: item.score?.toStringAsFixed(1),
+              rating: item.score?.toStringAsFixed(1),
               onTap: () {
                 if (widget.onTap != null) {
                   widget.onTap!(item);

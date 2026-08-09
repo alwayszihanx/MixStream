@@ -204,16 +204,16 @@ class TmdbDetailsDesktopHero extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            Icon(
+                            const Icon(
                               Icons.star_rounded,
                               size: 16,
-                              color: const Color(0xFF01B4E4),
+                              color: Color(0xFF01B4E4),
                             ),
                             const SizedBox(width: 2),
                             Text(
                               rating,
-                              style: TextStyle(
-                                color: const Color(0xFF01B4E4),
+                              style: const TextStyle(
+                                color: Color(0xFF01B4E4),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),

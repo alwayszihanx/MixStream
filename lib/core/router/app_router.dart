@@ -201,6 +201,22 @@ class DetailsRoute extends GoRouteData with $DetailsRoute {
   Widget build(BuildContext context, GoRouterState state) {
     return DetailsScreen(item: $extra.item, autoPlay: $extra.autoPlay);
   }
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) {
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: build(context, state),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    );
+  }
 }
 
 @TypedGoRoute<TmdbDetailsRoute>(path: '/tmdb-details')
@@ -228,6 +244,22 @@ class TmdbDetailsRoute extends GoRouteData with $TmdbDetailsRoute {
       source: source,
     );
   }
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) {
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: build(context, state),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    );
+  }
 }
 
 @TypedGoRoute<ViewAllRoute>(path: '/view-all')
@@ -244,6 +276,25 @@ class ViewAllRoute extends GoRouteData with $ViewAllRoute {
       onTap: $extra.onTap,
     );
   }
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) {
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: build(context, state),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+          ),
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    );
+  }
 }
 
 @TypedGoRoute<PlayerRoute>(path: '/player')
@@ -257,6 +308,25 @@ class PlayerRoute extends GoRouteData with $PlayerRoute {
       item: $extra.item,
       videoUrl: $extra.videoUrl,
       episode: $extra.episode,
+    );
+  }
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) {
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: build(context, state),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+          ),
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
     );
   }
 }

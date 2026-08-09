@@ -303,9 +303,8 @@ class _HomeSearchResultsState extends ConsumerState<_HomeSearchResults> {
           imageUrl: AppImageFallbacks.poster(item.posterUrl, label: item.title),
           title: item.title,
           heroTag: uniqueTag,
-          badgeText: item.score != null
-              ? item.score!.toStringAsFixed(1)
-              : null,
+          badgeText: item.score?.toStringAsFixed(1),
+          rating: item.score?.toStringAsFixed(1),
           onTap: () => DetailsRoute(
             $extra: DetailsRouteExtra(item: item),
           ).push<void>(context),

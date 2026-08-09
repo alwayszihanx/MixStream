@@ -15,6 +15,7 @@ import '../domain/entity/multimedia_item.dart';
 import '../router/app_router.dart';
 import '../storage/storage_service.dart';
 import '../network/dio_client_provider.dart';
+import 'notification_service.dart';
 
 part 'download_service.g.dart';
 
@@ -327,10 +328,18 @@ class DownloadService {
     if (update.status == TaskStatus.complete) {
       _ref.read(activeDownloadsProvider.notifier).remove(trackingUrl);
       _ref.read(downloadProgressProvider.notifier).remove(trackingUrl);
+
+      // Show system notification for download complete
+      _sendDownloadCompleteNotification(update.task);
     } else if (update.status == TaskStatus.failed ||
         update.status == TaskStatus.canceled) {
       _ref.read(activeDownloadsProvider.notifier).remove(trackingUrl);
       _ref.read(downloadProgressProvider.notifier).remove(trackingUrl);
+
+      if (update.status == TaskStatus.failed) {
+        // Show system notification for download failure
+        _sendDownloadErrorNotification(update.task);
+      }
 
       if (update.status == TaskStatus.canceled) {
         // Cleanup database and metadata for cancelled tasks
@@ -339,6 +348,39 @@ class DownloadService {
             .read(storageServiceProvider)
             .removeDownloadMetadata(update.task.taskId);
       }
+    }
+  }
+
+  Future<void> _sendDownloadCompleteNotification(Task task) async {
+    try {
+      final storage = _ref.read(storageServiceProvider);
+      final metadata = await storage.getDownloadMetadata(task.taskId);
+      final title = metadata?['item'] != null
+          ? (metadata!['item'] as Map)['title']?.toString() ?? 'Download'
+          : task.displayName;
+      final filePath = task.filename;
+      await _ref.read(notificationServiceProvider).showDownloadComplete(
+            title,
+            filePath,
+          );
+    } catch (_) {
+      // Non-critical — don't crash if notification fails
+    }
+  }
+
+  Future<void> _sendDownloadErrorNotification(Task task) async {
+    try {
+      final storage = _ref.read(storageServiceProvider);
+      final metadata = await storage.getDownloadMetadata(task.taskId);
+      final title = metadata?['item'] != null
+          ? (metadata!['item'] as Map)['title']?.toString() ?? 'Download'
+          : task.displayName;
+      await _ref.read(notificationServiceProvider).showDownloadError(
+            title,
+            'The download encountered an error. Tap to retry.',
+          );
+    } catch (_) {
+      // Non-critical
     }
   }
 

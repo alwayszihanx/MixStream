@@ -29,4 +29,8 @@ class LibraryRepository {
   List<MultimediaItem> getLibraryItems() {
     return _storageService.getLibraryItems();
   }
+
+  Future<void> clearLibrary() async {
+    await _storageService.clearLibrary();
+  }
 }

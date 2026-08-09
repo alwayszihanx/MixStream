@@ -76,6 +76,7 @@ class _SyncedProgressSectionState extends ConsumerState<SyncedProgressSection> {
                 vertical: 8,
               ),
               scrollDirection: Axis.horizontal,
+              physics: const PageScrollPhysics(),
               itemCount: widget.items.length,
               itemExtent: width + (isLarge ? 24.0 : 12.0),
               itemBuilder: (context, index) {

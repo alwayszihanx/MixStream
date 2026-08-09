@@ -7,6 +7,7 @@ import '../../../core/providers/device_info_provider.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'widgets/bookmarks_tab.dart';
 import 'widgets/downloads_tab.dart';
+import 'widgets/queue_tab.dart';
 import '../../../shared/widgets/app_icon.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -24,7 +25,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _pageController = PageController();
 
     // Sync PageView -> TabBar
@@ -92,15 +93,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               ),
             ),
             Expanded(
-              child: PageView.builder(
+              child:               PageView.builder(
                 controller: _pageController,
                 onPageChanged: (index) {
                   _tabController.animateTo(index);
                 },
                 physics: const BouncingScrollPhysics(),
-                itemCount: 2,
-                itemBuilder: (_, i) =>
-                    i == 0 ? const DownloadsTab() : const BookmarksTab(),
+                itemCount: 3,
+                itemBuilder: (_, i) {
+                  if (i == 0) return const DownloadsTab();
+                  if (i == 1) return const QueueTab();
+                  return const BookmarksTab();
+                },
               ),
             ),
           ],
@@ -113,10 +117,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.library),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
+          preferredSize: const Size.fromHeight(40),
           child: TabBar(
             controller: _tabController,
-            indicatorSize: TabBarIndicatorSize.label,
+            indicatorSize: TabBarIndicatorSize.tab,
+            indicator: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
             indicatorColor: Theme.of(context).colorScheme.primary,
             labelStyle: TextStyle(
               fontWeight: FontWeight.w600,
@@ -132,6 +140,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 icon: const AppIcon('download_for_offline_rounded'),
               ),
               Tab(
+                text: 'Queue',
+                icon: const AppIcon('queue_rounded'),
+              ),
+              Tab(
                 text: AppLocalizations.of(context)!.bookmarks,
                 icon: const AppIcon('bookmark_rounded'),
               ),
@@ -145,7 +157,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           _tabController.animateTo(index);
         },
         physics: const BouncingScrollPhysics(),
-        children: const [DownloadsTab(), BookmarksTab()],
+        children: const [DownloadsTab(), QueueTab(), BookmarksTab()],
       ),
     );
   }
@@ -169,10 +181,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             ),
             const SizedBox(width: 8),
             _TabChip(
-              label: l10n.bookmarks,
-              icon: const AppIcon('bookmark_rounded', size: 16),
+              label: 'Queue',
+              icon: const AppIcon('queue_rounded', size: 16),
               selected: _tabController.index == 1,
               onTap: () => _tabController.animateTo(1),
+              theme: theme,
+            ),
+            const SizedBox(width: 8),
+            _TabChip(
+              label: l10n.bookmarks,
+              icon: const AppIcon('bookmark_rounded', size: 16),
+              selected: _tabController.index == 2,
+              onTap: () => _tabController.animateTo(2),
               theme: theme,
             ),
           ],

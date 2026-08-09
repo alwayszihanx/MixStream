@@ -225,7 +225,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                 clipBehavior: Clip.none,
                 decoration: BoxDecoration(
                   color: dockBgColor,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: dockBorderColor.withValues(alpha: 0.8),
                     width: 1.0,

@@ -330,6 +330,7 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener {
       }
     });
 
+    ref.watch(appThemeConfigProvider);
     final themeConfig = ref.read(appThemeConfigProvider.notifier).currentConfig;
 
     return DynamicColorBuilder(
@@ -629,7 +630,7 @@ class LaunchErrorApp extends StatelessWidget {
 class CustomTitleBar extends ConsumerStatefulWidget {
   const CustomTitleBar({super.key});
 
-  static const double height = 48;
+  static const double height = 36;
 
   @override
   ConsumerState<CustomTitleBar> createState() => _CustomTitleBarState();
@@ -781,7 +782,7 @@ class _CustomTitleBarState extends ConsumerState<CustomTitleBar>
                             ? 'fullscreen_exit_rounded'
                             : 'fullscreen_rounded',
                         color: iconColor,
-                        size: 16,
+                        size: 14,
                       ),
                     ),
                     if (!_isFullScreen) ...[
@@ -892,8 +893,8 @@ class _PinButton extends StatelessWidget {
       padding: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       child: SizedBox(
-        width: 32,
-        height: Platform.isMacOS ? 28 : 32,
+        width: 28,
+        height: Platform.isMacOS ? 24 : 28,
         child: AppIcon(
           isActive ? 'push_pin_rounded' : 'push_pin_outlined',
           color: isActive
@@ -901,7 +902,7 @@ class _PinButton extends StatelessWidget {
               : (isDark
                     ? Colors.white.withValues(alpha: 0.5)
                     : const Color(0xFF5C5C5C).withValues(alpha: 0.6)),
-          size: 16,
+          size: 14,
         ),
       ),
     );
@@ -920,7 +921,7 @@ class _TitleBarButton extends StatelessWidget {
       onPressed: onPressed,
       padding: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-      child: SizedBox(width: 32, height: 32, child: child),
+      child: SizedBox(width: 28, height: 28, child: child),
     );
   }
 }
@@ -938,14 +939,14 @@ class _CloseButton extends StatelessWidget {
       padding: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       child: SizedBox(
-        width: 32,
-        height: 32,
+        width: 28,
+        height: 28,
         child: AppIcon(
           'close_rounded',
           color: isDark
               ? Colors.white.withValues(alpha: 0.85)
               : const Color(0xFF5C5C5C),
-          size: 16,
+          size: 14,
         ),
       ),
     );

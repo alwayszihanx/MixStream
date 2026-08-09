@@ -130,6 +130,14 @@ class SettingsRepository {
     return _storageService.getPlayerSetting<T>(key, defaultValue: defaultValue);
   }
 
+  Future<void> saveNavStyle(String value) async {
+    await _storageService.saveNavStyle(value);
+  }
+
+  String? getNavStyle() {
+    return _storageService.getNavStyle();
+  }
+
   Future<void> clearPreferences({bool keepRepos = true}) async {
     await _storageService.clearPreferences(keepRepos: keepRepos);
   }

@@ -307,11 +307,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
 class ButtonDesign {
   ButtonDesign._();
 
-  static const double borderRadius = 14;
+  static const double borderRadius = 12;
   static const double borderWidth = 1.5;
   static const EdgeInsetsGeometry padding = EdgeInsets.symmetric(
-    horizontal: 20,
-    vertical: 12,
+    horizontal: 24,
+    vertical: 14,
   );
   static const double contentGap = 8;
   static const double hoverTranslateY = -5;
@@ -662,7 +662,12 @@ class _CustomButtonState extends State<CustomButton>
       core = FilledButton(
         focusNode: _focusNode,
         autofocus: widget.autofocus,
-        onPressed: widget.onPressed,
+        onPressed: widget.onPressed != null
+            ? () {
+                HapticFeedback.lightImpact();
+                widget.onPressed!();
+              }
+            : null,
         style: FilledButton.styleFrom(
           backgroundColor: showHighlight
               ? Color.lerp(primaryColor, Colors.white, 0.18)
@@ -671,9 +676,10 @@ class _CustomButtonState extends State<CustomButton>
           disabledBackgroundColor: cs.onSurface.withValues(alpha: 0.12),
           disabledForegroundColor: cs.onSurface.withValues(alpha: 0.38),
           side: BorderSide.none,
-          shadowColor: Colors.transparent,
+          elevation: 2,
+          shadowColor: primaryColor.withValues(alpha: 0.4),
           shape: effectiveShape,
-          overlayColor: Colors.transparent,
+          overlayColor: cs.primary.withValues(alpha: 0.12),
           padding: effectivePadding,
         ),
         child: _buildContent(),
@@ -682,7 +688,12 @@ class _CustomButtonState extends State<CustomButton>
       core = TextButton(
         focusNode: _focusNode,
         autofocus: widget.autofocus,
-        onPressed: widget.onPressed,
+        onPressed: widget.onPressed != null
+            ? () {
+                HapticFeedback.lightImpact();
+                widget.onPressed!();
+              }
+            : null,
         style: TextButton.styleFrom(
           backgroundColor: showHighlight
               ? primaryColor.withValues(alpha: 0.28)
@@ -692,10 +703,10 @@ class _CustomButtonState extends State<CustomButton>
               : cs.onSurfaceVariant,
           disabledForegroundColor: cs.onSurface.withValues(alpha: 0.38),
           side: widget.isOutlined
-              ? BorderSide(color: cs.outline)
+              ? BorderSide(color: primaryColor, width: 1.5)
               : BorderSide.none,
           shape: effectiveShape,
-          overlayColor: Colors.transparent,
+          overlayColor: cs.primary.withValues(alpha: 0.12),
           shadowColor: Colors.transparent,
           padding: effectivePadding,
         ),
@@ -749,9 +760,9 @@ class _CustomButtonState extends State<CustomButton>
             final hoverFraction = _hoverAnimation.value;
             final translateY = ButtonDesign.hoverTranslateY * hoverFraction;
             final scale = _pressed ? ButtonDesign.clickScale : 1.0;
-            double shadowOpacity = 0.08 + (0.15 - 0.08) * hoverFraction;
-            double shadowBlur = 4 + (12 - 4) * hoverFraction;
-            double shadowOffset = 2 + (6 - 2) * hoverFraction;
+            final double shadowOpacity = 0.08 + (0.15 - 0.08) * hoverFraction;
+            final double shadowBlur = 4 + (12 - 4) * hoverFraction;
+            final double shadowOffset = 2 + (6 - 2) * hoverFraction;
             return Container(
               decoration: BoxDecoration(
                 borderRadius: outerBorderRadius,

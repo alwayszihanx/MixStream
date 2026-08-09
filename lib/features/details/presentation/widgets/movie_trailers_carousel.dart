@@ -104,7 +104,7 @@ class _MovieTrailersCarouselState extends State<MovieTrailersCarousel> {
                       context,
                     ).colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
@@ -220,7 +220,7 @@ class _MovieTrailersCarouselState extends State<MovieTrailersCarousel> {
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  child: AppIcon('play_arrow', color: Colors.white),
+                  child: const AppIcon('play_arrow', color: Colors.white),
                 ),
               ),
               Positioned(

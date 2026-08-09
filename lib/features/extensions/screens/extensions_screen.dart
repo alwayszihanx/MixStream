@@ -815,7 +815,7 @@ class _PluginTileState extends ConsumerState<_PluginTile> {
                 // Update button
                 if (isInstalled && updateAvailable != null)
                   IconButton(
-                    icon: AppIcon('download', color: Colors.green),
+                    icon: const AppIcon('download', color: Colors.green),
                     tooltip: l10n.updateTo(updateAvailable.version.toString()),
                     onPressed: () {
                       ref

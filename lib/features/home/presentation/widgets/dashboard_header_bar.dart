@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixstream/core/utils/layout_constants.dart';
 import 'package:mixstream/core/extensions/extension_manager.dart';
 import 'package:mixstream/l10n/generated/app_localizations.dart';
 import 'package:mixstream/features/home/presentation/delegates/home_search_delegate.dart';
 import 'package:mixstream/features/home/presentation/home_provider.dart';
+import 'package:mixstream/features/profile/presentation/profile_provider.dart';
+import 'package:mixstream/features/profile/presentation/profile_screen.dart';
 import 'dart:async';
 import '../../../../shared/widgets/app_icon.dart';
 
@@ -139,6 +142,33 @@ class DashboardHeaderBar extends ConsumerWidget {
                 color: cs.onSurface,
                 size: 18,
               ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          GestureDetector(
+            onTap: () => ProfileScreen.show(context),
+            child: Consumer(
+              builder: (context, ref, _) {
+                final profile = ref.watch(userProfileProvider);
+                return CircleAvatar(
+                  radius: 16,
+                  backgroundColor: profile.color,
+                  backgroundImage: profile.hasCustomImage
+                      ? FileImage(File(profile.imagePath!))
+                      : null,
+                  child: profile.hasCustomImage
+                      ? null
+                      : AppIcon(
+                          UserProfileData.avatarIcons[
+                              profile.avatarIndex %
+                                  UserProfileData.avatarIcons.length],
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                );
+              },
             ),
           ),
 

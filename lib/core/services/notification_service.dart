@@ -1,5 +1,9 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../shared/widgets/app_icon.dart';
 
 part 'notification_service.g.dart';
@@ -9,11 +13,141 @@ NotificationService notificationService(Ref ref) {
   return NotificationService();
 }
 
-/// A global service to manage UI notifications (SnackBars) without needing a [BuildContext].
-/// This is particularly useful for background tasks, providers, and deep nested components.
+/// Global service managing both in-app SnackBar notifications and
+/// platform-level local notifications (download complete/error, etc.).
 class NotificationService {
   final GlobalKey<ScaffoldMessengerState> messengerKey =
       GlobalKey<ScaffoldMessengerState>();
+
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+
+  bool _isInitialized = false;
+  static const int _downloadCompleteId = 1000;
+  static const int _downloadErrorId = 2000;
+
+  // ─── Initialization ───────────────────────────────────────────────────
+
+  Future<void> initLocalNotifications() async {
+    if (_isInitialized) return;
+
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const settings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _localNotifications.initialize(
+      settings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
+
+    // Create notification channel for downloads
+    if (Platform.isAndroid) {
+      const channel = AndroidNotificationChannel(
+        'mixstream_downloads',
+        'Downloads',
+        description: 'Shows download progress and completion status',
+        importance: Importance.high,
+      );
+      final androidPlugin =
+          _localNotifications.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.createNotificationChannel(channel);
+    }
+
+    _isInitialized = true;
+  }
+
+  void _onNotificationTapped(NotificationResponse response) {
+    // Could route to downloads tab here if needed
+  }
+
+  // ─── System Notifications ─────────────────────────────────────────────
+
+  Future<void> showDownloadComplete(String title, String filePath) async {
+    await initLocalNotifications();
+
+    final androidDetails = AndroidNotificationDetails(
+      'mixstream_downloads',
+      'Downloads',
+      channelDescription: 'Shows download completion status',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      color: const Color(0xFF00E676),
+      styleInformation: BigTextStyleInformation(
+        'File saved to: ${filePath.split('/').last}',
+        contentTitle: title,
+      ),
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _localNotifications.show(
+      _downloadCompleteId + title.hashCode,
+      'Download Complete',
+      '$title is ready to play',
+      details,
+    );
+  }
+
+  Future<void> showDownloadError(String title, String error) async {
+    await initLocalNotifications();
+
+    final androidDetails = AndroidNotificationDetails(
+      'mixstream_downloads',
+      'Downloads',
+      channelDescription: 'Shows download errors',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      color: const Color(0xFFFF5252),
+      styleInformation: BigTextStyleInformation(
+        error,
+        contentTitle: title,
+      ),
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _localNotifications.show(
+      _downloadErrorId + title.hashCode,
+      'Download Failed',
+      '$title could not be downloaded',
+      details,
+    );
+  }
+
+  Future<void> cancelNotification(int id) async {
+    await _localNotifications.cancel(id);
+  }
+
+  Future<void> cancelAllNotifications() async {
+    await _localNotifications.cancelAll();
+  }
+
+  // ─── In-App SnackBar Notifications ────────────────────────────────────
 
   void showSnackBar(
     String message, {

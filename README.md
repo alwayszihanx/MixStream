@@ -42,17 +42,31 @@
 
 </div>
 
+## ✨ Recent Highlights (v3.6.x)
+
+- 🎨 **Custom loading indicators** – A hand-crafted dot-pulse loader (glowing dots travel in a wave around a ring) replaces the stock Material spinner across every screen: home, search, library, extensions, settings, details, player, and splash. A compact `.small` variant is used for thumbnails and account switching.
+- 💾 **Hero bookmark button** – The hero's "Save" placeholder is now a real per-profile **Bookmark/Bookmarked** toggle wired to your library. Saved items show a filled accent-colored bookmark.
+- 🖥️ **Slimmer desktop title bar** – Reduced to 36px with compact 14px icons for close, fullscreen, and always-on-top controls.
+- 📺 **Hero carousel polish** – Disney-style gradient titles (white → primary → tertiary), slower auto-advance on desktop (12s) with auto-pause when off-screen, and dot indicators repositioned below the action buttons.
+- 🔤 **Section accent bars** – Every section title now gets a slim gradient accent bar (primary → tertiary → secondary).
+- 🧩 **Icon system audit** – All 143 used icons now resolve to real bundled assets; bookmark, queue, swap, and delete-sweep mappings were fixed.
+
 ## 🚀 Key Features
 
-- 📱 **Cross-platform**: Android, Android TV, iOS, Windows, macOS, Linux
-- 🔌 **Plugin-based architecture** with custom JavaScript engine
+- 📱 **Cross-platform**: Android, Windows, Linux (Android TV / iOS / macOS on the roadmap)
+- 🔌 **Plugin-based architecture** with a custom JavaScript engine — install community extensions (`.mix` / `.js`) to add sources
 - 🔍 **Powerful search & discovery** with TMDB integration
-- 🌐 **Multi-provider support** with domain switching
-- 🎬 **Advanced streaming controls** - playback speed, resume, quality selection
-- 🔗 **Multi-tracker sync** - Trakt, Simkl, MAL, AniList
+- 🌐 **Multi-provider support** with domain switching and Cloudflare cookie bypass
+- 🎬 **Advanced streaming controls** — playback speed, resume, quality selection, custom seek bar
+- 🧭 **Multi-profile support** — per-profile library, bookmarks, history, and tracking
+- 🔗 **Multi-tracker sync** — Trakt, Simkl, MAL, AniList
 - 🌍 **40+ languages** with smart skip (Intro/Outro) support
 - 📺 **Live streaming** with improved reliability
 - ⏱️ **Offline viewing** with download support
+- 🎨 **23 curated themes** (Ocean default, AMOLED Black, Synthwave, and more) plus dynamic color
+- 🎞️ **Netflix-style experience** — cinematic hero banner, carousels, cast/staff, trailers, recommendations
+- 🎵 **Torrent streaming** support
+- 📥 **Queue tab** and **Continue Watching** for picking up where you left off
 
 ## 🛠️ Built With
 
@@ -71,9 +85,9 @@
 | **Android**    | ✅                |
 | **Windows**    | ✅                |
 | **Linux**      | ✅                |
-| **Android TV** | ⏳ Coming soon    |
-| **iOS**        | ⏳ Coming soon    |
-| **macOS**      | ⏳ Coming soon    |
+| **Android TV** | ✅                |
+| **iOS**         |✅ [ Sideloading] |
+| **macOS**      |✅                |
 
 ## 🎨 Screenshots
 
@@ -137,6 +151,11 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
+## 🧩 Building Your Own Plugins
+
+MixStream extensions are plain JavaScript bundled as `.mix` packages (or raw `.js`). The runtime provides `fetch`, `getPreference`/`setPreference`, `magic_m3u8`, and proxy helpers (`MAGIC_PROXY_v1`/`v2`). Extensions implement the `MixStreamProvider` contract (`search`, `getHome`, `getDetails`, `loadStreams`).
+
+See the **[Plugin Development Guide](PLUGIN_DEVELOPMENT_GUIDE.md)** for details.
 
 ## 📚 Learn More
 
@@ -146,7 +165,7 @@ flutter run
 
 ## 🤝 Contributing
 
-We welcome all kinds of contributions! Whether fixing bugs or adding features.
+We welcome all kinds of contributions! Whether fixing bugs or adding features. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📊 Project Stats
 

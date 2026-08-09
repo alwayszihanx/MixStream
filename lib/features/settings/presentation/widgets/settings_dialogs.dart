@@ -587,7 +587,7 @@ void showDohProviderDialog(BuildContext context, WidgetRef ref) {
                           decoration: InputDecoration(
                             labelText: l10n.customDohUrlLabel,
                             hintText: 'https://...',
-                            prefixIcon: AppIcon('link_rounded', size: 20,),
+                            prefixIcon: const AppIcon('link_rounded', size: 20,),
                           ),
                           keyboardType: TextInputType.url,
                         ),
@@ -703,7 +703,7 @@ void showThemeConfigDialog(BuildContext context, WidgetRef ref) {
             return ListTile(
               leading: CircleAvatar(
                 backgroundColor: theme.primaryDark,
-                radius: 14,
+                radius: 24,
               ),
               title: Text(
                 theme.displayName,
@@ -964,7 +964,7 @@ void showQualityFilterModeDialog(
   required QualityFilterMode current,
   required Future<void> Function(QualityFilterMode) onChanged,
 }) {
-  const _options = [
+  const options = [
     (
       mode: QualityFilterMode.any,
       label: 'Show all (sort only)',
@@ -1005,7 +1005,7 @@ void showQualityFilterModeDialog(
               },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: _options.map((opt) {
+                children: options.map((opt) {
                   return ListTile(
                     title: Text(opt.label),
                     subtitle: Text(opt.subtitle),
@@ -1074,7 +1074,7 @@ void showOpenSubtitlesAuthDialog(
             surfaceTintColor: Colors.transparent,
             title: Row(
               children: [
-                AppIcon('subtitles_rounded', color: Colors.blue),
+                const AppIcon('subtitles_rounded', color: Colors.blue),
                 const SizedBox(width: 12),
                 Text(l10n.openSubtitles),
               ],
@@ -1098,7 +1098,7 @@ void showOpenSubtitlesAuthDialog(
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: l10n.username,
-                      prefixIcon: AppIcon('person_outline', size: 20),
+                      prefixIcon: const AppIcon('person_outline', size: 20),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1107,7 +1107,7 @@ void showOpenSubtitlesAuthDialog(
                     obscureText: isObscure,
                     decoration: InputDecoration(
                       labelText: l10n.password,
-                      prefixIcon: AppIcon('lock_outline', size: 20),
+                      prefixIcon: const AppIcon('lock_outline', size: 20),
                       suffixIcon: ExcludeFocus(
                         child: IconButton(
                           icon: AppIcon(
@@ -1128,7 +1128,7 @@ void showOpenSubtitlesAuthDialog(
                       ),
                       mode: LaunchMode.externalApplication,
                     ),
-                    icon: AppIcon('open_in_new_rounded', size: 16),
+                    icon: const AppIcon('open_in_new_rounded', size: 16),
                     label: Text(l10n.noAccountRegister),
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -1193,7 +1193,7 @@ void showOpenSubtitlesAuthDialog(
                                 maxHeight: 16,
                               ),
                             )
-                          : AppIcon('check_circle_outline_rounded', size: 18,),
+                          : const AppIcon('check_circle_outline_rounded', size: 18,),
                       label: Text(l10n.testConnection),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1299,7 +1299,7 @@ void showSubDlAuthDialog(
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: l10n.apiKey,
-                      prefixIcon: AppIcon('key_rounded', size: 20),
+                      prefixIcon: const AppIcon('key_rounded', size: 20),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -1329,7 +1329,7 @@ void showSubDlAuthDialog(
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: l10n.email,
-                      prefixIcon: AppIcon('email_outlined', size: 20),
+                      prefixIcon: const AppIcon('email_outlined', size: 20),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1338,7 +1338,7 @@ void showSubDlAuthDialog(
                     obscureText: isObscure,
                     decoration: InputDecoration(
                       labelText: l10n.password,
-                      prefixIcon: AppIcon('lock_outline', size: 20),
+                      prefixIcon: const AppIcon('lock_outline', size: 20),
                       suffixIcon: ExcludeFocus(
                         child: IconButton(
                           icon: AppIcon(
@@ -1390,7 +1390,7 @@ void showSubDlAuthDialog(
                                 maxHeight: 16,
                               ),
                             )
-                          : AppIcon('download_rounded', size: 18),
+                          : const AppIcon('download_rounded', size: 18),
                       label: Text(l10n.fetchMyApiKey),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1409,7 +1409,7 @@ void showSubDlAuthDialog(
                       Uri.parse('https://subdl.com/panel/api'),
                       mode: LaunchMode.externalApplication,
                     ),
-                    icon: AppIcon('open_in_new_rounded', size: 16),
+                    icon: const AppIcon('open_in_new_rounded', size: 16),
                     label: Text(l10n.noAccountRegister),
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -1480,7 +1480,7 @@ void showSubDlAuthDialog(
                                 maxHeight: 16,
                               ),
                             )
-                          : AppIcon('check_circle_outline_rounded', size: 18,),
+                          : const AppIcon('check_circle_outline_rounded', size: 18,),
                       label: Text(l10n.testConnection),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1580,7 +1580,7 @@ void showSubSourceAuthDialog(
                     autofocus: true,
                     decoration: InputDecoration(
                       labelText: l10n.apiKeyOptionalOverride,
-                      prefixIcon: AppIcon('key_rounded', size: 20),
+                      prefixIcon: const AppIcon('key_rounded', size: 20),
                       hintText: l10n.enterKeyToOverrideDefault,
                     ),
                   ),
@@ -1590,7 +1590,7 @@ void showSubSourceAuthDialog(
                       Uri.parse('https://subsource.net/dashboard/profile'),
                       mode: LaunchMode.externalApplication,
                     ),
-                    icon: AppIcon('open_in_new_rounded', size: 16),
+                    icon: const AppIcon('open_in_new_rounded', size: 16),
                     label: Text(l10n.getApiKeyFromProfile),
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -1650,7 +1650,7 @@ void showSubSourceAuthDialog(
                                 maxHeight: 16,
                               ),
                             )
-                          : AppIcon('check_circle_outline_rounded', size: 18,),
+                          : const AppIcon('check_circle_outline_rounded', size: 18,),
                       label: Text(l10n.testConnection),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),

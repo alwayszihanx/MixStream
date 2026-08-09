@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../shared/widgets/app_icon.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:mixstream/core/domain/entity/multimedia_item.dart';
 import 'package:mixstream/core/storage/history_repository.dart';
@@ -437,11 +438,7 @@ class EpisodeCard extends HookConsumerWidget {
                 placeholder: (context, url) => Container(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
+                    child: AppLoadingIndicator.small(),
                   ),
                 ),
               ),

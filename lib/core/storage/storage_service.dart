@@ -139,6 +139,10 @@ class StorageService {
     return items;
   }
 
+  Future<void> clearLibrary() async {
+    await _libraryBox.clear();
+  }
+
   // --- Settings ---
 
   Future<void> saveThemeMode(String mode) async {
@@ -283,6 +287,48 @@ class StorageService {
     return (_settingsBox.get('github_proxy_enabled', defaultValue: false)
             as bool?) ??
         false;
+  }
+
+  // --- Nav Style ---
+  Future<void> saveNavStyle(String value) async {
+    await _settingsBox.put('nav_style', value);
+  }
+
+  String? getNavStyle() {
+    return _settingsBox.get('nav_style') as String?;
+  }
+
+  // --- Profile ---
+  Future<void> saveProfileName(String name) async {
+    await _settingsBox.put('profile_name', name);
+  }
+
+  String? getProfileName() {
+    return _settingsBox.get('profile_name') as String?;
+  }
+
+  Future<void> saveProfileColorIndex(int index) async {
+    await _settingsBox.put('profile_color_index', index);
+  }
+
+  int getProfileColorIndex() {
+    return (_settingsBox.get('profile_color_index') as int?) ?? 0;
+  }
+
+  Future<void> saveProfileAvatarIndex(int index) async {
+    await _settingsBox.put('profile_avatar_index', index);
+  }
+
+  int getProfileAvatarIndex() {
+    return (_settingsBox.get('profile_avatar_index') as int?) ?? 0;
+  }
+
+  Future<void> saveProfileImagePath(String? path) async {
+    await _settingsBox.put('profile_image_path', path);
+  }
+
+  String? getProfileImagePath() {
+    return _settingsBox.get('profile_image_path') as String?;
   }
 
   // --- Integrations ---

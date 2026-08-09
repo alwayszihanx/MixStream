@@ -56,12 +56,14 @@ class _NoScrollbarBehavior extends ScrollBehavior {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<double> _appBarOpacityNotifier = ValueNotifier<double>(0);
   final ValueNotifier<bool> _isFabExtended = ValueNotifier<bool>(true);
   final ValueNotifier<bool> _showBottomFade = ValueNotifier(false);
   final FocusNode _firstActionFocusNode = FocusNode();
+  late AnimationController _retrySpinController;
+  late AnimationController _wobbleController;
 
   /// Carousel controller exposed by ExploreCarousel via [onControllerReady].
   /// Used by DashboardHeaderBar arrows.
@@ -74,6 +76,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _retrySpinController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _wobbleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
   }
 
   bool _isWidescreenForScroll() {
@@ -122,6 +132,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _isFabExtended.dispose();
     _showBottomFade.dispose();
     _firstActionFocusNode.dispose();
+    _retrySpinController.dispose();
+    _wobbleController.dispose();
     super.dispose();
   }
 
@@ -223,7 +235,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                 );
               },
-              borderRadius: BorderRadius.circular(50),
+              borderRadius: BorderRadius.circular(12),
               child: CircleAvatar(
                 backgroundColor: Theme.of(
                   context,
@@ -237,17 +249,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ],
       ),
-      floatingActionButton: ValueListenableBuilder<bool>(
-        valueListenable: _isFabExtended,
-        builder: (context, isFabExtended, _) {
-          return Material(
-            elevation: 4,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Theme.of(context).colorScheme.surfaceDim
-                : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _isFabExtended,
+          builder: (context, isFabExtended, _) {
+            return Material(
+              elevation: 4,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.surfaceDim
+                  : Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
               onTap: () => _showProviderSelector(context, ref),
               child: Container(
                 height: 56,
@@ -327,12 +341,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           );
         },
       ),
-      body: _buildBody(
-        context,
-        homeDataAsync,
-        history,
-        generalSettings.watchHistoryEnabled,
-        syncedProgressAsync,
+      ),
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTapUp: (details) {
+          final statusBarHeight = MediaQuery.paddingOf(context).top;
+          if (details.localPosition.dy <= statusBarHeight &&
+              _scrollController.hasClients &&
+              _scrollController.offset > 0) {
+            _scrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+            );
+          }
+        },
+        child: _buildBody(
+          context,
+          homeDataAsync,
+          history,
+          generalSettings.watchHistoryEnabled,
+          syncedProgressAsync,
+        ),
       ),
     );
   }
@@ -424,7 +454,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                 ),
 
-              if (watchHistoryEnabled && history.isNotEmpty)
+              if (watchHistoryEnabled && history.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: _buildGradientDivider(context),
+                ),
                 SliverToBoxAdapter(
                   child: ContinueWatchingSection(
                     title: l10n.continueWatching,
@@ -432,19 +465,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     topPadding: isWidescreen ? 0 : null,
                   ),
                 ),
+              ],
 
-              if (syncedProgressAsync.asData?.value.isNotEmpty == true)
+              if (syncedProgressAsync.asData?.value.isNotEmpty == true) ...[
+                SliverToBoxAdapter(
+                  child: _buildGradientDivider(context),
+                ),
                 SliverToBoxAdapter(
                   child: SyncedProgressSection(
                     title: 'Synced from Trakt',
                     items: syncedProgressAsync.asData!.value,
                     onItemTap: (item) {
-                      // Pre-fill search query and navigate to Search tab
                       ref.read(searchQueryProvider.notifier).set(item.title);
                       const SearchRoute().go(context);
                     },
                   ),
                 ),
+              ],
+
+              SliverToBoxAdapter(
+                child: _buildGradientDivider(context),
+              ),
 
               SliverList(
                 delegate: SliverChildBuilderDelegate(
@@ -523,6 +564,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  Widget _buildGradientDivider(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Container(
+        height: 1,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              cs.onSurface.withValues(alpha: 0.0),
+              cs.onSurface.withValues(alpha: 0.08),
+              cs.onSurface.withValues(alpha: 0.0),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildNoProviderState(
     BuildContext context,
     AppLocalizations l10n, {
@@ -532,10 +592,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AppIcon(
-            'extension_off_rounded',
-            size: 64,
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          AnimatedBuilder(
+            animation: _wobbleController,
+            builder: (context, child) {
+              return Transform.rotate(
+                angle: _wobbleController.value * 0.1,
+                child: child,
+              );
+            },
+            child: AppIcon(
+              'extension_off_rounded',
+              size: 64,
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -624,11 +693,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               runSpacing: 12,
               alignment: WrapAlignment.center,
               children: [
-                CustomButton(
-                  onPressed: () => ref.invalidate(homeDataProvider),
-                  label: l10n.retry,
-                  icon: const AppIcon('refresh_rounded'),
-                  isPrimary: true,
+                AnimatedBuilder(
+                  animation: _retrySpinController,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _retrySpinController.value * 6.28318,
+                      child: child,
+                    );
+                  },
+                  child: CustomButton(
+                    onPressed: () {
+                      _retrySpinController.forward(from: 0);
+                      ref.invalidate(homeDataProvider);
+                    },
+                    label: l10n.retry,
+                    icon: const AppIcon('refresh_rounded'),
+                    isPrimary: true,
+                  ),
                 ),
                 CustomButton(
                   onPressed: () => const LibraryRoute().push<void>(context),
@@ -681,7 +762,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               label: l10n.close,
             ),
             CustomButton(
-              icon: AppIcon('extension', size: 18),
+              icon: const AppIcon('extension', size: 18),
               label: l10n.goToExtensions,
               isPrimary: true,
               onPressed: () {
@@ -1023,7 +1104,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: SizedBox(
           height: heroHeight,
           width: double.infinity,
-          child: ShimmerPlaceholder(borderRadius: 18),
+          child: ShimmerPlaceholder(borderRadius: 12),
         ),
       );
     } else {
@@ -1041,14 +1122,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Widget _buildListShimmer(BuildContext context) {
     final isDesktop = context.isDesktop;
-    final cardWidth = isDesktop ? 200.0 : 130.0;
-    final imageHeight = cardWidth / (2 / 3);
-    final listHeight = imageHeight + 40.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title Placeholder
         Padding(
           padding: EdgeInsets.fromLTRB(
             isDesktop
@@ -1060,16 +1137,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 : LayoutConstants.spacingMd,
             LayoutConstants.spacingSm,
           ),
-          child: ShimmerPlaceholder.rectangular(
+          child: ShimmerPlaceholder.text(
             width: 150,
-            height: 24,
-            borderRadius: 4,
           ),
         ),
         const SizedBox(height: LayoutConstants.spacingMd),
-        // List Placeholder
         SizedBox(
-          height: listHeight,
+          height: isDesktop ? 300 : 230,
           child: ListView.separated(
             padding: EdgeInsets.symmetric(
               horizontal: isDesktop
@@ -1084,15 +1158,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   : LayoutConstants.spacingSm,
             ),
             itemBuilder: (context, index) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ShimmerPlaceholder.rectangular(
-                    width: cardWidth,
-                    height: imageHeight,
-                    borderRadius: 12,
-                  ),
-                ],
+              return ShimmerPlaceholder.card(
+                isPortrait: true,
               );
             },
           ),

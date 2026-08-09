@@ -299,25 +299,57 @@ class _LoadingCard extends StatelessWidget {
       (phase.kind == PlaybackUiPhaseKind.error && onBack != null);
 }
 
-class _PhaseIndicator extends StatelessWidget {
+class _PhaseIndicator extends StatefulWidget {
   final PlaybackUiPhase phase;
 
   const _PhaseIndicator({required this.phase});
 
   @override
+  State<_PhaseIndicator> createState() => _PhaseIndicatorState();
+}
+
+class _PhaseIndicatorState extends State<_PhaseIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _spinController;
+
+  @override
+  void initState() {
+    super.initState();
+    _spinController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _spinController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     const size = 42.0;
 
-    if (phase.kind == PlaybackUiPhaseKind.error) {
+    if (widget.phase.kind == PlaybackUiPhaseKind.error) {
       return AppIcon('error_outline', color: Colors.red.shade300, size: size);
     }
 
-    return const SizedBox(
-      width: size,
-      height: size,
-      child: CircularProgressIndicator(
-        strokeWidth: 3,
-        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+    return AnimatedBuilder(
+      animation: _spinController,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle: _spinController.value * 6.28318,
+          child: child,
+        );
+      },
+      child: const SizedBox(
+        width: size,
+        height: size,
+        child: CircularProgressIndicator(
+          strokeWidth: 3,
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        ),
       ),
     );
   }

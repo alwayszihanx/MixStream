@@ -15,15 +15,7 @@ class AppThemeMode extends _$AppThemeMode {
     _repository = ref.watch(settingsRepositoryProvider);
     final saved = _repository.getThemeMode();
     if (saved == null) {
-      final profileAsync = ref.watch(deviceProfileProvider);
-      final profile = profileAsync.asData?.value;
-      if (profile == null) {
-        return ThemeMode.dark;
-      }
-      if (profile.isTv) {
-        return ThemeMode.dark;
-      }
-      return ThemeMode.system;
+      return ThemeMode.dark;
     }
     return _getThemeMode(saved);
   }
@@ -55,7 +47,7 @@ class AppThemeConfig extends _$AppThemeConfig {
     _repository = ref.watch(settingsRepositoryProvider);
     final saved = _repository.getThemeConfig();
     if (saved >= 0 && saved < allThemes.length) return saved;
-    return 0;
+    return 12; // Tropical
   }
 
   Future<void> setThemeConfig(int index) async {

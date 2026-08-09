@@ -122,8 +122,8 @@ class MetadataBar extends ConsumerWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: themeColor.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(6),
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: themeColor.withValues(alpha: 0.3),
             width: 0.5,
@@ -144,11 +144,8 @@ class MetadataBar extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-        ),
-        borderRadius: BorderRadius.circular(4),
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         text,
@@ -207,14 +204,37 @@ class MetadataBar extends ConsumerWidget {
   }
 }
 
-class NextAiringWidget extends StatelessWidget {
+class NextAiringWidget extends StatefulWidget {
   final NextAiring nextAiring;
   const NextAiringWidget({super.key, required this.nextAiring});
 
   @override
+  State<NextAiringWidget> createState() => _NextAiringWidgetState();
+}
+
+class _NextAiringWidgetState extends State<NextAiringWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final date = DateTime.fromMillisecondsSinceEpoch(
-      nextAiring.unixTime * 1000,
+      widget.nextAiring.unixTime * 1000,
     );
     final formattedDate = DateFormat('MMM dd, yyyy (hh:mm a)').format(date);
 
@@ -235,8 +255,17 @@ class NextAiringWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              AppIcon('upcoming_rounded', size: 20,
-                color: Theme.of(context).colorScheme.primary,
+              AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: 1.0 + (_pulseController.value * 0.15),
+                    child: child,
+                  );
+                },
+                child: AppIcon('upcoming_rounded', size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               const SizedBox(width: 8),
               Text(
@@ -249,7 +278,7 @@ class NextAiringWidget extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "Episode ${nextAiring.episode} of Season ${nextAiring.season} will air on:",
+            "Episode ${widget.nextAiring.episode} of Season ${widget.nextAiring.season} will air on:",
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           Text(
@@ -297,7 +326,7 @@ class CastCarousel extends StatelessWidget {
                 child: Column(
                   children: [
                     CircleAvatar(
-                      radius: 35,
+                      radius: 38,
                       backgroundImage: actor.image != null
                           ? CachedNetworkImageProvider(actor.image!)
                           : null,
@@ -336,9 +365,32 @@ class CastCarousel extends StatelessWidget {
   }
 }
 
-class TrailersSection extends StatelessWidget {
+class TrailersSection extends StatefulWidget {
   final List<Trailer> trailers;
   const TrailersSection({super.key, required this.trailers});
+
+  @override
+  State<TrailersSection> createState() => _TrailersSectionState();
+}
+
+class _TrailersSectionState extends State<TrailersSection>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -358,10 +410,10 @@ class TrailersSection extends StatelessWidget {
           height: 160,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: trailers.length,
+            itemCount: widget.trailers.length,
             separatorBuilder: (_, _) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
-              final trailer = trailers[index];
+              final trailer = widget.trailers[index];
               return CardsWrapper(
                 onTap: () async {
                   final uri = Uri.tryParse(trailer.url);
@@ -388,8 +440,17 @@ class TrailersSection extends StatelessWidget {
                       ),
                       Container(
                         color: Colors.black26,
-                        child: const Center(
-                          child: AppIcon('play_circle_fill_rounded', color: Colors.white, size: 48),
+                        child: Center(
+                          child: AnimatedBuilder(
+                            animation: _pulseController,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: 1.0 + (_pulseController.value * 0.1),
+                                child: child,
+                              );
+                            },
+                            child: const AppIcon('play_circle_fill_rounded', color: Colors.white, size: 48),
+                          ),
                         ),
                       ),
                       Positioned(
@@ -433,7 +494,7 @@ class TrailersSection extends StatelessWidget {
   }
 }
 
-class RecommendationsCarousel extends StatelessWidget {
+class RecommendationsCarousel extends StatefulWidget {
   final List<MultimediaItem> items;
   final void Function(MultimediaItem) onItemTap;
 
@@ -442,6 +503,29 @@ class RecommendationsCarousel extends StatelessWidget {
     required this.items,
     required this.onItemTap,
   });
+
+  @override
+  State<RecommendationsCarousel> createState() => _RecommendationsCarouselState();
+}
+
+class _RecommendationsCarouselState extends State<RecommendationsCarousel>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _staggerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _staggerController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300 + widget.items.length * 60),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _staggerController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -465,48 +549,65 @@ class RecommendationsCarousel extends StatelessWidget {
           height: listHeight,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: items.length,
+            itemCount: widget.items.length,
             separatorBuilder: (_, _) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
-              final item = items[index];
-              return CardsWrapper(
-                onTap: () => onItemTap(item),
-                child: SizedBox(
-                  width: cardWidth,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl:
-                                AppImageFallbacks.poster(
-                                  item.posterUrl,
-                                  label: item.title,
-                                ) ??
-                                '',
-                            fit: BoxFit.cover,
-                            width: cardWidth,
-                            errorWidget: (_, _, _) =>
-                                ThumbnailErrorPlaceholder(label: item.title),
+              final item = widget.items[index];
+              final itemStart = index / widget.items.length;
+              final itemEnd = (index + 1) / widget.items.length;
+              return AnimatedBuilder(
+                animation: _staggerController,
+                builder: (context, child) {
+                  final progress = (_staggerController.value - itemStart)
+                      .clamp(0.0, 1.0) /
+                      (itemEnd - itemStart).clamp(0.001, 1.0);
+                  return Opacity(
+                    opacity: progress.clamp(0.0, 1.0),
+                    child: Transform.translate(
+                      offset: Offset(30 * (1 - progress), 0),
+                      child: child,
+                    ),
+                  );
+                },
+                child: CardsWrapper(
+                  onTap: () => widget.onItemTap(item),
+                  child: SizedBox(
+                    width: cardWidth,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl:
+                                  AppImageFallbacks.poster(
+                                    item.posterUrl,
+                                    label: item.title,
+                                  ) ??
+                                  '',
+                              fit: BoxFit.cover,
+                              width: cardWidth,
+                              errorWidget: (_, _, _) =>
+                                  ThumbnailErrorPlaceholder(label: item.title),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: isLarge
-                            ? Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              )
-                            : Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        Text(
+                          item.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: isLarge
+                              ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                )
+                              : Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
