@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/router/app_router.dart';
 
 import '../../../core/domain/entity/multimedia_item.dart';
@@ -74,6 +76,13 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
     final shouldShow = actionTop < threshold;
     if (_showStickyBar.value != shouldShow) {
       _showStickyBar.value = shouldShow;
+    }
+  }
+
+  Future<void> _openSourceWebpage(MultimediaItem item) async {
+    final url = item.url;
+    if (url.isNotEmpty) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
   }
 
@@ -242,6 +251,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                             : Colors.white,
                       ),
                       onPressed: () {
+                        HapticFeedback.lightImpact();
                         if (isBookmarked) {
                           libraryNotifier.removeItem(item.url);
                         } else {
@@ -259,10 +269,29 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                     descendantsAreTraversable: false,
                     child: IconButton(
                       icon: const AppIcon(
+                        'public_rounded',
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _openSourceWebpage(item);
+                      },
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black45,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Focus(
+                    descendantsAreTraversable: false,
+                    child: IconButton(
+                      icon: const AppIcon(
                         'share_rounded',
                         color: Colors.white,
                       ),
                       onPressed: () {
+                        HapticFeedback.lightImpact();
                         Share.share(
                           '${item.title}\n${item.url}',
                         );
@@ -362,6 +391,21 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
               } else {
                 libraryNotifier.addItem(item);
               }
+            },
+            style: IconButton.styleFrom(
+              backgroundColor: isDark ? Colors.black45 : Colors.white54,
+              foregroundColor: textColor,
+            ),
+          ),
+          // Open source webpage — D-pad reachable
+          IconButton(
+            icon: AppIcon(
+              'public_rounded',
+              color: textColor,
+            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _openSourceWebpage(item);
             },
             style: IconButton.styleFrom(
               backgroundColor: isDark ? Colors.black45 : Colors.white54,

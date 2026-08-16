@@ -15,6 +15,8 @@ class MultimediaCard extends StatefulWidget {
   final String? badgeText;
   final String? rating;
   final int? rank;
+  final List<PopupMenuEntry<String>> Function(BuildContext)? contextMenuBuilder;
+  final void Function(String value)? onContextMenuAction;
 
   const MultimediaCard({
     super.key,
@@ -27,6 +29,8 @@ class MultimediaCard extends StatefulWidget {
     this.badgeText,
     this.rating,
     this.rank,
+    this.contextMenuBuilder,
+    this.onContextMenuAction,
   });
 
   @override
@@ -46,6 +50,8 @@ class _MultimediaCardState extends State<MultimediaCard> {
         onTap: widget.onTap,
         focusNode: widget.focusNode,
         scaleFactor: 1.05,
+        contextMenuBuilder: widget.contextMenuBuilder,
+        onContextMenuAction: widget.onContextMenuAction,
         child: SizedBox(
           width: cardWidth,
           child: Column(

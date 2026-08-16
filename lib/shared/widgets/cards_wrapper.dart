@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mixstream/core/utils/responsive_breakpoints.dart';
 
 class CardsWrapper extends StatefulWidget {
   final Widget child;
@@ -9,6 +10,8 @@ class CardsWrapper extends StatefulWidget {
   final bool autoFocus;
   final BorderRadius? borderRadius;
   final FocusNode? focusNode;
+  final List<PopupMenuEntry<String>> Function(BuildContext)? contextMenuBuilder;
+  final void Function(String value)? onContextMenuAction;
 
   const CardsWrapper({
     super.key,
@@ -19,6 +22,8 @@ class CardsWrapper extends StatefulWidget {
     this.autoFocus = false,
     this.borderRadius,
     this.focusNode,
+    this.contextMenuBuilder,
+    this.onContextMenuAction,
   });
 
   @override
@@ -277,6 +282,31 @@ class _CardsWrapperState extends State<CardsWrapper>
           },
           onTap: widget.onTap,
           onLongPress: widget.onLongPress,
+          onSecondaryTapDown: (details) {
+            if (widget.contextMenuBuilder != null && context.isDesktop) {
+              final items = widget.contextMenuBuilder!(context);
+              if (items.isNotEmpty) {
+                showMenu<String>(
+                  context: context,
+                  position: RelativeRect.fromLTRB(
+                    details.globalPosition.dx,
+                    details.globalPosition.dy,
+                    details.globalPosition.dx,
+                    details.globalPosition.dy,
+                  ),
+                  items: items,
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ).then((value) {
+                  if (value != null) {
+                    widget.onContextMenuAction?.call(value);
+                  }
+                });
+              }
+            }
+          },
           child: Builder(
             builder: (context) {
               // Build the animated gradient border.

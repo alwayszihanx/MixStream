@@ -860,6 +860,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
           label: isBookmarked ? 'Bookmarked' : 'Bookmark',
           highlight: isBookmarked,
           onTap: () {
+            HapticFeedback.lightImpact();
             if (isBookmarked) {
               libraryNotifier.removeItem(movie.url);
             } else {
@@ -872,13 +873,19 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
           icon: 'play_arrow_rounded',
           label: 'Play',
           isPrimary: true,
-          onTap: () => widget.onTap?.call(movie),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            widget.onTap?.call(movie);
+          },
         ),
         const SizedBox(width: 12),
         _ActionButton(
           icon: 'info_outline_rounded',
           label: 'Info',
-          onTap: () => widget.onTap?.call(movie),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            widget.onTap?.call(movie);
+          },
         ),
       ],
     );

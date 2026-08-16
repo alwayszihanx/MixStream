@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
@@ -153,6 +154,7 @@ class DetailsActionButtons extends HookConsumerWidget {
               details!.episodes != null &&
               details!.episodes!.isNotEmpty)
           ? () async {
+              HapticFeedback.mediumImpact();
               await ref
                   .read(detailsControllerProvider(item.url).notifier)
                   .handlePlayPress(context, details!);
@@ -335,12 +337,16 @@ class DetailsActionButtons extends HookConsumerWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             onPressed: isDownloading
-                ? () => DownloadProgressDialog.show(
-                    context,
-                    details?.title ?? item.title,
-                    episodeUrl,
-                  )
+                ? () {
+                    HapticFeedback.lightImpact();
+                    DownloadProgressDialog.show(
+                      context,
+                      details?.title ?? item.title,
+                      episodeUrl,
+                    );
+                  }
                 : () {
+                    HapticFeedback.lightImpact();
                     ref
                         .read(downloadLauncherProvider)
                         .launch(
