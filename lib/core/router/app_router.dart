@@ -13,6 +13,7 @@ import '../../features/details/presentation/details_screen.dart';
 import '../../features/details/presentation/tmdb_movie_details_screen.dart';
 import '../../features/explore/presentation/view_all_screen.dart';
 import '../../features/player/presentation/player_screen.dart';
+import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../domain/entity/multimedia_item.dart';
 import 'package:mixstream/shared/widgets/app_scaffold.dart';
 import '../../core/storage/settings_repository.dart';
@@ -335,9 +336,38 @@ class PlayerRoute extends GoRouteData with $PlayerRoute {
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
+@TypedGoRoute<OnboardingRoute>(path: '/onboarding')
+class OnboardingRoute extends GoRouteData with $OnboardingRoute {
+  const OnboardingRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const OnboardingScreen();
+  }
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) {
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: build(context, state),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
 @Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
-  final initial = ref.read(settingsRepositoryProvider).getDefaultHomeScreen();
+  final onboardingDone = ref
+      .read(settingsRepositoryProvider)
+      .hasCompletedOnboarding();
+  final initial = onboardingDone
+      ? ref.read(settingsRepositoryProvider).getDefaultHomeScreen()
+      : '/onboarding';
 
   return GoRouter(
     initialLocation: initial,

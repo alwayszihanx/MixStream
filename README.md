@@ -18,9 +18,6 @@
   <a href="https://github.com/alwayszihanx/mixstream/issues">
     <img src="https://img.shields.io/github/issues/alwayszihanx/mixstream?style=for-the-badge&color=e74c3c" />
   </a>
-  <a href="https://github.com/alwayszihanx/mixstream/issues?q=is%3Aissue+is%3Aclosed">
-    <img src="https://img.shields.io/github/issues-search/alwayszihanx/mixstream?query=is%3Aissue+is%3Aclosed&style=for-the-badge&color=2ecc71" />
-  </a>
   <a href="https://github.com/alwayszihanx/mixstream/commits/main">
     <img src="https://img.shields.io/github/last-commit/alwayszihanx/mixstream?style=for-the-badge&color=17a2b8" />
   </a>
@@ -42,18 +39,18 @@
 
 </div>
 
-## ✨ Recent Highlights (v3.6.x)
+## ✨ Highlights (v3.6.8)
 
-- 🎨 **Custom loading indicators** – A hand-crafted dot-pulse loader (glowing dots travel in a wave around a ring) replaces the stock Material spinner across every screen: home, search, library, extensions, settings, details, player, and splash. A compact `.small` variant is used for thumbnails and account switching.
-- 💾 **Hero bookmark button** – The hero's "Save" placeholder is now a real per-profile **Bookmark/Bookmarked** toggle wired to your library. Saved items show a filled accent-colored bookmark.
-- 🖥️ **Slimmer desktop title bar** – Reduced to 36px with compact 14px icons for close, fullscreen, and always-on-top controls.
-- 📺 **Hero carousel polish** – Disney-style gradient titles (white → primary → tertiary), slower auto-advance on desktop (12s) with auto-pause when off-screen, and dot indicators repositioned below the action buttons.
-- 🔤 **Section accent bars** – Every section title now gets a slim gradient accent bar (primary → tertiary → secondary).
-- 🧩 **Icon system audit** – All 143 used icons now resolve to real bundled assets; bookmark, queue, swap, and delete-sweep mappings were fixed.
+- 🎬 **Cinematic details page** – Fully redesigned with a rounded parallax hero card, floating glass action panel, a prominent circular back button, and a two-panel editorial layout for desktop/TV.
+- 🧭 **Floating pill navigation** – A gradient pill-shaped nav bar with glowing active states replaces the stock tab bar; the widescreen sidebar uses a rounded 28px dock.
+- 🏠 **First-run onboarding** – A 3-slide welcome flow introduces streaming, extensions, and offline downloads before the app opens.
+- 📚 **Rebuilt Library tabs** – Continue Watching | My List | Downloads | Queue, with a smarter continue-watching feed (progress 0–98%).
+- 🌞 **Solarized default theme** – Fresh installs now boot into the curated Solarized theme.
+- 🎨 **Design system polish** – 32px pill nav, rounded cards, gradient section accent bars, and consistent corner radii across the app.
 
 ## 🚀 Key Features
 
-- 📱 **Cross-platform**: Android, Windows, Linux (Android TV / iOS / macOS on the roadmap)
+- 📱 **Cross-platform**: Android, Windows, Linux, Android TV, iOS (sideloading), macOS
 - 🔌 **Plugin-based architecture** with a custom JavaScript engine — install community extensions (`.mix` / `.js`) to add sources
 - 🔍 **Powerful search & discovery** with TMDB integration
 - 🌐 **Multi-provider support** with domain switching and Cloudflare cookie bypass
@@ -63,7 +60,7 @@
 - 🌍 **40+ languages** with smart skip (Intro/Outro) support
 - 📺 **Live streaming** with improved reliability
 - ⏱️ **Offline viewing** with download support
-- 🎨 **23 curated themes** (Ocean default, AMOLED Black, Synthwave, and more) plus dynamic color
+- 🎨 **23 curated themes** (Solarized default, AMOLED Black, Synthwave, and more) plus dynamic color
 - 🎞️ **Netflix-style experience** — cinematic hero banner, carousels, cast/staff, trailers, recommendations
 - 🎵 **Torrent streaming** support
 - 📥 **Queue tab** and **Continue Watching** for picking up where you left off
@@ -86,8 +83,8 @@
 | **Windows**    | ✅                |
 | **Linux**      | ✅                |
 | **Android TV** | ✅                |
-| **iOS**         |✅ [ Sideloading] |
-| **macOS**      |✅                |
+| **iOS**        | ✅ [Sideloading] |
+| **macOS**      | ✅                |
 
 ## 🎨 Screenshots
 
@@ -113,32 +110,18 @@
 
 Download the latest APK from the **[Releases page](https://github.com/alwayszihanx/mixstream/releases/latest)** and install it on your device.
 
-### 🐧 Linux
-
-**⚡ One-command install (app + all MixPlug plugins):**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/alwayszihanx/MixStream/main/installer.sh | sudo bash
-```
-
-This installs MixStream **and** automatically installs all plugins from the MixPlug repository, so extensions are ready on first launch.
-
-**🗑️ One-command uninstall:**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/alwayszihanx/MixStream/main/uninstaller.sh | sudo bash
-```
-
-The installer automatically uses the local bundle if available, or downloads it from GitHub Releases.
-
 ### 💻 Windows
 
 1. Download `mixstream.exe` from Releases
 2. Install and run the application
 
+### 🐧 Linux
+
+Download the `.deb`, `.rpm`, or `.tar.xz` package from Releases and install it with your package manager.
+
 ### 🍏 iOS / macOS
 
-Coming soon...
+Available via sideloading / DMG from Releases.
 
 ## 🛠️ Build from Source
 
@@ -151,21 +134,15 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
+> **Note**: Release APKs from local builds are debug-signed (no `android/key.properties`), which is fine for installing on your own device but not for publishing.
+
 ## 🧩 Building Your Own Plugins
 
 MixStream extensions are plain JavaScript bundled as `.mix` packages (or raw `.js`). The runtime provides `fetch`, `getPreference`/`setPreference`, `magic_m3u8`, and proxy helpers (`MAGIC_PROXY_v1`/`v2`). Extensions implement the `MixStreamProvider` contract (`search`, `getHome`, `getDetails`, `loadStreams`).
 
-See the **[Plugin Development Guide](PLUGIN_DEVELOPMENT_GUIDE.md)** for details.
-
-## 📚 Learn More
-
-- **GitHub Issues**: Report bugs or request features
-- **Translation Guide**: Help with localization
-- **Extension Guide**: Build your own plugins
-
 ## 🤝 Contributing
 
-We welcome all kinds of contributions! Whether fixing bugs or adding features. See [CONTRIBUTING.md](CONTRIBUTING.md).
+We welcome all kinds of contributions! Whether fixing bugs or adding features, feel free to open a PR.
 
 ## 📊 Project Stats
 

@@ -45,6 +45,14 @@ class SettingsRepository {
     return _storageService.getDefaultHomeScreen();
   }
 
+  Future<void> setHasCompletedOnboarding(bool completed) async {
+    await _storageService.setHasCompletedOnboarding(completed);
+  }
+
+  bool hasCompletedOnboarding() {
+    return _storageService.hasCompletedOnboarding();
+  }
+
   Future<void> setDevLoadAssets(bool enabled) async {
     await _storageService.setDevLoadAssets(enabled);
   }

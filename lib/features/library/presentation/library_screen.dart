@@ -6,6 +6,7 @@ import '../../../core/utils/responsive_breakpoints.dart';
 import '../../../core/providers/device_info_provider.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'widgets/bookmarks_tab.dart';
+import 'widgets/continue_watching_tab.dart';
 import 'widgets/downloads_tab.dart';
 import 'widgets/queue_tab.dart';
 import '../../../shared/widgets/app_icon.dart';
@@ -25,7 +26,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _pageController = PageController();
 
     // Sync PageView -> TabBar
@@ -99,11 +100,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                   _tabController.animateTo(index);
                 },
                 physics: const BouncingScrollPhysics(),
-                itemCount: 3,
+                itemCount: 4,
                 itemBuilder: (_, i) {
-                  if (i == 0) return const DownloadsTab();
-                  if (i == 1) return const QueueTab();
-                  return const BookmarksTab();
+                  if (i == 0) return const ContinueWatchingTab();
+                  if (i == 1) return const BookmarksTab();
+                  if (i == 2) return const DownloadsTab();
+                  return const QueueTab();
                 },
               ),
             ),
@@ -136,16 +138,20 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             ),
             tabs: [
               Tab(
+                text: 'Continue Watching',
+                icon: const AppIcon('play_circle_outline_rounded'),
+              ),
+              Tab(
+                text: 'My List',
+                icon: const AppIcon('bookmark_rounded'),
+              ),
+              Tab(
                 text: AppLocalizations.of(context)!.downloads,
                 icon: const AppIcon('download_for_offline_rounded'),
               ),
               Tab(
                 text: 'Queue',
                 icon: const AppIcon('queue_rounded'),
-              ),
-              Tab(
-                text: AppLocalizations.of(context)!.bookmarks,
-                icon: const AppIcon('bookmark_rounded'),
               ),
             ],
           ),
@@ -157,7 +163,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           _tabController.animateTo(index);
         },
         physics: const BouncingScrollPhysics(),
-        children: const [DownloadsTab(), QueueTab(), BookmarksTab()],
+        children: const [
+          ContinueWatchingTab(),
+          BookmarksTab(),
+          DownloadsTab(),
+          QueueTab(),
+        ],
       ),
     );
   }
@@ -173,26 +184,34 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             _TabChip(
-              label: l10n.downloads,
-              icon: const AppIcon('download_for_offline_rounded', size: 16),
+              label: 'Continue Watching',
+              icon: const AppIcon('play_circle_outline_rounded', size: 16),
               selected: _tabController.index == 0,
               onTap: () => _tabController.animateTo(0),
               theme: theme,
             ),
             const SizedBox(width: 8),
             _TabChip(
-              label: 'Queue',
-              icon: const AppIcon('queue_rounded', size: 16),
+              label: 'My List',
+              icon: const AppIcon('bookmark_rounded', size: 16),
               selected: _tabController.index == 1,
               onTap: () => _tabController.animateTo(1),
               theme: theme,
             ),
             const SizedBox(width: 8),
             _TabChip(
-              label: l10n.bookmarks,
-              icon: const AppIcon('bookmark_rounded', size: 16),
+              label: l10n.downloads,
+              icon: const AppIcon('download_for_offline_rounded', size: 16),
               selected: _tabController.index == 2,
               onTap: () => _tabController.animateTo(2),
+              theme: theme,
+            ),
+            const SizedBox(width: 8),
+            _TabChip(
+              label: 'Queue',
+              icon: const AppIcon('queue_rounded', size: 16),
+              selected: _tabController.index == 3,
+              onTap: () => _tabController.animateTo(3),
               theme: theme,
             ),
           ],

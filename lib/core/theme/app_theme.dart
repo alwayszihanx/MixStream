@@ -140,7 +140,26 @@ class ThemeConfig {
   );
 }
 
+/// Index of the default theme config (Solarized) in [allThemes].
+const int defaultThemeConfigIndex = 23;
+
 const List<ThemeConfig> allThemes = [
+  // 0. Netflix - Signature red on pure black
+  ThemeConfig(
+    displayName: 'Netflix',
+    primaryLight: Color(0xFFE50914),
+    primaryDark: Color(0xFFE50914),
+    secondaryLight: Color(0xFFB20710),
+    secondaryDark: Color(0xFFF6121D),
+    tertiaryLight: Color(0xFF8B050B),
+    tertiaryDark: Color(0xFFFF2B34),
+    backgroundLight: Color(0xFF141414),
+    backgroundDark: Color(0xFF000000),
+    surfaceLight: Color(0xFF181818),
+    surfaceDark: Color(0xFF141414),
+    textLight: Color(0xFFFFFFFF),
+    textDark: Color(0xFFFFFFFF),
+  ),
   // 1. Midnight Violet - Deep purple accent
   ThemeConfig(
     displayName: 'Midnight Violet',
@@ -541,6 +560,22 @@ const List<ThemeConfig> allThemes = [
     textLight: Color(0xFF200A30),
     textDark: Color(0xFFCDD6F4),
   ),
+  // 26. Monochrome - Pure grayscale
+  ThemeConfig(
+    displayName: 'Monochrome',
+    primaryLight: Color(0xFF6B6B6B),
+    primaryDark: Color(0xFFBDBDBD),
+    secondaryLight: Color(0xFF595959),
+    secondaryDark: Color(0xFF9E9E9E),
+    tertiaryLight: Color(0xFF757575),
+    tertiaryDark: Color(0xFFD0D0D0),
+    backgroundLight: Color(0xFFF7F7F7),
+    backgroundDark: Color(0xFF121212),
+    surfaceLight: Color(0xFFEBEBEB),
+    surfaceDark: Color(0xFF1E1E1E),
+    textLight: Color(0xFF1A1A1A),
+    textDark: Color(0xFFF2F2F2),
+  ),
 ];
 
 class _ThemeDataCache {
@@ -592,50 +627,50 @@ class AppTheme {
 
     final isDark = brightness == Brightness.dark;
     final base = isDark ? ThemeData.dark() : ThemeData.light();
-    final textTheme = GoogleFonts.poppinsTextTheme(base.textTheme).copyWith(
-      displayLarge: GoogleFonts.poppins(
+    final textTheme = GoogleFonts.interTextTheme(base.textTheme).copyWith(
+      displayLarge: GoogleFonts.inter(
         fontSize: 32,
         fontWeight: FontWeight.bold,
         color: colorScheme.onSurface,
       ),
-      displayMedium: GoogleFonts.poppins(
+      displayMedium: GoogleFonts.inter(
         fontSize: 28,
         fontWeight: FontWeight.bold,
         color: colorScheme.onSurface,
       ),
-      displaySmall: GoogleFonts.poppins(
+      displaySmall: GoogleFonts.inter(
         fontSize: 24,
         fontWeight: FontWeight.bold,
         color: colorScheme.onSurface,
       ),
-      headlineMedium: GoogleFonts.poppins(
+      headlineMedium: GoogleFonts.inter(
         fontSize: 24,
         fontWeight: FontWeight.w600,
         color: colorScheme.onSurface,
       ),
-      titleLarge: GoogleFonts.poppins(
+      titleLarge: GoogleFonts.inter(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: colorScheme.onSurface,
       ),
-      titleMedium: GoogleFonts.poppins(
+      titleMedium: GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: colorScheme.onSurface,
       ),
-      bodyLarge: GoogleFonts.poppins(
+      bodyLarge: GoogleFonts.inter(
         fontSize: 16,
         color: colorScheme.onSurface,
       ),
-      bodyMedium: GoogleFonts.poppins(
+      bodyMedium: GoogleFonts.inter(
         fontSize: 14,
         color: colorScheme.onSurfaceVariant,
       ),
-      bodySmall: GoogleFonts.poppins(
+      bodySmall: GoogleFonts.inter(
         fontSize: 12,
         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
       ),
-      labelLarge: GoogleFonts.poppins(
+      labelLarge: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.1,
@@ -653,7 +688,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         titleTextStyle: textTheme.titleLarge,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
@@ -664,14 +699,14 @@ class AppTheme {
         dragHandleColor: colorScheme.onSurface.withValues(alpha: 0.2),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
-            top: Radius.circular(16),
+            top: Radius.circular(24),
           ),
         ),
       ),
       cardTheme: CardThemeData(
         color: colorScheme.surface,
         surfaceTintColor: colorScheme.primary.withValues(alpha: 0.05),
-        elevation: 2,
+        elevation: 0,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -725,7 +760,7 @@ class AppTheme {
         secondaryLabelStyle: TextStyle(color: colorScheme.primary),
         checkmarkColor: colorScheme.primary,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.all(Radius.circular(8)),
           side: BorderSide.none,
         ),
       ),
@@ -760,7 +795,7 @@ class AppTheme {
         style: ButtonStyle(
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderRadius: BorderRadius.all(Radius.circular(16)),
             ),
           ),
         ),
@@ -769,7 +804,7 @@ class AppTheme {
         style: ButtonStyle(
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderRadius: BorderRadius.all(Radius.circular(16)),
             ),
           ),
         ),
@@ -778,7 +813,7 @@ class AppTheme {
         style: ButtonStyle(
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderRadius: BorderRadius.all(Radius.circular(16)),
             ),
           ),
         ),

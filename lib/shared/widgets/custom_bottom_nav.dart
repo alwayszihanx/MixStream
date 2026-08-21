@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:mixstream/l10n/generated/app_localizations.dart';
 import './app_icon.dart';
@@ -19,48 +21,76 @@ class CustomBottomNavBar extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.92),
         border: Border(
           top: BorderSide(
             color: theme.dividerColor.withValues(alpha: 0.2),
           ),
         ),
       ),
-      child: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: onTap,
-        backgroundColor: theme.scaffoldBackgroundColor,
-        indicatorColor: Colors.transparent,
-        elevation: 0,
-        height: 56,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
-          NavigationDestination(
-            icon: AppIcon('home_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            selectedIcon: AppIcon('home', color: theme.colorScheme.primary),
-            label: l10n.home,
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: NavigationBar(
+            selectedIndex: currentIndex,
+            onDestinationSelected: onTap,
+            backgroundColor: Colors.transparent,
+            indicatorColor: Colors.transparent,
+            elevation: 0,
+            height: 60,
+            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                );
+              }
+              return TextStyle(
+                fontSize: 10,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              );
+            }),
+            destinations: [
+              _destination(context, 'home_outlined', 'home', l10n.home),
+              _destination(
+                  context, 'search_outlined', 'search', l10n.search),
+              _destination(
+                  context, 'explore_outlined', 'explore', l10n.explore),
+              _destination(
+                  context,
+                  'video_library_outlined',
+                  'video_library',
+                  l10n.library),
+              _destination(
+                  context, 'settings_outlined', 'settings', l10n.settings),
+            ],
           ),
-          NavigationDestination(
-            icon: AppIcon('search_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            selectedIcon: AppIcon('search', color: theme.colorScheme.primary),
-            label: l10n.search,
-          ),
-          NavigationDestination(
-            icon: AppIcon('explore_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            selectedIcon: AppIcon('explore', color: theme.colorScheme.primary),
-            label: l10n.explore,
-          ),
-          NavigationDestination(
-            icon: AppIcon('video_library_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            selectedIcon: AppIcon('video_library', color: theme.colorScheme.primary),
-            label: l10n.library,
-          ),
-          NavigationDestination(
-            icon: AppIcon('settings_outlined', color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            selectedIcon: AppIcon('settings', color: theme.colorScheme.primary),
-            label: l10n.settings,
-          ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _destination(
+    BuildContext context,
+    String outlinedIcon,
+    String filledIcon,
+    String label,
+  ) {
+    final theme = Theme.of(context);
+    return NavigationDestination(
+      icon: AppIcon(
+        outlinedIcon,
+        size: 23,
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+      ),
+      selectedIcon: AppIcon(
+        filledIcon,
+        size: 23,
+        color: theme.colorScheme.primary,
+      ),
+      label: label,
     );
   }
 }

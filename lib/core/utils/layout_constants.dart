@@ -11,8 +11,8 @@ class LayoutConstants {
   static const double spacingXxl = 32;
 
   // Details screen SliverAppBar
-  static const double detailsExpandedHeightMobile = 400;
-  static const double detailsExpandedHeightDesktop = 300;
+  static const double detailsExpandedHeightMobile = 360;
+  static const double detailsExpandedHeightDesktop = 280;
 
   // Explore carousel: use same breakpoint as [ResponsiveBreakpoints.desktopBreakpoint]
   static const double exploreCarouselDesktopBreakpoint = 900;

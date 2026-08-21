@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:io';
 import '../domain/entity/multimedia_item.dart';
+import '../theme/app_theme.dart';
 
 part 'storage_service.g.dart';
 
@@ -158,7 +159,10 @@ class StorageService {
   }
 
   int getThemeConfig() {
-    return _settingsBox.get('theme_config', defaultValue: 0) as int;
+    return _settingsBox.get(
+          'theme_config',
+          defaultValue: defaultThemeConfigIndex,
+        ) as int;
   }
 
   // --- Sidebar State ---
@@ -177,6 +181,16 @@ class StorageService {
   String getDefaultHomeScreen() {
     return _settingsBox.get('default_home_screen', defaultValue: '/home')
         as String;
+  }
+
+  // --- Onboarding ---
+  Future<void> setHasCompletedOnboarding(bool completed) async {
+    await _settingsBox.put('has_completed_onboarding', completed);
+  }
+
+  bool hasCompletedOnboarding() {
+    return _settingsBox.get('has_completed_onboarding',
+            defaultValue: false) as bool;
   }
 
   Future<void> setDevLoadAssets(bool enabled) async {

@@ -134,6 +134,7 @@ class _SearchResultSectionState extends ConsumerState<SearchResultSection> {
                               : null,
                           badgeText: item.score?.toStringAsFixed(1),
                           rating: item.score?.toStringAsFixed(1),
+                          metadata: _buildMetadata(item),
                           onTap: () => DetailsRoute(
                             $extra: DetailsRouteExtra(item: item),
                           ).push<void>(context),
@@ -184,5 +185,18 @@ class _SearchResultSectionState extends ConsumerState<SearchResultSection> {
         ),
       ),
     );
+  }
+
+  String? _buildMetadata(MultimediaItem item) {
+    final year = item.year;
+    final type = switch (item.contentType) {
+      MultimediaContentType.movie => 'Movie',
+      MultimediaContentType.series => 'Series',
+      MultimediaContentType.anime => 'Anime',
+      MultimediaContentType.livestream => 'Live',
+      MultimediaContentType.other => null,
+    };
+    if (year == null && type == null) return null;
+    return [if (year != null) '$year', if (type != null) type].join(' • ');
   }
 }

@@ -27,6 +27,8 @@ class FloatingPillNav extends StatelessWidget {
       (_NavEntry('settings', 'settings_outlined', l10n.settings)),
     ];
 
+    const radius = 32.0;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -36,32 +38,41 @@ class FloatingPillNav extends StatelessWidget {
           bottom: 16,
           child: Center(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(radius),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        theme.colorScheme.surface.withValues(alpha: 0.96),
+                        theme.colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.88,
+                        ),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(radius),
                     border: Border.all(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.15),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.22),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 28,
+                        offset: const Offset(0, 10),
                       ),
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                        blurRadius: 18,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 10,
                     vertical: 8,
                   ),
                   child: Row(
@@ -117,33 +128,56 @@ class _PillNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inactiveColor = Theme.of(context).colorScheme.onSurface;
+    final theme = Theme.of(context);
+    final inactiveColor = theme.colorScheme.onSurface;
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
-        scale: isActive ? 1.15 : 1.0,
+        scale: isActive ? 1.12 : 1.0,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutBack,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOut,
-            width: isActive ? 48 : 40,
-            height: 32,
+            width: isActive ? 52 : 40,
+            height: 40,
             decoration: BoxDecoration(
               color: isActive
-                  ? activeColor.withValues(alpha: 0.15)
+                  ? activeColor.withValues(alpha: 0.18)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
+              border: isActive
+                  ? Border.all(
+                      color: activeColor.withValues(alpha: 0.35),
+                      width: 1.2,
+                    )
+                  : null,
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: activeColor.withValues(alpha: 0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
             ),
             child: Center(
-              child: AppIcon(
-                isActive ? icon : outlinedIcon,
-                size: 22,
-                color: isActive ? activeColor : inactiveColor.withValues(alpha: 0.6),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AppIcon(
+                    isActive ? icon : outlinedIcon,
+                    size: 22,
+                    color: isActive
+                        ? activeColor
+                        : inactiveColor.withValues(alpha: 0.6),
+                  ),
+                ],
               ),
             ),
           ),

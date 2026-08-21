@@ -307,7 +307,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 class ButtonDesign {
   ButtonDesign._();
 
-  static const double borderRadius = 12;
+  static const double borderRadius = 14;
   static const double borderWidth = 1.5;
   static const EdgeInsetsGeometry padding = EdgeInsets.symmetric(
     horizontal: 24,

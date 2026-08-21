@@ -63,4 +63,87 @@ class AppUtils {
     }
     return url;
   }
+
+  /// Converts a long scraped filename/source title into a clean display title.
+  ///
+  /// Strips season/episode markers, resolution, codec, audio, release group
+  /// and quality tokens, then normalizes separators. The original data is
+  /// never modified — this only affects what is shown under cards.
+  ///
+  /// Example: `Agent.Kim.Reactivated.S01E02.1080p.WEB-DL.x264-WEB`
+  ///       -> `Agent Kim Reactivated`
+  static String cleanDisplayTitle(String raw) {
+    var title = raw.trim();
+    if (title.isEmpty) return title;
+
+    // Strip file extensions.
+    title = title.replaceAll(RegExp(r'\.(mkv|mp4|avi|webm|mov|m4v|ts|flv)$', caseSensitive: false), '');
+
+    // Remove season/episode markers (S01E02, 1x02, Episode 3, E02).
+    title = title.replaceAll(
+      RegExp(r'(?:\[)?\s*S\d{1,2}\s*E\d{1,3}\s*(?:\])?', caseSensitive: false),
+      ' ',
+    );
+    title = title.replaceAll(
+      RegExp(r'(?:\[)?\s*S\d{1,2}\s*(?:-\s*S\d{1,2})?\s*(?:\])?', caseSensitive: false),
+      ' ',
+    );
+    title = title.replaceAll(
+      RegExp(r'\b\d{1,2}x\d{1,3}\b', caseSensitive: false),
+      ' ',
+    );
+    title = title.replaceAll(
+      RegExp(r'\b(?:Episode|Ep)\s*\d{1,3}\b', caseSensitive: false),
+      ' ',
+    );
+    title = title.replaceAll(
+      RegExp(r'\[?\s*E\d{1,3}\s*\]?', caseSensitive: false),
+      ' ',
+    );
+
+    // Remove release year when it stands alone.
+    title = title.replaceAll(RegExp(r'\b(?:19|20)\d{2}\b'), ' ');
+
+    // Remove resolution tokens.
+    title = title.replaceAll(
+      RegExp(r'\b(?:2160p|1080p|1080i|720p|480p|4k|uhd|8k)\b', caseSensitive: false),
+      ' ',
+    );
+
+    // Remove quality / source tokens.
+    title = title.replaceAll(
+      RegExp(r'\b(?:web[- ]?dl|webrip|bluray|blu-ray|brrip|bdrip|hdtv|hdtvrip|dvdrip|remux|hdr10?|dv|hdr)\b', caseSensitive: false),
+      ' ',
+    );
+
+    // Remove codec tokens.
+    title = title.replaceAll(
+      RegExp(r'\b(?:x264|x265|h[. ]?264|h[. ]?265|hevc|avc|av1|aac|mp3|flac)\b', caseSensitive: false),
+      ' ',
+    );
+
+    // Remove audio channel tokens.
+    title = title.replaceAll(
+      RegExp(r'\b(?:ddp?5[. ]?1|dts[- ]?hd|dts|atmos|aac2[. ]?0|truehd|eac3|ac3|dd)\b', caseSensitive: false),
+      ' ',
+    );
+
+    // Remove release-group tags (trailing token after a separator).
+    title = title.replaceAll(
+      RegExp(r'(?:[-_~]\s*[A-Za-z0-9]{2,6})$'),
+      '',
+    );
+    title = title.replaceAll(
+      RegExp(r'(?:\[[A-Za-z0-9 _-]{1,12}\])$'),
+      '',
+    );
+
+    // Normalize separators to single spaces.
+    title = title.replaceAll(RegExp(r'[._\-\[\]()]+'), ' ');
+
+    // Collapse whitespace and clean double spaces from "S E" markers.
+    title = title.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    return title;
+  }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -50,8 +52,13 @@ class DetailsSeasonListWrapper extends ConsumerWidget {
         itemBuilder: (context, index) {
           final s = seasons[index];
           final isSelected = s == selectedSeason;
+          final episodeCount = seasonMap[s]?.length ?? 0;
           return FilterChip(
-            label: Text(AppLocalizations.of(context)!.seasonWithNumber(s)),
+            label: Text(
+              episodeCount > 0
+                  ? 'S$s · $episodeCount'
+                  : AppLocalizations.of(context)!.seasonWithNumber(s),
+            ),
             selected: isSelected,
             onSelected: (_) => ref
                 .read(detailsControllerProvider(itemUrl).notifier)
@@ -142,19 +149,16 @@ class DetailsActionButtons extends HookConsumerWidget {
       }
     }
 
-    final playBtn = CustomButton(
-      isPrimary: true,
+    final playBtn = _DetailsActionButton(
+      playStyle: true,
       focusNode: playFocusNode,
       autofocus: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
       onPressed:
           (details != null &&
               details!.episodes != null &&
               details!.episodes!.isNotEmpty)
           ? () async {
-              HapticFeedback.mediumImpact();
+              unawaited(HapticFeedback.mediumImpact());
               await ref
                   .read(detailsControllerProvider(item.url).notifier)
                   .handlePlayPress(context, details!);
@@ -166,7 +170,7 @@ class DetailsActionButtons extends HookConsumerWidget {
             }
           : null,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: isLaunching
@@ -183,7 +187,7 @@ class DetailsActionButtons extends HookConsumerWidget {
                   Text(AppLocalizations.of(context)!.resolving),
                 ]
               : [
-                  const AppIcon('play_arrow_rounded', size: 20),
+                  const AppIcon('play_arrow_rounded', size: 20, color: Colors.white),
                   const SizedBox(width: LayoutConstants.spacingXs),
                   Text(
                     playLabel,
@@ -235,12 +239,7 @@ class DetailsActionButtons extends HookConsumerWidget {
         );
       }).toList(),
       child: IgnorePointer(
-        child: CustomButton(
-          isPrimary: false,
-          isOutlined: true,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+        child: _DetailsActionButton(
           onPressed: () {},
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
@@ -302,12 +301,7 @@ class DetailsActionButtons extends HookConsumerWidget {
     final downloadBtn = !showDownload
         ? const SizedBox.shrink()
         : downloadedFile != null
-        ? CustomButton(
-            isPrimary: false,
-            isOutlined: true,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+        ? _DetailsActionButton(
             onPressed: () {
               DownloadManagementDialog.show(
                 context,
@@ -319,7 +313,7 @@ class DetailsActionButtons extends HookConsumerWidget {
               );
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -330,12 +324,7 @@ class DetailsActionButtons extends HookConsumerWidget {
               ),
             ),
           )
-        : CustomButton(
-            isPrimary: false,
-            isOutlined: true,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+        : _DetailsActionButton(
             onPressed: isDownloading
                 ? () {
                     HapticFeedback.lightImpact();
@@ -356,7 +345,7 @@ class DetailsActionButtons extends HookConsumerWidget {
                         );
                   },
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: isDownloading
@@ -1254,6 +1243,50 @@ class DetailsDesktopEpisodeColumn extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// Flat, Netflix-style action button: solid fill, small rounded corners and
+/// no glow or drop shadows.
+class _DetailsActionButton extends StatelessWidget {
+  final Widget child;
+  final VoidCallback? onPressed;
+  final bool playStyle;
+  final FocusNode? focusNode;
+  final bool autofocus;
+
+  const _DetailsActionButton({
+    required this.child,
+    required this.onPressed,
+    this.playStyle = false,
+    this.focusNode,
+    this.autofocus = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isPlay = playStyle;
+    return FilledButton(
+      focusNode: focusNode,
+      autofocus: autofocus,
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        backgroundColor: isPlay
+            ? cs.primary
+            : cs.onSurface.withValues(alpha: 0.14),
+        foregroundColor: isPlay ? cs.onPrimary : cs.onSurface,
+        disabledBackgroundColor: cs.onSurface.withValues(alpha: 0.08),
+        disabledForegroundColor: cs.onSurface.withValues(alpha: 0.3),
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        overlayColor: Colors.white.withValues(alpha: 0.08),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+      child: child,
     );
   }
 }

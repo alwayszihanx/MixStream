@@ -497,11 +497,13 @@ class _TrailersSectionState extends State<TrailersSection>
 class RecommendationsCarousel extends StatefulWidget {
   final List<MultimediaItem> items;
   final void Function(MultimediaItem) onItemTap;
+  final String title;
 
   const RecommendationsCarousel({
     super.key,
     required this.items,
     required this.onItemTap,
+    this.title = 'More Like This',
   });
 
   @override
@@ -539,7 +541,7 @@ class _RecommendationsCarouselState extends State<RecommendationsCarousel>
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: Text(
-            "More Like This",
+            widget.title,
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),

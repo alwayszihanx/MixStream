@@ -229,7 +229,7 @@ class _SettingsTileState extends State<SettingsTile>
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: widget.icon,
                       ),

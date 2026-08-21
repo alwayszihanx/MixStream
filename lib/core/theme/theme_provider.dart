@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../storage/settings_repository.dart';
-import '../providers/device_info_provider.dart';
 import 'app_theme.dart';
 
 part 'theme_provider.g.dart';
@@ -47,7 +46,7 @@ class AppThemeConfig extends _$AppThemeConfig {
     _repository = ref.watch(settingsRepositoryProvider);
     final saved = _repository.getThemeConfig();
     if (saved >= 0 && saved < allThemes.length) return saved;
-    return 12; // Tropical
+    return defaultThemeConfigIndex; // Solarized
   }
 
   Future<void> setThemeConfig(int index) async {

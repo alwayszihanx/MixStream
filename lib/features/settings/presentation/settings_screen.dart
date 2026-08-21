@@ -8,12 +8,10 @@ import '../../../core/theme/theme_provider.dart';
 import '../../../core/theme/nav_style_provider.dart';
 import '../../../shared/widgets/app_icon.dart';
 
-import '../../../core/utils/stream_quality_sorter.dart';
 import 'widgets/settings_widgets.dart';
 import 'widgets/settings_dialogs.dart';
 import 'player_settings_provider.dart';
 import 'general_settings_provider.dart';
-import 'account_settings_screen.dart';
 
 import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../core/providers/locale_provider.dart';
@@ -82,13 +80,6 @@ class SettingsScreen extends ConsumerWidget {
         const PlayerSettings();
 
     final l10n = AppLocalizations.of(context)!;
-
-    final platform = Theme.of(context).platform;
-    final isDesktopOS =
-        platform == TargetPlatform.windows ||
-        platform == TargetPlatform.macOS ||
-        platform == TargetPlatform.linux;
-    final isTouchDevice = !isTv && !isDesktopOS;
 
     final theme = Theme.of(context);
     final currentNavStyle = ref.watch(appNavStyleProvider);
@@ -183,169 +174,8 @@ class SettingsScreen extends ConsumerWidget {
             SettingsGroup(
               title: l10n.player,
               icon: const AppIcon('play_arrow', size: 20),
-              description: 'Playback, gestures, and quality',
+              description: 'Playback and quality',
               children: [
-                SettingsTile(
-                  icon: const AppIcon('smart_display_rounded'),
-                  title: l10n.defaultPlayer,
-                  subtitle: getPlayerDisplayName(
-                    playerSettings.preferredPlayer,
-                    l10n,
-                  ),
-                  onTap: () => showDefaultPlayerDialog(
-                    context,
-                    ref,
-                    playerSettings.preferredPlayer,
-                  ),
-                ),
-                if (isTouchDevice) ...[
-                  SettingsTile(
-                    icon: const AppIcon('swipe_vertical_rounded'),
-                    title: l10n.leftGesture,
-                    subtitle: getGestureLabel(playerSettings.leftGesture, l10n),
-                    onTap: () => showGestureDialog(
-                      context,
-                      ref,
-                      true,
-                      playerSettings.leftGesture,
-                    ),
-                  ),
-                  SettingsTile(
-                    icon: const AppIcon('swipe_vertical_rounded'),
-                    title: l10n.rightGesture,
-                    subtitle: getGestureLabel(
-                      playerSettings.rightGesture,
-                      l10n,
-                    ),
-                    onTap: () => showGestureDialog(
-                      context,
-                      ref,
-                      false,
-                      playerSettings.rightGesture,
-                    ),
-                  ),
-                  SettingsTile(
-                    icon: const AppIcon('touch_app_rounded'),
-                    title: l10n.doubleTapToSeek,
-                    subtitle: playerSettings.doubleTapEnabled
-                        ? l10n.enabled
-                        : l10n.disabled,
-                    trailing: Switch(
-                      value: playerSettings.doubleTapEnabled,
-                      onChanged: (val) => ref
-                          .read(playerSettingsProvider.notifier)
-                          .setDoubleTapEnabled(val),
-                    ),
-                    onTap: () => ref
-                        .read(playerSettingsProvider.notifier)
-                        .setDoubleTapEnabled(!playerSettings.doubleTapEnabled),
-                  ),
-                  SettingsTile(
-                    icon: const AppIcon('swipe_rounded'),
-                    title: l10n.swipeToSeek,
-                    subtitle: playerSettings.swipeSeekEnabled
-                        ? l10n.enabled
-                        : l10n.disabled,
-                    trailing: Switch(
-                      value: playerSettings.swipeSeekEnabled,
-                      onChanged: (val) => ref
-                          .read(playerSettingsProvider.notifier)
-                          .setSwipeSeekEnabled(val),
-                    ),
-                    onTap: () => ref
-                        .read(playerSettingsProvider.notifier)
-                        .setSwipeSeekEnabled(!playerSettings.swipeSeekEnabled),
-                  ),
-                ],
-                SettingsTile(
-                  icon: const AppIcon('av_timer_rounded'),
-                  title: l10n.seekDuration,
-                  subtitle: formatSeekDuration(
-                    playerSettings.seekDuration,
-                    l10n,
-                  ),
-                  onTap: () => showDurationDialog(
-                    context,
-                    ref,
-                    playerSettings.seekDuration,
-                  ),
-                ),
-                SettingsTile(
-                  icon: const AppIcon('timer_outlined'),
-                  title: l10n.bufferDepth,
-                  subtitle: formatReadahead(
-                    playerSettings.readaheadSeconds,
-                    l10n,
-                  ),
-                  onTap: () => showReadaheadDialog(
-                    context,
-                    ref,
-                    playerSettings.readaheadSeconds,
-                  ),
-                ),
-                SettingsTile(
-                  icon: const AppIcon('aspect_ratio_rounded'),
-                  title: l10n.defaultResizeMode,
-                  subtitle: getResizeModeLabel(
-                    playerSettings.defaultResizeMode,
-                    l10n,
-                  ),
-                  onTap: () => showResizeDialog(
-                    context,
-                    ref,
-                    playerSettings.defaultResizeMode,
-                  ),
-                ),
-                SettingsTile(
-                  icon: const AppIcon('high_quality_rounded'),
-                  title: l10n.hardwareDecoding,
-                  subtitle: playerSettings.hardwareDecoding
-                      ? '${l10n.enabled} (${l10n.recommended})'
-                      : l10n.disabled,
-                  trailing: Switch(
-                    value: playerSettings.hardwareDecoding,
-                    onChanged: (val) => ref
-                        .read(playerSettingsProvider.notifier)
-                        .setHardwareDecoding(val),
-                  ),
-                  onTap: () => ref
-                      .read(playerSettingsProvider.notifier)
-                      .setHardwareDecoding(!playerSettings.hardwareDecoding),
-                ),
-                SettingsTile(
-                  icon: const AppIcon('wifi_rounded'),
-                  title: l10n.wifiQualityPreference,
-                  subtitle: qualityPreferenceLabel(
-                    playerSettings.wifiQuality,
-                    l10n,
-                  ),
-                  onTap: () => showQualityDialog(
-                    context,
-                    ref,
-                    title: l10n.wifiQualityPreference,
-                    current: playerSettings.wifiQuality,
-                    onChanged: ref
-                        .read(playerSettingsProvider.notifier)
-                        .setWifiQuality,
-                  ),
-                ),
-                SettingsTile(
-                  icon: const AppIcon('signal_cellular_alt_rounded'),
-                  title: l10n.mobileQualityPreference,
-                  subtitle: qualityPreferenceLabel(
-                    playerSettings.mobileQuality,
-                    l10n,
-                  ),
-                  onTap: () => showQualityDialog(
-                    context,
-                    ref,
-                    title: l10n.mobileQualityPreference,
-                    current: playerSettings.mobileQuality,
-                    onChanged: ref
-                        .read(playerSettingsProvider.notifier)
-                        .setMobileQuality,
-                  ),
-                ),
                 SettingsTile(
                   icon: const AppIcon('quality'),
                   title: 'Quality Filter Mode',
@@ -361,27 +191,6 @@ class SettingsScreen extends ConsumerWidget {
                         .read(playerSettingsProvider.notifier)
                         .setQualityFilterMode,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: LayoutConstants.spacingLg),
-            SettingsGroup(
-              title: l10n.accounts,
-              icon: const AppIcon('account_circle_rounded', size: 20),
-              description: 'Subtitles and tracking services',
-              children: [
-                SettingsTile(
-                  icon: const AppIcon('account_circle_rounded'),
-                  title: 'Manage Accounts',
-                  subtitle: 'Configure Subtitles and Tracking Services',
-                  isLast: true,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const AccountSettingsScreen(),
-                      ),
-                    );
-                  },
                 ),
               ],
             ),
@@ -469,21 +278,6 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: l10n.factoryResetSubtitle,
                   isLast: true,
                   onTap: () => showFactoryResetDialog(context, ref),
-                ),
-              ],
-            ),
-            const SizedBox(height: LayoutConstants.spacingLg),
-            SettingsGroup(
-              title: l10n.developer,
-              icon: const AppIcon('developer', size: 20),
-              description: 'Debug and development tools',
-              children: [
-                SettingsTile(
-                  icon: const AppIcon('developer_mode_rounded'),
-                  title: l10n.developerOptions,
-                  subtitle: l10n.developerOptionsSubtitle,
-                  isLast: true,
-                  onTap: () => const DeveloperOptionsRoute().go(context),
                 ),
               ],
             ),

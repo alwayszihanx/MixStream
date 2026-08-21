@@ -170,7 +170,7 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                       width: 4,
                       height: isDesktop ? 18 : 14,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(4),
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -288,6 +288,7 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                       isPortrait: _isPortrait,
                       badgeText: item.score?.toStringAsFixed(1),
                       rating: item.score?.toStringAsFixed(1),
+                      metadata: _buildCardMetadata(item),
                       onTap: () {
                         if (widget.onTap != null) {
                           widget.onTap!(item);
@@ -311,6 +312,24 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
       ],
     );
   }
+
+  /// Compact card metadata line: "2026 • K-Drama" style.
+  String? _buildCardMetadata(MultimediaItem item) {
+    final year = item.year;
+    final type = switch (item.contentType) {
+      MultimediaContentType.movie => 'Movie',
+      MultimediaContentType.series => 'Series',
+      MultimediaContentType.anime => 'Anime',
+      MultimediaContentType.livestream => 'Live',
+      MultimediaContentType.other => null,
+    };
+    if (year == null && type == null) return null;
+    final parts = [
+      if (year != null) '$year',
+      if (type != null) type,
+    ];
+    return parts.join(' • ');
+  }
 }
 
 /// Small arrow button used in section headers on desktop.
@@ -329,7 +348,7 @@ class _HeaderArrowButton extends StatelessWidget {
         onPressed: onTap,
         padding: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: icon,
       ),

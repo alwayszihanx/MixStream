@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/utils/responsive_breakpoints.dart';
+import '../../core/utils/app_utils.dart';
 import 'cards_wrapper.dart';
 import 'shimmer_placeholder.dart';
 import 'thumbnail_error_placeholder.dart';
@@ -15,6 +16,8 @@ class MultimediaCard extends StatefulWidget {
   final String? badgeText;
   final String? rating;
   final int? rank;
+  final String? metadata;
+  final List<String>? badges;
   final List<PopupMenuEntry<String>> Function(BuildContext)? contextMenuBuilder;
   final void Function(String value)? onContextMenuAction;
 
@@ -29,6 +32,8 @@ class MultimediaCard extends StatefulWidget {
     this.badgeText,
     this.rating,
     this.rank,
+    this.metadata,
+    this.badges,
     this.contextMenuBuilder,
     this.onContextMenuAction,
   });
@@ -38,12 +43,17 @@ class MultimediaCard extends StatefulWidget {
 }
 
 class _MultimediaCardState extends State<MultimediaCard> {
+  static const double _posterRadius = 10;
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = context.isDesktop;
     final cardWidth = isDesktop
         ? (widget.isPortrait ? 200.0 : 300.0)
         : (widget.isPortrait ? 130.0 : 200.0);
+    final displayTitle = AppUtils.cleanDisplayTitle(widget.title);
+    final showBadges = widget.badges?.isNotEmpty == true;
+    final showRating = widget.rating != null && widget.rating!.isNotEmpty;
 
     return RepaintBoundary(
       child: CardsWrapper(
@@ -59,7 +69,7 @@ class _MultimediaCardState extends State<MultimediaCard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(_posterRadius),
                 child: AspectRatio(
                   aspectRatio: widget.isPortrait ? 2 / 3 : 16 / 9,
                   child: Stack(
@@ -71,16 +81,16 @@ class _MultimediaCardState extends State<MultimediaCard> {
                           imageUrl: widget.imageUrl ?? '',
                           fit: BoxFit.cover,
                           placeholder: (context, url) =>
-                              ShimmerPlaceholder(borderRadius: 12),
+                              ShimmerPlaceholder(borderRadius: _posterRadius),
                           errorWidget: (_, _, _) =>
-                              ThumbnailErrorPlaceholder(label: widget.title),
+                              ThumbnailErrorPlaceholder(label: displayTitle),
                         ),
                       ),
                       Positioned(
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        height: 80,
+                        height: 70,
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -88,13 +98,13 @@ class _MultimediaCardState extends State<MultimediaCard> {
                               end: Alignment.bottomCenter,
                               colors: [
                                 Colors.transparent,
-                                Colors.black.withValues(alpha: 0.6),
+                                Colors.black.withValues(alpha: 0.65),
                               ],
                             ),
                           ),
                         ),
                       ),
-                      if (widget.rating != null && widget.rating!.isNotEmpty)
+                      if (showRating)
                         Positioned(
                           top: 6,
                           left: 6,
@@ -105,7 +115,7 @@ class _MultimediaCardState extends State<MultimediaCard> {
                             ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF5C518),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(4),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.4),
@@ -148,7 +158,7 @@ class _MultimediaCardState extends State<MultimediaCard> {
                             ),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               widget.badgeText!,
@@ -159,6 +169,46 @@ class _MultimediaCardState extends State<MultimediaCard> {
                                 letterSpacing: 0.5,
                               ),
                             ),
+                          ),
+                        ),
+                      if (showBadges)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (final badge in widget.badges!.take(2))
+                                Container(
+                                  margin: const EdgeInsets.only(left: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF01B4E4),
+                                    borderRadius: BorderRadius.circular(4),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    badge,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.4,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       if (widget.rank != null && widget.rank! <= 10)
@@ -172,23 +222,54 @@ class _MultimediaCardState extends State<MultimediaCard> {
                         left: 0,
                         right: 0,
                         child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Text(
-                            widget.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isDesktop ? 13 : 11,
-                              fontWeight: FontWeight.w600,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.7),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
+                          padding: const EdgeInsets.fromLTRB(8, 6, 8, 7),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                displayTitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isDesktop ? 13 : 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.2,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (widget.metadata != null &&
+                                  widget.metadata!.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  widget.metadata!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontSize: isDesktop ? 11 : 9.5,
+                                    fontWeight: FontWeight.w500,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        blurRadius: 3,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
-                            ),
+                            ],
                           ),
                         ),
                       ),

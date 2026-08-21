@@ -76,18 +76,18 @@ class SyncedProgressCard extends ConsumerWidget {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         width: width,
         decoration: BoxDecoration(
           color: cs.surfaceContainer,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(4),
+                left: Radius.circular(12),
               ),
               child: AspectRatio(
                 aspectRatio: 2 / 3,

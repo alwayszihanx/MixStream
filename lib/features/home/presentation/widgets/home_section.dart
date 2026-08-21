@@ -37,6 +37,7 @@ class _HomeSectionState extends ConsumerState<HomeSection> {
     if (widget.items.isEmpty) return const SizedBox.shrink();
 
     final isLarge = context.isTabletOrLarger;
+    final cs = Theme.of(context).colorScheme;
 
     final double totalHeight = isLarge ? 350.0 : 230.0;
 
@@ -50,13 +51,31 @@ class _HomeSectionState extends ConsumerState<HomeSection> {
             behavior: HitTestBehavior.opaque,
             child: Row(
               children: [
+                // Brand accent gradient bar
+                Container(
+                  width: 4,
+                  height: isLarge ? 18 : 14,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        cs.primary,
+                        cs.tertiary,
+                        cs.secondary,
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     widget.title,
                     style: TextStyle(
                       fontSize: isLarge ? 20 : 17,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: cs.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -68,7 +87,7 @@ class _HomeSectionState extends ConsumerState<HomeSection> {
                   child: Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 22,
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: cs.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
               ],

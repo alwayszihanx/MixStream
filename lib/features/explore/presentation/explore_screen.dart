@@ -3,7 +3,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/widgets/cards_wrapper.dart';
-import '../../../shared/widgets/custom_widgets.dart';
 import '../../home/presentation/home_provider.dart';
 import '../../home/presentation/home_state.dart';
 import '../data/explore_mode_provider.dart';
@@ -50,7 +49,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   final ValueNotifier<bool> _isScrolledNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<double> _appBarOpacityNotifier = ValueNotifier<double>(0);
   final ValueNotifier<bool> _showBottomFade = ValueNotifier(false);
-  final ValueNotifier<bool> _isFabExtended = ValueNotifier<bool>(true);
   final FocusNode _firstActionFocusNode = FocusNode();
 
   @override
@@ -92,16 +90,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     if (isScrolled != _isScrolledNotifier.value) {
       _isScrolledNotifier.value = isScrolled;
     }
-
-    if (_scrollController.position.userScrollDirection ==
-            ScrollDirection.reverse &&
-        _isFabExtended.value) {
-      _isFabExtended.value = false;
-    } else if (_scrollController.position.userScrollDirection ==
-            ScrollDirection.forward &&
-        !_isFabExtended.value) {
-      _isFabExtended.value = true;
-    }
   }
 
   @override
@@ -111,7 +99,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     _isScrolledNotifier.dispose();
     _appBarOpacityNotifier.dispose();
     _showBottomFade.dispose();
-    _isFabExtended.dispose();
     _firstActionFocusNode.dispose();
     super.dispose();
   }
@@ -177,6 +164,29 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             ),
             centerTitle: false,
             actions: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  right: LayoutConstants.spacingMd,
+                ),
+                child: CardsWrapper(
+                  onTap: () {
+                    final isAnime = ref.read(exploreModeProvider);
+                    ref
+                        .read(exploreModeProvider.notifier)
+                        .setAnimeMode(!isAnime);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: CircleAvatar(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.1),
+                    radius: 18,
+                    child: AppIcon('explore', color: Theme.of(context).colorScheme.onSurface,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.only(
                   right: LayoutConstants.spacingMd,
@@ -254,50 +264,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     firstActionFocusNode: _firstActionFocusNode,
                   )
                 : _buildScrollView(context),
-          ),
-          floatingActionButton: ValueListenableBuilder<bool>(
-            valueListenable: _isFabExtended,
-            builder: (context, isFabExtended, _) {
-              final isAnime = ref.watch(exploreModeProvider);
-              return CustomButton(
-                onPressed: () {
-                  ref
-                      .read(exploreModeProvider.notifier)
-                      .setAnimeMode(!isAnime);
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AppIcon(
-                      isAnime ? 'arrow_back' : 'explore',
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      child: SizedBox(
-                        width: isFabExtended ? null : 0,
-                        child: isFabExtended
-                            ? Padding(
-                                padding: const EdgeInsets.only(left: 12),
-                                child: Text(
-                                  isAnime ? 'Go Back' : 'Explore Anime',
-                                  style: TextStyle(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
           ),
         );
       },

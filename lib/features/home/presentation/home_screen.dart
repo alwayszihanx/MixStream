@@ -59,7 +59,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<double> _appBarOpacityNotifier = ValueNotifier<double>(0);
-  final ValueNotifier<bool> _isFabExtended = ValueNotifier<bool>(true);
   final ValueNotifier<bool> _showBottomFade = ValueNotifier(false);
   final FocusNode _firstActionFocusNode = FocusNode();
   late AnimationController _retrySpinController;
@@ -113,15 +112,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       _appBarOpacityNotifier.value = opacity;
     }
 
-    if (_scrollController.position.userScrollDirection ==
-            ScrollDirection.reverse &&
-        _isFabExtended.value) {
-      _isFabExtended.value = false;
-    } else if (_scrollController.position.userScrollDirection ==
-            ScrollDirection.forward &&
-        !_isFabExtended.value) {
-      _isFabExtended.value = true;
-    }
   }
 
   @override
@@ -129,7 +119,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _appBarOpacityNotifier.dispose();
-    _isFabExtended.dispose();
     _showBottomFade.dispose();
     _firstActionFocusNode.dispose();
     _retrySpinController.dispose();
@@ -198,7 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       );
     }
 
-    // Mobile layout: existing AppBar + FAB
+    // Mobile layout: AppBar with extension + search actions
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -221,6 +210,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
         title: Text(l10n.appTitle),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: LayoutConstants.spacingMd),
+            child: CardsWrapper(
+              focusNode: _firstActionFocusNode,
+              onTap: () => _showProviderSelector(context, ref),
+              borderRadius: BorderRadius.circular(12),
+              child: CircleAvatar(
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.1),
+                radius: 18,
+                child: AppIcon('extension', color: Theme.of(context).colorScheme.onSurface,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: LayoutConstants.spacingMd),
             child: CardsWrapper(
@@ -248,99 +254,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ),
         ],
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80),
-        child: ValueListenableBuilder<bool>(
-          valueListenable: _isFabExtended,
-          builder: (context, isFabExtended, _) {
-            return Material(
-              elevation: 4,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Theme.of(context).colorScheme.surfaceDim
-                  : Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-              onTap: () => _showProviderSelector(context, ref),
-              child: Container(
-                height: 56,
-                constraints: const BoxConstraints(minWidth: 56),
-                padding: EdgeInsets.symmetric(
-                  horizontal: isFabExtended ? 16 : 0,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AppIcon('extension', color: Theme.of(context).colorScheme.primary,
-                    ),
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      child: SizedBox(
-                        width: isFabExtended ? null : 0,
-                        child: isFabExtended
-                            ? Padding(
-                                padding: const EdgeInsets.only(left: 12),
-                                child: Builder(
-                                  builder: (context) {
-                                    final l10n = AppLocalizations.of(context)!;
-                                    final active = ref.watch(
-                                      activeProviderProvider,
-                                    );
-                                    final isDebug = active?.isDebug ?? false;
-                                    return Row(
-                                      children: [
-                                        Text(
-                                          active?.name ?? l10n.none,
-                                          style: TextStyle(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurface,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.fade,
-                                          softWrap: false,
-                                        ),
-                                        if (isDebug) ...[
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 4,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.red,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              l10n.debug,
-                                              style: const TextStyle(
-                                                fontSize: 10,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    );
-                                  },
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
       ),
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,

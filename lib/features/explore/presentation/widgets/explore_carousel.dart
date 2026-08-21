@@ -219,7 +219,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
     if (widget.movies.isEmpty) return const SizedBox.shrink();
 
     final size = MediaQuery.sizeOf(context);
-    final heroHeight = size.height * 0.60;
+    final heroHeight = size.height * 0.57;
     final isDesktop =
         size.width > LayoutConstants.exploreCarouselDesktopBreakpoint;
 
@@ -317,7 +317,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         border: _isFocusHighlighted
                             ? Border.all(
                                 color: Theme.of(context).colorScheme.primary,
@@ -326,7 +326,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
                             : null,
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         child: SizedBox(
                           height: heroHeight,
                           child: _buildCarouselStack(
@@ -700,7 +700,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
               ),
             ),
 
-          // 3. Title
+          // 3. Title + metadata
           Positioned(
             left: 24,
             right: 24,
@@ -710,8 +710,8 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
               child: _withEntrance(
                 entranceT,
                 opacity >= 0.999
-                    ? _buildTitle(title)
-                    : Opacity(opacity: opacity, child: _buildTitle(title)),
+                    ? _buildTitleBlock(movie)
+                    : Opacity(opacity: opacity, child: _buildTitleBlock(movie)),
               ),
             ),
           ),
@@ -811,34 +811,55 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
     );
   }
 
+  Widget _buildTitleBlock(MultimediaItem movie) {
+    final metaParts = <String>[
+      if (movie.year != null) '${movie.year}',
+      if (movie.contentType == MultimediaContentType.movie) 'Movie',
+      if (movie.contentType == MultimediaContentType.series) 'Series',
+      if (movie.contentType == MultimediaContentType.anime) 'Anime',
+      if (movie.contentType == MultimediaContentType.livestream) 'Live',
+      if (movie.genresStr.isNotEmpty) movie.genresStr,
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (metaParts.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              metaParts.join(' • '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.3,
+                shadows: const [Shadow(color: Colors.black, blurRadius: 6)],
+              ),
+            ),
+          ),
+        _buildTitle(movie.title),
+      ],
+    );
+  }
+
   Widget _buildTitle(String title) {
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: ShaderMask(
-        shaderCallback: (bounds) => LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            Colors.white,
-            Colors.white.withValues(alpha: 0.85),
-            scheme.primary,
-            scheme.tertiary,
-          ],
-          stops: const [0.0, 0.6, 0.92, 1.0],
-        ).createShader(bounds),
-        blendMode: BlendMode.srcATop,
-        child: Text(
-          title,
-          textAlign: TextAlign.left,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            shadows: [Shadow(color: Colors.black, blurRadius: 8)],
-          ),
+      child: Text(
+        title,
+        textAlign: TextAlign.left,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 30,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.5,
+          shadows: [Shadow(color: Colors.black, blurRadius: 10)],
         ),
       ),
     );
@@ -857,7 +878,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
       children: [
         _ActionButton(
           icon: isBookmarked ? 'bookmark_rounded' : 'bookmark_border_rounded',
-          label: isBookmarked ? 'Bookmarked' : 'Bookmark',
+          label: isBookmarked ? 'In My List' : 'My List',
           highlight: isBookmarked,
           onTap: () {
             HapticFeedback.lightImpact();
@@ -871,7 +892,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
         const SizedBox(width: 12),
         _ActionButton(
           icon: 'play_arrow_rounded',
-          label: 'Play',
+          label: 'Watch Now',
           isPrimary: true,
           onTap: () {
             HapticFeedback.mediumImpact();
@@ -881,7 +902,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
         const SizedBox(width: 12),
         _ActionButton(
           icon: 'info_outline_rounded',
-          label: 'Info',
+          label: 'Details',
           onTap: () {
             HapticFeedback.lightImpact();
             widget.onTap?.call(movie);
@@ -917,12 +938,12 @@ class _ActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
           color: isPrimary
               ? Colors.white
               : Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: isPrimary
               ? null
               : Border.all(

@@ -225,7 +225,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                 clipBehavior: Clip.none,
                 decoration: BoxDecoration(
                   color: dockBgColor,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(28),
                   border: Border.all(
                     color: dockBorderColor.withValues(alpha: 0.8),
                     width: 1.0,
@@ -315,13 +315,19 @@ class _SidebarDockItemState extends ConsumerState<_SidebarDockItem> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Background color of the items (bg-gray-200 / dark:bg-neutral-800 verbatim, no accent highlight)
-    final itemBgColor = isDark
-        ? const Color(0xFF262626)
-        : const Color(0xFFE5E7EB);
+    // Background color of the items — selected items get the Netflix red accent
+    final itemBgColor = widget.isSelected
+        ? theme.colorScheme.primary
+        : isDark
+            ? const Color(0xFF262626)
+            : const Color(0xFFE5E7EB);
 
     // Icon color of the items (high contrast in both dark and light modes)
-    final iconColor = isDark ? Colors.white : const Color(0xFF171717);
+    final iconColor = widget.isSelected
+        ? Colors.white
+        : isDark
+            ? Colors.white
+            : const Color(0xFF171717);
 
     // Tooltip style color variables (bg-gray-100 / dark:bg-neutral-800 verbatim)
     final tooltipBgColor = isDark
