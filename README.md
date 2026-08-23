@@ -39,10 +39,13 @@
 
 </div>
 
-## ✨ Highlights (v3.6.8)
+## ✨ Highlights (v3.6.9)
 
-- 🎬 **Cinematic details page** – Fully redesigned with a rounded parallax hero card, floating glass action panel, a prominent circular back button, and a two-panel editorial layout for desktop/TV.
-- 🧭 **Floating pill navigation** – A gradient pill-shaped nav bar with glowing active states replaces the stock tab bar; the widescreen sidebar uses a rounded 28px dock.
+- 🎬 **Cinematic 7-stage splash** – A brand-new intro: the screen opens on pure black, an ambient green glow blooms, real genre posters (Horror, Thriller, Action, Sci-Fi, Anime, Drama, Comedy, Documentary) emerge from every direction and collapse into the **MixStream** logo, a light sweep glides across it, and it fades seamlessly into the app.
+- 🌑 **Dark-only experience** – MixStream now boots and stays in **dark mode only** (no system/light toggle). The UI, splash, and home screen share one consistent deep-dark surface so the splash → app hand-off is perfectly seamless.
+- 🟢 **Wordmark branding** – The home screen AppBar now shows the **MixStream wordmark logo** instead of plain text, and the splash forms the logo from `mixstream.png` before cross-fading into the full wordmark.
+- 🎨 **Cinematic details page** – Rounded parallax hero card, floating glass action panel, a prominent circular back button, and a two-panel editorial layout for desktop/TV.
+- 🧭 **Floating pill navigation** – A gradient pill-shaped nav bar with glowing active states; the widescreen sidebar uses a rounded 28px dock.
 - 🏠 **First-run onboarding** – A 3-slide welcome flow introduces streaming, extensions, and offline downloads before the app opens.
 - 📚 **Rebuilt Library tabs** – Continue Watching | My List | Downloads | Queue, with a smarter continue-watching feed (progress 0–98%).
 - 🌞 **Solarized default theme** – Fresh installs now boot into the curated Solarized theme.
@@ -50,7 +53,7 @@
 
 ## 🚀 Key Features
 
-- 📱 **Cross-platform**: Android, Windows, Linux, Android TV, iOS (sideloading), macOS
+- 📱 **Cross-platform**: Android, Windows, Linux, Android TV, iOS (sideloading), and macOS
 - 🔌 **Plugin-based architecture** with a custom JavaScript engine — install community extensions (`.mix` / `.js`) to add sources
 - 🔍 **Powerful search & discovery** with TMDB integration
 - 🌐 **Multi-provider support** with domain switching and Cloudflare cookie bypass
@@ -64,6 +67,7 @@
 - 🎞️ **Netflix-style experience** — cinematic hero banner, carousels, cast/staff, trailers, recommendations
 - 🎵 **Torrent streaming** support
 - 📥 **Queue tab** and **Continue Watching** for picking up where you left off
+- 🖼️ **Cinematic splash & wordmark branding** for a premium first impression
 
 ## 🛠️ Built With
 
@@ -106,22 +110,74 @@
 
 ## 📥 Installation
 
+All release files are published on the **[Releases page](https://github.com/alwayszihanx/mixstream/releases)**. Pick the asset that matches your platform below.
+
 ### 🤖 Android
 
-Download the latest APK from the **[Releases page](https://github.com/alwayszihanx/mixstream/releases/latest)** and install it on your device.
+Download the APK that matches your device architecture:
+
+| Asset | Use for |
+|:------|:--------|
+| `MixStream-Android-universal-v3.6.9.apk` | Any device (larger file) |
+| `MixStream-Android-arm64-v8a-v3.6.9.apk` | Most modern phones (recommended) |
+| `MixStream-Android-armeabi-v7a-v3.6.9.apk` | Older 32-bit devices |
+| `MixStream-Android-x86_64-v3.6.9.apk` | Emulators / x86 devices |
+
+1. Transfer the APK to your device (or download it directly).
+2. Open it and allow **"Install unknown apps"** when prompted.
+3. Tap **Install**. On first launch you'll see the cinematic splash, then onboarding.
+
+> The app is built without a custom upload key by default, so it is signed with a debug-style keystore. Sideloading works fine; just keep the same key if you upgrade over an existing install.
 
 ### 💻 Windows
 
-1. Download `mixstream.exe` from Releases
-2. Install and run the application
+1. Download `MixStream-Windows-x64-Setup-v3.6.9.exe`.
+2. Run the installer (Inno Setup) and follow the prompts.
+3. Launch **MixStream** from the Start menu / desktop shortcut.
+
+> If SmartScreen complains, choose **"More info" → "Run anyway"** (the build is unsigned).
 
 ### 🐧 Linux
 
-Download the `.deb`, `.rpm`, or `.tar.xz` package from Releases and install it with your package manager.
+Choose the package for your distro:
 
-### 🍏 iOS / macOS
+- **Debian / Ubuntu / derivatives** — `MixStream-Linux-x64-v3.6.9.deb`
+  ```bash
+  sudo apt install ./MixStream-Linux-x64-v3.6.9.deb
+  # or
+  sudo dpkg -i MixStream-Linux-x64-v3.6.9.deb && sudo apt-get -f install
+  ```
+- **Fedora / openSUSE / RHEL** — `MixStream-Linux-x64-v3.6.9.rpm`
+  ```bash
+  sudo rpm -i MixStream-Linux-x64-v3.6.9.rpm
+  # or
+  sudo dnf install ./MixStream-Linux-x64-v3.6.9.rpm
+  ```
+- **Portable bundle** — `MixStream-Linux-x64-v3.6.9.tar.xz`
+  ```bash
+  tar -xf MixStream-Linux-x64-v3.6.9.tar.xz
+  cd MixStream-Linux-x64-v3.6.9
+  ./mixstream
+  ```
+  > Run the binary from inside its folder so it can find `data/` and `lib/`. For a menu entry, copy the folder to `~/.local/opt/mixstream` and add a `.desktop` file pointing at the executable.
 
-Available via sideloading / DMG from Releases.
+ARM64 Linux builds (`MixStream-Linux-arm64-*`) are also provided in releases.
+
+### 🍏 macOS
+
+1. Download `MixStream-macOS-<arch>-v3.6.9.dmg` (`arm64`, `x64`, or `universal`).
+2. Open the DMG and drag **MixStream** to **Applications**.
+3. Because the build is unsigned, macOS may block it. Right-click the app → **Open**, or run once:
+   ```bash
+   xattr -cr /Applications/MixStream.app
+   ```
+   then launch normally.
+
+### 📱 iOS (Sideloading)
+
+1. Download `MixStream-iOS-v3.6.9.ipa` (unsigned).
+2. Sideload it with [AltStore](https://altstore.io/), Sideloadly, or Xcode.
+3. Trust the developer profile in **Settings → General → VPN & Device Management** before opening.
 
 ## 🛠️ Build from Source
 
@@ -136,6 +192,19 @@ flutter run
 
 > **Note**: Release APKs from local builds are debug-signed (no `android/key.properties`), which is fine for installing on your own device but not for publishing.
 
+Optional API keys (TMDB, Trakt, Simkl, MAL, AniList, AnimeSkip) can be injected at build time:
+
+```bash
+cat > dart-defines.json <<'JSON'
+{
+  "TMDB_API_KEY": "your_key",
+  "TRAKT_CLIENT_ID": "your_id",
+  "TRAKT_CLIENT_SECRET": "your_secret"
+}
+JSON
+flutter build apk --release --dart-define-from-file=dart-defines.json
+```
+
 ## 🧩 Building Your Own Plugins
 
 MixStream extensions are plain JavaScript bundled as `.mix` packages (or raw `.js`). The runtime provides `fetch`, `getPreference`/`setPreference`, `magic_m3u8`, and proxy helpers (`MAGIC_PROXY_v1`/`v2`). Extensions implement the `MixStreamProvider` contract (`search`, `getHome`, `getDetails`, `loadStreams`).
@@ -143,6 +212,10 @@ MixStream extensions are plain JavaScript bundled as `.mix` packages (or raw `.j
 ## 🤝 Contributing
 
 We welcome all kinds of contributions! Whether fixing bugs or adding features, feel free to open a PR.
+
+### 👤 Contributors
+
+- [@alwaszihanx](https://github.com/alwaszihanx) — Creator & maintainer
 
 ## 📊 Project Stats
 

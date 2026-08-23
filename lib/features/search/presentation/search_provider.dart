@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/extensions/extension_manager.dart';
 import '../../../../core/extensions/base_provider.dart';
+import '../../../../core/extensions/cloudstream/cloudstream_manager.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../explore/data/explore_tmdb_provider.dart';
 
@@ -70,7 +71,10 @@ Stream<SearchAggregateState> searchAllProviders(
   required SearchFilter filter,
   required bool Function() isCancelled,
 }) async* {
-  final allProviders = manager.getAllProviders();
+  final allProviders = <MixStreamProvider>[
+    ...manager.getAllProviders(),
+    ...ref.watch(cloudStreamManagerProvider),
+  ];
   final providers = allProviders.where((p) {
     final isLiveOnly =
         p.supportedTypes.isNotEmpty &&

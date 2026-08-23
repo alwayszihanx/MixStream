@@ -2,6 +2,7 @@ package io.alwayszihan.mixstream
 
 import android.content.Intent
 import android.net.Uri
+import io.alwayszihan.mixstream.cloudstream.CloudStreamBridge
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -9,12 +10,15 @@ import android.app.PictureInPictureParams
 import android.os.Build
 import androidx.core.content.FileProvider
 import java.io.File
+import android.content.ComponentName
+import android.content.pm.PackageManager
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "io.alwayszihan.mixstream.player/pip"
     private val TV_CHANNEL = "io.alwayszihan.mixstream/tv_channel"
     private val PLAYER_CHANNEL = "io.alwayszihan.mixstream/external_player"
     private val BUILD_CONFIG_CHANNEL = "io.alwayszihan.mixstream/build_config"
+    private val ICON_CHANNEL = "io.alwayszihan.mixstream/launcher_icon"
 
     private var isPlaying = false
 
@@ -139,6 +143,9 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // CloudStream native bridge (loads real .cs3 DEX plugins)
+        CloudStreamBridge(this, messenger)
+
         // Build Config Channel
         MethodChannel(messenger, BUILD_CONFIG_CHANNEL).setMethodCallHandler { call, result ->
             val pm = applicationContext.packageManager
@@ -175,8 +182,45 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        // Launcher icon switch (toggles the Logo2Alias activity-alias)
+        MethodChannel(messenger, ICON_CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method == "setAlternateIconName") {
+                val iconName = call.argument<String?>("iconName")
+                try {
+                    val pm = packageManager
+                    val pkg = applicationContext.packageName
+                    val main = ComponentName(this, MainActivity::class.java)
+                    val alias = ComponentName(this, "$pkg.Logo2Alias")
+                    if (iconName == "Logo2Alias") {
+                        pm.setComponentEnabledSetting(
+                            alias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                            PackageManager.DONT_KILL_APP,
+                        )
+                        pm.setComponentEnabledSetting(
+                            main, PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                            PackageManager.DONT_KILL_APP,
+                        )
+                    } else {
+                        pm.setComponentEnabledSetting(
+                            main, PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                            PackageManager.DONT_KILL_APP,
+                        )
+                        pm.setComponentEnabledSetting(
+                            alias, PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                            PackageManager.DONT_KILL_APP,
+                        )
+                    }
+                    result.success(null)
+                } catch (e: Exception) {
+                    result.error("ICON_ERROR", e.message, null)
+                }
+            } else {
+                result.notImplemented()
+            }
+        }
     }
-    
+
     // Action Constants
     private val ACTION_MEDIA_CONTROL = "media_control"
     private val EXTRA_CONTROL_TYPE = "control_type"

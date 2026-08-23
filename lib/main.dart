@@ -12,6 +12,8 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'shared/widgets/custom_widgets.dart';
 import 'core/storage/storage_service.dart';
+import 'core/storage/settings_repository.dart';
+import 'core/services/launcher_icon_service.dart';
 import 'core/network/doh_service.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'core/utils/app_utils.dart';
@@ -28,9 +30,10 @@ import 'core/network/cloudflare_bypass.dart';
 import 'package:dpad/dpad.dart';
 import 'core/config/tmdb_config.dart';
 import 'core/providers/device_info_provider.dart';
-import 'shared/widgets/loading_indicator.dart';
 import 'features/settings/presentation/general_settings_provider.dart';
 import './shared/widgets/app_icon.dart';
+import './shared/widgets/splash_screen.dart';
+import 'features/onboarding/presentation/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,6 +89,9 @@ class AppRoot extends StatefulWidget {
 class _AppRootState extends State<AppRoot> {
   late StorageService _storageService;
   bool _initialized = false;
+  bool _showSplash = true;
+  bool _showOnboarding = false;
+  bool _onboardingPending = false;
   Object? _error;
   StackTrace? _stackTrace;
 
@@ -93,6 +99,16 @@ class _AppRootState extends State<AppRoot> {
   void initState() {
     super.initState();
     _init();
+  }
+
+  void _onSplashFinished() {
+    if (mounted) setState(() => _showSplash = false);
+  }
+
+  void _onOnboardingDone() {
+    if (!mounted) return;
+    setState(() => _showOnboarding = false);
+    unawaited(_storageService.setHasCompletedOnboarding(true));
   }
 
   Future<void> _init() async {
@@ -115,6 +131,8 @@ class _AppRootState extends State<AppRoot> {
       if (mounted) {
         setState(() {
           _initialized = true;
+          _onboardingPending = !_storageService.hasCompletedOnboarding();
+          if (_onboardingPending) _showOnboarding = true;
         });
         // Pre-warm the system WebView after the first frame so the initial
         // render isn't delayed. This eliminates the frame jank that occurs
@@ -147,25 +165,30 @@ class _AppRootState extends State<AppRoot> {
     }
 
     if (!_initialized) {
-      return Directionality(
+      return const Directionality(
         textDirection: TextDirection.ltr,
-        child: DynamicColorBuilder(
-          builder: (lightDynamic, darkDynamic) {
-            final color =
-                lightDynamic?.primary ??
-                const Color(0xFF6200EE); // Default Purple/Blue
-            return ColoredBox(
-              color: Colors.black,
-              child: Center(child: AppLoadingIndicator(color: color)),
-            );
-          },
-        ),
+        child: ColoredBox(color: Color(0xFF000000)),
       );
+    }
+
+    // Show exactly ONE screen at a time. Building MyApp *behind* an opaque
+    // splash/onboarding overlay leaves it in a broken (pure-black) state under
+    // the Impeller/Vulkan backend when the overlay is later removed, so we
+    // never stack it under the overlays.
+    final Widget body;
+    if (_showSplash) {
+      body = AppSplashScreen(onFinished: _onSplashFinished);
+    } else if (_showOnboarding) {
+      body = OnboardingScreen(onDone: _onOnboardingDone);
+    } else {
+      body = const MyApp();
     }
 
     return ProviderScope(
       overrides: [storageServiceProvider.overrideWithValue(_storageService)],
-      child: const ExtensionsSyncBridge(child: MyApp()),
+      child: ExtensionsSyncBridge(
+        child: Directionality(textDirection: TextDirection.ltr, child: body),
+      ),
     );
   }
 }
@@ -190,6 +213,8 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener {
       ref.read(downloadServiceProvider).init();
       _checkExtensionsUpdates();
       _checkAppUpdates();
+      LauncherIconService.instance
+          .applyChoice(ref.read(settingsRepositoryProvider).getAppLogoChoice());
     });
   }
 

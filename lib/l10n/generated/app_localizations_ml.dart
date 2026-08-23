@@ -993,6 +993,12 @@ class AppLocalizationsMl extends AppLocalizations {
   String get next => 'അടുത്തത്';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'പി.ഐ.പി (PiP)';
 
   @override

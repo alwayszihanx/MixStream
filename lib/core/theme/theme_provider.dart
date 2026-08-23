@@ -12,28 +12,13 @@ class AppThemeMode extends _$AppThemeMode {
   @override
   ThemeMode build() {
     _repository = ref.watch(settingsRepositoryProvider);
-    final saved = _repository.getThemeMode();
-    if (saved == null) {
-      return ThemeMode.dark;
-    }
-    return _getThemeMode(saved);
+    // Dark‑only: ignore any previously saved light/system preference.
+    return ThemeMode.dark;
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
     state = mode;
     await _repository.saveThemeMode(mode.name);
-  }
-
-  ThemeMode _getThemeMode(String mode) {
-    switch (mode) {
-      case 'light':
-        return ThemeMode.light;
-      case 'dark':
-        return ThemeMode.dark;
-      case 'system':
-      default:
-        return ThemeMode.system;
-    }
   }
 }
 

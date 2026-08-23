@@ -953,6 +953,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get next => '下一个';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => '画中画';
 
   @override

@@ -980,6 +980,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get next => 'التالي';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'صورة داخل صورة';
 
   @override

@@ -960,6 +960,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get next => '다음';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'PiP 모드';
 
   @override

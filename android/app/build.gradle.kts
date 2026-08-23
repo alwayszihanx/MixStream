@@ -85,4 +85,7 @@ flutter {
 dependencies {
     implementation("androidx.tvprovider:tvprovider:1.0.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    // CloudStream engine: provider API + .cs3 plugin loader. Powers the native
+    // CloudStream bridge (see CloudStreamBridge.kt + cloudstream_executor.dart).
+    implementation("com.github.recloudstream.cloudstream:library:v4.8.0")
 }

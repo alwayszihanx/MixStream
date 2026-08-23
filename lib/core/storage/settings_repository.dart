@@ -21,6 +21,14 @@ class SettingsRepository {
     return _storageService.getThemeMode();
   }
 
+  Future<void> saveAppLogoChoice(String choice) async {
+    await _storageService.saveAppLogoChoice(choice);
+  }
+
+  String getAppLogoChoice() {
+    return _storageService.getAppLogoChoice();
+  }
+
   Future<void> saveThemeConfig(int index) async {
     await _storageService.saveThemeConfig(index);
   }

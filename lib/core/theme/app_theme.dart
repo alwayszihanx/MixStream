@@ -514,19 +514,19 @@ const List<ThemeConfig> allThemes = [
   ),
   // 23. Solarized - Blue on dark
   ThemeConfig(
-    displayName: 'Solarized',
-    primaryLight: Color(0xFF268BD2),
-    primaryDark: Color(0xFF4AA0E0),
-    secondaryLight: Color(0xFF2AA198),
-    secondaryDark: Color(0xFF55C4B8),
-    tertiaryLight: Color(0xFF6C71C4),
-    tertiaryDark: Color(0xFF9E9ED0),
-    backgroundLight: Color(0xFFFDF6E3),
-    backgroundDark: Color(0xFF002B36),
-    surfaceLight: Color(0xFFF0E8D0),
-    surfaceDark: Color(0xFF073642),
-    textLight: Color(0xFF002B36),
-    textDark: Color(0xFFFDF6E3),
+    displayName: 'MixStream',
+    primaryLight: Color(0xFF1E9E6A),
+    primaryDark: Color(0xFF66E29F),
+    secondaryLight: Color(0xFF3FBFA0),
+    secondaryDark: Color(0xFF8FE9C8),
+    tertiaryLight: Color(0xFF2A9D8F),
+    tertiaryDark: Color(0xFF5FD3B8),
+    backgroundLight: Color(0xFFEAF4F1),
+    backgroundDark: Color(0xFF02141D),
+    surfaceLight: Color(0xFFF3FBF9),
+    surfaceDark: Color(0xFF041C28),
+    textLight: Color(0xFF02141D),
+    textDark: Color(0xFFE6F2EE),
   ),
   // 24. Tokyo Night - Purple-blue on dark
   ThemeConfig(
@@ -645,7 +645,7 @@ class AppTheme {
       ),
       headlineMedium: GoogleFonts.inter(
         fontSize: 24,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: colorScheme.onSurface,
       ),
       titleLarge: GoogleFonts.inter(
@@ -664,6 +664,7 @@ class AppTheme {
       ),
       bodyMedium: GoogleFonts.inter(
         fontSize: 14,
+        fontWeight: FontWeight.w400,
         color: colorScheme.onSurfaceVariant,
       ),
       bodySmall: GoogleFonts.inter(
@@ -671,7 +672,7 @@ class AppTheme {
         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
       ),
       labelLarge: GoogleFonts.inter(
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.1,
         color: colorScheme.onSurface,
@@ -681,7 +682,7 @@ class AppTheme {
     final result = ThemeData(
       useMaterial3: false,
       brightness: brightness,
-      scaffoldBackgroundColor: colorScheme.surface,
+      scaffoldBackgroundColor: Colors.transparent,
       colorScheme: colorScheme,
       dialogTheme: DialogThemeData(
         backgroundColor: colorScheme.surfaceContainerHighest,

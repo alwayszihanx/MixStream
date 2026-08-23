@@ -64,30 +64,6 @@ jobs:
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  shortcode:
-    name: Installer Scripts
-    needs: [version, create_release]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - name: Prepare Installer Scripts
-        run: |
-          chmod +x installer.sh uninstaller.sh
-      - name: Upload Installer Scripts
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ needs.version.outputs.version }}
-          allowUpdates: true
-          replacesArtifacts: true
-          artifacts: |
-            installer.sh
-            uninstaller.sh
-          omitBodyDuringUpdate: true
-          omitNameDuringUpdate: true
-          token: ${{ secrets.GITHUB_TOKEN }}
-
   android:
     name: Android Build
     needs: [version, create_release]

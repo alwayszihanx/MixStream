@@ -13,6 +13,7 @@ import 'package:mixstream/core/theme/nav_style_provider.dart';
 import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../features/settings/presentation/general_settings_provider.dart';
 import 'loading_indicator.dart';
+import 'app_background.dart';
 
 class AppScaffold extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -153,8 +154,9 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
                   return KeyEventResult.ignored;
                 },
                 child: Material(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  child: SafeArea(
+                  color: Colors.transparent,
+                  child: AppBackground(
+                    child: SafeArea(
                     bottom: false,
                     child: Stack(
                       clipBehavior: Clip.none,
@@ -198,7 +200,8 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
                 ),
               ),
             ),
-          );
+          ),
+        );
         }
 
         // Mobile uses Bottom Navigation
@@ -214,7 +217,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
               body: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  widget.navigationShell,
+                  AppBackground(child: widget.navigationShell),
                   FloatingPillNav(
                     currentIndex: widget.navigationShell.currentIndex,
                     onTap: (index) => _onItemTapped(index, context),
@@ -223,23 +226,29 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
               ),
             ),
             NavStyle.bottomBar => Scaffold(
-              body: widget.navigationShell,
+              body: AppBackground(child: widget.navigationShell),
               bottomNavigationBar: CustomBottomNavBar(
                 currentIndex: widget.navigationShell.currentIndex,
                 onTap: (index) => _onItemTapped(index, context),
               ),
             ),
             _ => Scaffold(
-              body: widget.navigationShell,
+              body: AppBackground(child: widget.navigationShell),
             ),
           },
         );
       },
-      loading: () => const Scaffold(body: Center(child: AppLoadingIndicator())),
+      loading: () => Scaffold(
+        body: AppBackground(
+          child: const Center(child: AppLoadingIndicator()),
+        ),
+      ),
       error: (err, stack) => Scaffold(
-        body: Center(
-          child: Text(
-            AppLocalizations.of(context)!.errorPrefix(err.toString()),
+        body: AppBackground(
+          child: Center(
+            child: Text(
+              AppLocalizations.of(context)!.errorPrefix(err.toString()),
+            ),
           ),
         ),
       ),

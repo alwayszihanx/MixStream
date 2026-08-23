@@ -970,6 +970,12 @@ class AppLocalizationsHr extends AppLocalizations {
   String get next => 'Sljedeće';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'PiP';
 
   @override

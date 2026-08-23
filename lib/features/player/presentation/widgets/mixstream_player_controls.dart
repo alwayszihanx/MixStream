@@ -495,7 +495,7 @@ class MixStreamPlayerControlsState
         .read(playerGestureHandlerProvider.notifier)
         .showToast(
           "${previousSpeed.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}x",
-          'play_arrow_rounded',
+          'play-bold',
         );
   }
 
@@ -1063,7 +1063,7 @@ class MixStreamPlayerControlsState
                     maxPlaybackSpeed: maxPlaybackSpeed,
                   ),
 
-                // Touch play/pause — a screen-centered overlay (not inside the
+                // Touch transport — a screen-centered overlay (not inside the
                 // chrome's shorter middle band) so it lines up vertically with
                 // the OSD and seek animations. Fades with the chrome.
                 if (!_isTv &&
@@ -1075,19 +1075,7 @@ class MixStreamPlayerControlsState
                       child: AnimatedOpacity(
                         opacity: _isVisible ? 1.0 : 0.0,
                         duration: _animDuration,
-                        child: Center(
-                          child: PlayerPlayPauseButton(
-                            player: widget.player,
-                            videoViewController: widget.videoViewController,
-                            isLoading: widget.isLoading,
-                            isTv: _isTv,
-                            size: 64,
-                            backgroundColor: Colors.black.withValues(
-                              alpha: 0.32,
-                            ),
-                            onPressed: _togglePlay,
-                          ),
-                        ),
+                        child: _buildCenterTransport(isSeries),
                       ),
                     ),
                   ),
@@ -1398,17 +1386,10 @@ class MixStreamPlayerControlsState
       showBufferingSpinner: false,
     );
 
-    // Left cluster: play/pause (non-touch), lock (touch only), next episode
+    // Left cluster: play/pause (non-touch) + next episode. Lock lives in the
+    // top-bar action cluster so it mirrors the same top-right placement.
     final leading = <Widget>[
       if (!isTouch) playPause,
-      if (isTouch)
-        PlayerIconButton(
-          icon: AppIcon(_isLocked ? 'lock' : 'lock_open'),
-          tooltip: _isLocked ? l10n.unlock : l10n.lock,
-          onPressed: _toggleLock,
-          isTv: _isTv,
-          highlight: _isLocked,
-        ),
       if (isSeries)
         PlayerIconButton(
           icon: const AppIcon('skip_next_rounded'),
@@ -1419,34 +1400,52 @@ class MixStreamPlayerControlsState
         ),
     ];
 
-    // Right-side icon-only buttons (same style as resize/fullscreen). Sources,
-    // Audio and Subtitles all open the same side panel, each landing on its own
-    // tab; the panel applies every choice instantly.
-    final actions = <Widget>[
+    final gearButton = PlayerIconButton(
+      icon: const AppIcon('settings_rounded'),
+      tooltip: l10n.settings,
+      onPressed: () => openSourcesPanel(0),
+      isTv: _isTv,
+    );
+
+    final topBarActions = <Widget>[
       PlayerIconButton(
-        icon: const AppIcon('source'),
-        tooltip: l10n.sources,
-        onPressed: () => openSourcesPanel(0),
+        icon: AppIcon(_isLocked ? 'lock' : 'lock_open'),
+        tooltip: _isLocked ? l10n.unlock : l10n.lock,
+        onPressed: _toggleLock,
         isTv: _isTv,
+        highlight: _isLocked,
       ),
-      PlayerIconButton(
-        icon: const AppIcon('audiotrack_rounded'),
-        tooltip: l10n.audioTracks,
-        onPressed: () => openSourcesPanel(1),
-        isTv: _isTv,
-      ),
-      PlayerIconButton(
-        icon: const AppIcon('subtitles_rounded'),
-        tooltip: l10n.subtitles,
-        onPressed: () => openSourcesPanel(2),
-        isTv: _isTv,
-      ),
+      gearButton,
+    ];
+
+    // Secondary actions, described once and rendered either inline (TV/
+    // desktop) or behind the touch "⋯ More" sheet.
+    final sourceAction = PlayerActionItem(
+      icon: const AppIcon('source'),
+      label: l10n.sources,
+      onTap: () => openSourcesPanel(0),
+    );
+    final audioAction = PlayerActionItem(
+      icon: const AppIcon('audiotrack_rounded'),
+      label: l10n.audioTracks,
+      onTap: () => openSourcesPanel(1),
+    );
+    final subtitleAction = PlayerActionItem(
+      icon: const AppIcon('subtitles_rounded'),
+      label: l10n.subtitles,
+      onTap: () => openSourcesPanel(2),
+    );
+
+    final actionItems = <PlayerActionItem>[
+      sourceAction,
+      audioAction,
+      subtitleAction,
       if (supportsPlaybackSpeed)
-        PlayerIconButton(
+        PlayerActionItem(
           icon: const AppIcon('speed'),
-          tooltip:
+          label:
               "${playbackSpeed.toStringAsFixed(2).replaceAll(RegExp(r'\.00$'), '')}x",
-          onPressed: () => PlayerBottomSheets.showSpeedSelection(
+          onTap: () => PlayerBottomSheets.showSpeedSelection(
             context: context,
             currentSpeed: playbackSpeed,
             maxSpeed: maxPlaybackSpeed,
@@ -1454,60 +1453,68 @@ class MixStreamPlayerControlsState
                 .read(playerControllerProvider.notifier)
                 .setPlaybackSpeed(s, persist: true),
           ),
-          isTv: _isTv,
         ),
       if (torrentStatus != null)
-        PlayerIconButton(
+        PlayerActionItem(
           icon: const AppIcon('folder'),
-          tooltip: l10n.content,
-          onPressed: openContentPanel,
-          isTv: _isTv,
+          label: l10n.content,
+          onTap: openContentPanel,
         ),
       if (torrentStatus != null)
-        PlayerIconButton(
+        PlayerActionItem(
           icon: const AppIcon('info_outline'),
-          tooltip: l10n.stats,
-          onPressed: () => setState(() => _showTorrentInfo = !_showTorrentInfo),
-          isTv: _isTv,
+          label: l10n.stats,
+          onTap: () => setState(() => _showTorrentInfo = !_showTorrentInfo),
           highlight: _showTorrentInfo,
         ),
       if (isTouch && (Platform.isAndroid || (Platform.isIOS && !_isIpad)))
-        PlayerIconButton(
+        PlayerActionItem(
           icon: const AppIcon('screen_rotation'),
-          tooltip: l10n.rotate,
-          onPressed: _toggleOrientation,
-          isTv: _isTv,
+          label: l10n.rotate,
+          onTap: _toggleOrientation,
         ),
       if (isSeries)
-        PlayerIconButton(
+        PlayerActionItem(
           icon: const AppIcon('playlist_play_rounded'),
-          tooltip: l10n.episodes,
-          onPressed: openEpisodesPanel,
-          isTv: _isTv,
+          label: l10n.episodes,
+          onTap: openEpisodesPanel,
         ),
-      PlayerIconButton(
+      PlayerActionItem(
         icon: const AppIcon('aspect_ratio_rounded'),
-        tooltip: l10n.resize,
-        onPressed: cycleResize,
-        isTv: _isTv,
+        label: l10n.resize,
+        onTap: cycleResize,
       ),
       if (Platform.isAndroid && !_isTv)
-        PlayerIconButton(
+        PlayerActionItem(
           icon: const AppIcon('picture_in_picture_alt_rounded'),
-          tooltip: l10n.pip,
-          onPressed: _enterPip,
-          isTv: _isTv,
+          label: l10n.pip,
+          onTap: _enterPip,
         ),
       if (isDesktop)
-        PlayerIconButton(
+        PlayerActionItem(
           icon: AppIcon(
             _isFullscreen ? 'fullscreen_exit_rounded' : 'fullscreen_rounded',
           ),
-          tooltip: _isFullscreen ? l10n.windowed : l10n.fullscreen,
-          onPressed: toggleFullscreen,
-          isTv: _isTv,
+          label: _isFullscreen ? l10n.windowed : l10n.fullscreen,
+          onTap: toggleFullscreen,
         ),
     ];
+
+    final moreButton = PlayerIconButton(
+      icon: const AppIcon('more_horiz_rounded'),
+      tooltip: l10n.more,
+      onPressed: () => _openMoreSheet(actionItems),
+      isTv: _isTv,
+    );
+
+    final bottomActions = isTouch
+        ? [
+            sourceAction.toButton(isTv: _isTv),
+            audioAction.toButton(isTv: _isTv),
+            subtitleAction.toButton(isTv: _isTv),
+            moreButton,
+          ]
+        : actionItems.map((a) => a.toButton(isTv: _isTv)).toList();
 
     // One overlay layer: a Column with top bar / center / bottom bar. No
     // Positioned, no magic offsets — each zone sizes to content and paints its
@@ -1534,6 +1541,7 @@ class MixStreamPlayerControlsState
                     onBack: widget.onBackPointer ?? () => context.pop(),
                     isTv: _isTv,
                     backFocusNode: _backFocusNode,
+                    actions: topBarActions,
                   ),
                 ),
                 // Center zone stays empty: the touch play/pause is rendered as
@@ -1586,7 +1594,7 @@ class MixStreamPlayerControlsState
                       },
                     ),
                     leading: leading,
-                    actions: actions,
+                    actions: bottomActions,
                   ),
                 ),
               ],
@@ -1594,6 +1602,47 @@ class MixStreamPlayerControlsState
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCenterTransport(bool isSeries) {
+    final l10n = AppLocalizations.of(context)!;
+    final playDisc = PlayPauseDisc(
+      playing: _isPlaying,
+      onTap: _togglePlay,
+      onLongPressStart: (_) => _startTouchSpeedHold(),
+      onLongPressEnd: (_) => _endTouchSpeedHold(),
+    );
+    if (!isSeries) return Center(child: playDisc);
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TransportButton(
+            icon: const AppIcon('skip_previous_rounded'),
+            label: l10n.previous,
+            onTap: null,
+          ),
+          const SizedBox(width: 16),
+          playDisc,
+          const SizedBox(width: 16),
+          TransportButton(
+            icon: const AppIcon('skip_next_rounded'),
+            label: l10n.next,
+            onTap: () =>
+                ref.read(playerControllerProvider.notifier).playNextEpisode(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openMoreSheet(List<PlayerActionItem> items) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => MoreSheet(items: items),
     );
   }
 

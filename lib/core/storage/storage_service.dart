@@ -154,6 +154,14 @@ class StorageService {
     return _settingsBox.get('theme_mode') as String?;
   }
 
+  Future<void> saveAppLogoChoice(String choice) async {
+    await _settingsBox.put('app_logo_choice', choice);
+  }
+
+  String getAppLogoChoice() {
+    return _settingsBox.get('app_logo_choice', defaultValue: 'logo1') as String;
+  }
+
   Future<void> saveThemeConfig(int index) async {
     await _settingsBox.put('theme_config', index);
   }

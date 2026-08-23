@@ -973,6 +973,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get next => 'Další';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'Obraz v obraze';
 
   @override

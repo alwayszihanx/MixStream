@@ -90,3 +90,5 @@ tree-shaking-test*.js
 !assets/plugins/.gitkeep
 
 node_modules/
+
+upload-keystore.jks

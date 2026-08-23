@@ -17,6 +17,7 @@ import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/network/doh_service.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/providers/app_logo_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -147,12 +148,26 @@ class SettingsScreen extends ConsumerWidget {
                   icon: const AppIcon('translate_rounded'),
                   title: l10n.language,
                   subtitle: l10n.languageName,
-                  isLast: true,
                   onTap: () => showLanguageDialog(
                     context,
                     ref,
                     ref.read(localeProvider),
                   ),
+                ),
+                SettingsTile(
+                  icon: const AppIcon('brandfetch'),
+                  title: 'App Icon',
+                  subtitle: ref.watch(appLogoProvider) == 'logo2'
+                      ? 'Logo 2'
+                      : 'Logo 1',
+                  isLast: true,
+                  onTap: () async {
+                    final current = ref.read(appLogoProvider);
+                    final choice = await showAppLogoDialog(context, current);
+                    if (choice != null && choice != current) {
+                      ref.read(appLogoProvider.notifier).setChoice(choice);
+                    }
+                  },
                 ),
               ],
             ),

@@ -51,6 +51,7 @@ class ExtensionPlugin {
   final List<PluginDomain>? domains; // Available mirror domains from manifest
   final List<PluginSubProvider>?
   providers; // Sub-providers (one JS, many feeds)
+  final bool isCloudStream; // JS provider running in the CloudStream shim runtime
 
   ExtensionPlugin({
     required this.packageName,
@@ -69,6 +70,7 @@ class ExtensionPlugin {
     this.customBaseUrl,
     this.domains,
     this.providers,
+    this.isCloudStream = false,
   });
 
   /// Helper to check if this is a debug/asset plugin
@@ -152,6 +154,61 @@ class ExtensionPlugin {
       customBaseUrl: customBaseUrl ?? this.customBaseUrl,
       domains: domains,
       providers: providers,
+      isCloudStream: isCloudStream,
+    );
+  }
+
+  /// Factory for CloudStream-style (JS) provider entries coming from a
+  /// CloudStream repository's `plugins.json`. These entries use `url` for the
+  /// `.cs3`/zip download and an integer `version`, and lack MixStream's
+  /// `packageName`/`sourceUrl` fields. [packageNameOverride] keeps the id
+  /// stable between the repo listing and the installed package.
+  factory ExtensionPlugin.cloudStreamFromJson(
+    Map<String, dynamic> json,
+    String repositoryId, {
+    String? packageNameOverride,
+  }) {
+    String deriveId() {
+      final candidate =
+          packageNameOverride ??
+          json['internalName'] as String? ??
+          json['packageName'] as String? ??
+          json['id'] as String? ??
+          json['name'] as String? ??
+          (json['url'] as String? ?? '');
+      if (candidate.isEmpty) {
+        return 'cs.${candidate.hashCode.abs()}';
+      }
+      final sanitized = candidate.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+      return sanitized.isEmpty ? 'cs.${candidate.hashCode.abs()}' : sanitized;
+    }
+
+    final id = deriveId();
+    final rawVersion = json['version'];
+    final version = rawVersion is int
+        ? rawVersion
+        : int.tryParse(
+              (rawVersion as String? ?? '1').replaceAll(
+                RegExp(r'[^0-9]'),
+                '',
+              ),
+            ) ??
+            1;
+
+    return ExtensionPlugin(
+      packageName: id,
+      name: json['name'] as String? ?? id,
+      repositoryId: repositoryId,
+      sourceUrl: json['url'] as String? ?? '',
+      version: version,
+      status: json['status'] as int? ?? 1,
+      iconUrl: json['iconUrl'] as String?,
+      authors: _readList(json, ['authors', 'author']),
+      description: json['description'] as String?,
+      categories: _readList(json, ['tvTypes', 'categories', 'types']),
+      languages: _readList(json, ['language', 'languages', 'lang']),
+      manifest: json,
+      isCloudStream: true,
     );
   }
 }

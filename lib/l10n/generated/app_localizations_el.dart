@@ -989,6 +989,12 @@ class AppLocalizationsEl extends AppLocalizations {
   String get next => 'Επόμενο';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'PiP';
 
   @override

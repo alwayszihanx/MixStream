@@ -971,6 +971,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get next => 'Następny';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'PiP';
 
   @override

@@ -983,6 +983,12 @@ class AppLocalizationsUk extends AppLocalizations {
   String get next => 'Наст.';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'Картинка в картинці';
 
   @override

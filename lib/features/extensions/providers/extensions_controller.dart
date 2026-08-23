@@ -9,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/extensions/models/extension_plugin.dart';
 import '../../../../core/extensions/models/extension_repository.dart';
 import '../../../../core/extensions/providers.dart';
+import '../../../../core/extensions/cloudstream/cloudstream_installer.dart';
+import '../../../../core/extensions/cloudstream/cloudstream_manager.dart';
 import '../../../core/storage/settings_repository.dart';
 
 part 'extensions_controller.g.dart';
@@ -98,6 +100,15 @@ class ExtensionsController extends _$ExtensionsController {
         plugins.addAll(assetPlugins);
       }
 
+      // Merge in installed CloudStream (`.cs3`) providers so they show
+      // alongside the native MixStream plugins on the Extensions screen and
+      // the home extension list (not just after a fresh install).
+      try {
+        plugins.addAll(await loadInstalledCloudStreamPlugins());
+      } catch (e) {
+        if (kDebugMode) debugPrint("Failed to load CloudStream plugins: $e");
+      }
+
       // 2. Load Repositories
       final prefs = await SharedPreferences.getInstance();
       final urls = prefs.getStringList('extension_repo_urls') ?? [];
@@ -154,6 +165,14 @@ class ExtensionsController extends _$ExtensionsController {
     try {
       final storageService = ref.read(pluginStorageServiceProvider);
       final plugins = await storageService.listInstalledPlugins();
+
+      // Merge in installed CloudStream (JS) providers so they show alongside
+      // the native MixStream plugins in the Extensions UI.
+      try {
+        plugins.addAll(await loadInstalledCloudStreamPlugins());
+      } catch (e) {
+        if (kDebugMode) debugPrint("Failed to load CloudStream plugins: $e");
+      }
 
       // Load Asset Plugins if enabled
       if (ref.read(settingsRepositoryProvider).getDevLoadAssets()) {
@@ -473,6 +492,13 @@ class ExtensionsController extends _$ExtensionsController {
       for (final plugin in plugins) {
         File? savedFile;
 
+        // CloudStream JS providers are installed via the CloudStream installer
+        // (they're `.cs3`/zip packages containing `plugin.js`, not `.mix`).
+        if (plugin.isCloudStream) {
+          await _installCloudStreamPlugin(plugin);
+          continue;
+        }
+
         // Standard HTTP Download
         savedFile = await repositoryService.downloadPlugin(plugin.sourceUrl);
 
@@ -543,11 +569,60 @@ class ExtensionsController extends _$ExtensionsController {
     }
   }
 
+  /// Installs a CloudStream JS provider package (downloaded as raw bytes and
+  /// handed to the CloudStream installer, which extracts `plugin.js` and
+  /// registers it with the QuickJS runtime).
+  Future<void> _installCloudStreamPlugin(ExtensionPlugin plugin) async {
+    final currentInstalling = Set<String>.from(state.installingPlugins)
+      ..remove(plugin.packageName);
+    try {
+      final repositoryService = ref.read(repositoryServiceProvider);
+      final csManager = ref.read(cloudStreamManagerProvider.notifier);
+
+      final bytes = await repositoryService.downloadPluginBytes(
+        plugin.sourceUrl,
+      );
+      if (bytes == null) {
+        throw Exception('download failed (${plugin.sourceUrl})');
+      }
+
+      await csManager.installPlugin(
+        bytes,
+        repoId: plugin.repositoryId,
+        idOverride: plugin.packageName,
+      );
+
+      state = ExtensionsSuccess(
+        installedPlugins: state.installedPlugins,
+        repositories: state.repositories,
+        availablePlugins: state.availablePlugins,
+        availableUpdates: state.availableUpdates,
+        installingPlugins: currentInstalling,
+      );
+    } catch (e) {
+      state = ExtensionsError(
+        'Failed to install CloudStream plugin ${plugin.name}: $e',
+        installedPlugins: state.installedPlugins,
+        repositories: state.repositories,
+        availablePlugins: state.availablePlugins,
+        availableUpdates: state.availableUpdates,
+        installingPlugins: currentInstalling,
+      );
+    }
+  }
+
   Future<void> updatePlugin(ExtensionPlugin plugin) async {
     await installPlugin(plugin);
   }
 
   Future<void> uninstallPlugin(ExtensionPlugin plugin) async {
+    if (plugin.isCloudStream) {
+      await ref
+          .read(cloudStreamManagerProvider.notifier)
+          .uninstallPlugin(plugin.packageName);
+      await loadInstalledPlugins();
+      return;
+    }
     final storageService = ref.read(pluginStorageServiceProvider);
     await storageService.deletePlugin(plugin);
     await loadInstalledPlugins();

@@ -994,6 +994,12 @@ class AppLocalizationsKn extends AppLocalizations {
   String get next => 'ಮುಂದಿನದು';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'ಪಿಐಪಿ';
 
   @override

@@ -368,7 +368,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             .read(playerGestureHandlerProvider.notifier)
             .showToast(
               "${previousSpeed.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}x",
-              'play_arrow_rounded',
+              'play-bold',
             );
         return KeyEventResult.handled;
       }

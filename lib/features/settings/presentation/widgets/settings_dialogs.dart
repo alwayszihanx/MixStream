@@ -58,6 +58,69 @@ String getHomeScreenLabel(String route, AppLocalizations l10n) {
   }
 }
 
+/// Shows a dialog to pick which logo is used for the app launcher icon.
+/// Returns the selected choice ('logo1' / 'logo2') or null if cancelled.
+Future<String?> showAppLogoDialog(BuildContext context, String current) {
+  return showDialog<String?>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      surfaceTintColor: Colors.transparent,
+      title: const Text('App Icon'),
+      content: SizedBox(
+        width: 320,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildLogoOption(ctx, 'assets/images/logo-1.png', 'Logo 1', 'logo1',
+                current),
+            const SizedBox(height: 12),
+            _buildLogoOption(ctx, 'assets/images/logo-2.png', 'Logo 2', 'logo2',
+                current),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildLogoOption(
+  BuildContext ctx,
+  String asset,
+  String label,
+  String value,
+  String current,
+) {
+  final selected = current == value;
+  return Material(
+    color: selected ? Colors.white.withOpacity(0.08) : Colors.transparent,
+    borderRadius: BorderRadius.circular(12),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => Navigator.pop<String?>(ctx, value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: Image.asset(asset, fit: BoxFit.contain),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 15),
+              ),
+            ),
+            if (selected) const AppIcon('checkmark-circle-01', size: 20),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 /// Shows a dialog to pick the default home screen.
 void showDefaultHomeScreenDialog(
   BuildContext context,
@@ -648,22 +711,10 @@ void showThemeDialog(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildThemeOption(l10n.system, ThemeMode.system, () {
-                ref
-                    .read(appThemeModeProvider.notifier)
-                    .setThemeMode(ThemeMode.system);
-                Navigator.pop<void>(context);
-              }),
               _buildThemeOption(l10n.dark, ThemeMode.dark, () {
                 ref
                     .read(appThemeModeProvider.notifier)
                     .setThemeMode(ThemeMode.dark);
-                Navigator.pop<void>(context);
-              }),
-              _buildThemeOption(l10n.light, ThemeMode.light, () {
-                ref
-                    .read(appThemeModeProvider.notifier)
-                    .setThemeMode(ThemeMode.light);
                 Navigator.pop<void>(context);
               }),
             ],

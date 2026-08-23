@@ -591,7 +591,7 @@ class _PlayNowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final child = ButtonLabel(
       icon: AppIcon(
-        'play_arrow_rounded',
+        'play-bold',
         color: Colors.white,
         size: isCompact ? 18 : 20,
       ),

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart'; // For kDebugMode
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import '../models/extension_repository.dart';
 import '../models/extension_plugin.dart';
 
@@ -81,26 +82,29 @@ class RepositoryService {
             : response.data as Map<String, dynamic>;
 
         if (data != null) {
-          // Validation: A valid repository must have a name, an ID, and either pluginLists or repos
+          // Validation: a repository needs a name and at least one source of
+          // plugins. CloudStream-style repos use `pluginLists` without an
+          // `id`/`packageName`; their id is derived from the URL instead.
           final hasName = data.containsKey('name');
-          final hasId =
-              data.containsKey('id') || data.containsKey('packageName');
-          // Extract lists safely to check content
           final plugins = (data['pluginLists'] as List?) ?? <dynamic>[];
           final repos = (data['repos'] as List?) ?? <dynamic>[];
+          final embedded = (data['plugins'] as List?) ?? <dynamic>[];
 
-          final hasPlugins = plugins.isNotEmpty;
-          final hasRepos = repos.isNotEmpty;
+          final hasPlugins =
+              plugins.isNotEmpty || repos.isNotEmpty || embedded.isNotEmpty;
 
-          if (!hasName || !hasId || (!hasPlugins && !hasRepos)) {
+          if (!hasName || !hasPlugins) {
             throw Exception(
-              'Invalid repository format: Missing name, id/packageName, or plugin/repos',
+              'Invalid repository format: Missing name or plugin/repo list',
             );
           }
 
-          if (hasPlugins && hasRepos) {
+          if ((plugins.isNotEmpty && repos.isNotEmpty) ||
+              (plugins.isNotEmpty && embedded.isNotEmpty) ||
+              (repos.isNotEmpty && embedded.isNotEmpty)) {
             throw Exception(
-              "Repository cannot contain both 'pluginLists' and 'repos'. Please separate them.",
+              "Repository cannot contain more than one of 'pluginLists', "
+              "'repos', or 'plugins'. Please separate them.",
             );
           }
 
@@ -131,20 +135,34 @@ class RepositoryService {
         final response = await _dio.get<dynamic>(normalizedUrl);
 
         if (response.statusCode == 200 && response.data != null) {
-          final List<dynamic>? list = response.data is String
-              ? _jsonDecodeSafe(response.data as String) as List<dynamic>?
-              : response.data as List<dynamic>?;
+          final decoded = response.data is String
+              ? _jsonDecodeSafe(response.data as String)
+              : response.data;
 
-          if (list != null) {
-            final plugins = list
-                .map(
-                  (e) => ExtensionPlugin.fromJson(
-                    e as Map<String, dynamic>,
-                    repo.packageName,
-                  ),
-                )
-                .toList();
-            allPlugins.addAll(plugins);
+          List<dynamic> list;
+          if (decoded is List) {
+            list = decoded;
+          } else if (decoded is Map && decoded['plugins'] is List) {
+            // CloudStream-style plugins.json: {"plugins":[...]}
+            list = decoded['plugins'] as List;
+          } else {
+            list = const [];
+          }
+
+          for (final entry in list) {
+            if (entry is! Map) continue;
+            final map = Map<String, dynamic>.from(entry);
+            if (map['packageName'] != null || map['sourceUrl'] != null) {
+              // MixStream plugin entry
+              allPlugins.add(
+                ExtensionPlugin.fromJson(map, repo.packageName),
+              );
+            } else if (map['url'] != null) {
+              // CloudStream JS provider entry (`.cs3`/zip with plugin.js)
+              allPlugins.add(
+                ExtensionPlugin.cloudStreamFromJson(map, repo.packageName),
+              );
+            }
           }
         }
       } catch (e) {
@@ -155,6 +173,26 @@ class RepositoryService {
     }
 
     return allPlugins;
+  }
+
+  /// Downloads a plugin package and returns its raw bytes (used for CloudStream
+  /// `.cs3`/zip installs where we hand the bytes to the CloudStream installer).
+  Future<Uint8List?> downloadPluginBytes(String url) async {
+    try {
+      final normalizedUrl = _normalizeUrl(url);
+      final response = await _dio.get<List<int>>(
+        normalizedUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        return Uint8List.fromList(response.data!);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to download plugin bytes $url: $e');
+      }
+    }
+    return null;
   }
 
   /// Download a plugin file to a temporary location

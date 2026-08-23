@@ -983,6 +983,12 @@ class AppLocalizationsGu extends AppLocalizations {
   String get next => 'આગામી';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'PiP';
 
   @override

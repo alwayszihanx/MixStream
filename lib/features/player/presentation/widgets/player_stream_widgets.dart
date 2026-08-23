@@ -208,16 +208,28 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
             },
             child: Padding(
               padding: const EdgeInsets.only(bottom: 2),
-              child: Text(
-                label,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.clip,
-                style: const TextStyle(
-                  color: HotstarPlayerStyle.primaryText,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: [FontFeature.tabularFigures()],
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.clip,
+                    style: const TextStyle(
+                      color: HotstarPlayerStyle.primaryText,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -507,7 +519,7 @@ class PlayerPlayPauseButton extends StatelessWidget {
         child: isSpinning
             ? const _PlayerSpinner()
             : AppIcon(
-                isPlaying ? 'pause_rounded' : 'play_arrow_rounded',
+                isPlaying ? 'pause_rounded' : 'play-bold',
                 color: Colors.white,
                 size: size * 0.88,
               ),
@@ -1210,7 +1222,7 @@ class _SeekBarState extends State<_SeekBar> {
             child: Container(
               color: interval.isSkipSegment
                   ? HotstarPlayerStyle.skipSegment
-                  : Colors.white,
+                  : HotstarPlayerStyle.accent,
             ),
           ),
         ),

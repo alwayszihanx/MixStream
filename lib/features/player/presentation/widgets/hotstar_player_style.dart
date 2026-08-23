@@ -11,7 +11,8 @@ class HotstarPlayerStyle {
   static const Color background = Color(0xFF000000);
   static const Color panel = Color(0xFF05070B);
   static const Color panelElevated = Color(0xFF090D14);
-  static const Color accent = Color(0xFF0A84FF);
+  /// Zangetsu-style coral signature used by the progress bar + focus rings.
+  static const Color accent = Color(0xFFFF4D57);
   static const Color hotstar = Color(0xFF1F80E0);
   static const Color accentAlt = Color(0xFFDD3EFF);
   static const Color primaryText = Color(0xF2FFFFFF);
@@ -20,7 +21,7 @@ class HotstarPlayerStyle {
   static const Color divider = Color(0x1FFFFFFF);
   static const Color track = Color(0x55FFFFFF);
   static const Color trackInactive = Color(0x35FFFFFF);
-  static const Color focus = Color(0x660A84FF);
+  static const Color focus = Color(0x66FF4D57);
   static const Color liveRed = Color(0xFFE53935);
 
   /// Marker on the scrubber for skip segments (intro / recap / outro). A warm
@@ -50,18 +51,18 @@ class HotstarPlayerStyle {
   /// seek, scrubber, action, and utility buttons look identical when focused.
   static const double focusScale = 1.04;
 
-  // --- Gradients (const scrims, dark at the edge → transparent at center) ---
+  // --- Gradients (flat scrims: solid at the edge → clear) ---
   static const LinearGradient topGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xCC000000), Color(0x66000000), Color(0x00000000)],
-    stops: [0.0, 0.55, 1.0],
+    colors: [Color(0x59000000), Color(0x00000000)],
+    stops: [0.0, 1.0],
   );
 
   static const LinearGradient bottomGradient = LinearGradient(
     begin: Alignment.bottomCenter,
     end: Alignment.topCenter,
-    colors: [Color(0xE6000000), Color(0x99000000), Color(0x00000000)],
-    stops: [0.0, 0.5, 1.0],
+    colors: [Color(0x8C000000), Color(0x00000000)],
+    stops: [0.0, 1.0],
   );
 }

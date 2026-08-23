@@ -5,6 +5,9 @@ allprojects {
         maven {
             url = uri(File(rootProject.projectDir, "../packages/flutter_torrent_server/android/repo"))
         }
+        // CloudStream engine (provider API + plugin loader) for the native
+        // CloudStream bridge. See docs/cloudstream-integration-spec.md.
+        maven { url = uri("https://jitpack.io") }
     }
 }
 

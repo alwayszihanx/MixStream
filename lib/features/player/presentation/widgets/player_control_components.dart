@@ -4,14 +4,274 @@ import '../../../../shared/widgets/app_icon.dart';
 import '../../../../shared/widgets/custom_widgets.dart';
 import 'hotstar_player_style.dart';
 
-/// Top zone: back button + title/subtitle. Paints its own top scrim so the
-/// chrome no longer needs a separate fixed-height Positioned gradient.
+/// Translucent capsule that groups a row of player buttons behind one soft
+/// backdrop, instead of a chip per icon. Plain alpha (no BackdropFilter) so it
+/// costs nothing to composite, and it's the Material the buttons' ripples
+/// paint onto.
+class _ZBarGroup extends StatelessWidget {
+  final List<Widget> children;
+
+  const _ZBarGroup({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.3),
+      borderRadius: BorderRadius.circular(26),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(mainAxisSize: MainAxisSize.min, children: children),
+      ),
+    );
+  }
+}
+
+/// Disc backdrop for the centre transport controls. They sit over the middle
+/// of the picture where barely any scrim reaches, so they carry more alpha
+/// than the bottom capsules. [onLongPressStart]/[onLongPressEnd] let the play
+/// disc double as the touch "hold to speed up" affordance.
+class TransportDisc extends StatelessWidget {
+  const TransportDisc({
+    required this.size,
+    required this.child,
+    this.onTap,
+    this.dimmed = false,
+    this.onLongPressStart,
+    this.onLongPressEnd,
+  });
+
+  final double size;
+  final Widget child;
+  final VoidCallback? onTap;
+  final bool dimmed;
+  final GestureLongPressStartCallback? onLongPressStart;
+  final GestureLongPressEndCallback? onLongPressEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final disc = Material(
+      color: Colors.black.withValues(alpha: dimmed ? 0.18 : 0.45),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        splashColor: Colors.white.withValues(alpha: 0.22),
+        highlightColor: Colors.white.withValues(alpha: 0.10),
+        child: SizedBox(width: size, height: size, child: Center(child: child)),
+      ),
+    );
+    if (onLongPressStart == null && onLongPressEnd == null) return disc;
+    return GestureDetector(
+      onLongPressStart: onLongPressStart,
+      onLongPressEnd: onLongPressEnd,
+      behavior: HitTestBehavior.opaque,
+      child: disc,
+    );
+  }
+}
+
+/// Centre play/pause disc with an animated play/pause swap.
+class PlayPauseDisc extends StatelessWidget {
+  const PlayPauseDisc({
+    required this.playing,
+    required this.onTap,
+    this.onLongPressStart,
+    this.onLongPressEnd,
+  });
+
+  final bool playing;
+  final VoidCallback onTap;
+  final GestureLongPressStartCallback? onLongPressStart;
+  final GestureLongPressEndCallback? onLongPressEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    return TransportDisc(
+      size: 58,
+      onTap: onTap,
+      onLongPressStart: onLongPressStart,
+      onLongPressEnd: onLongPressEnd,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        transitionBuilder: (child, anim) => FadeTransition(
+          opacity: anim,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.72, end: 1).animate(anim),
+            child: child,
+          ),
+        ),
+        child: AppIcon(
+          playing ? 'pause_rounded' : 'play-bold',
+          key: ValueKey<bool>(playing),
+          color: Colors.white,
+          size: 34,
+        ),
+      ),
+    );
+  }
+}
+
+/// Prev/next episode step either side of play/pause. A null [onTap] means there
+/// is nowhere to step: the disc dims and stops taking touches.
+class TransportButton extends StatelessWidget {
+  const TransportButton({
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
+
+  final Widget icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: IgnorePointer(
+        ignoring: !enabled,
+        child: Opacity(
+          opacity: enabled ? 1 : 0.28,
+          child: TransportDisc(
+            size: 46,
+            dimmed: !enabled,
+            onTap: onTap,
+            child: IconTheme(
+              data: const IconThemeData(color: Colors.white, size: 26),
+              child: icon,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A player action descriptor, rendered either inline (TV/desktop) or inside
+/// the "⋯ More" sheet (touch).
+class PlayerActionItem {
+  const PlayerActionItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.highlight = false,
+  });
+
+  final Widget icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool highlight;
+
+  PlayerIconButton toButton({required bool isTv}) => PlayerIconButton(
+        icon: icon,
+        tooltip: label,
+        onPressed: onTap,
+        isTv: isTv,
+        highlight: highlight,
+      );
+}
+
+/// Bottom sheet listing the secondary player actions behind the "⋯ More"
+/// button on touch.
+class MoreSheet extends StatelessWidget {
+  const MoreSheet({required this.items});
+
+  final List<PlayerActionItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: HotstarPlayerStyle.panelElevated,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final item in items) MoreRow(item: item),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class MoreRow extends StatelessWidget {
+  const MoreRow({required this.item});
+
+  final PlayerActionItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).pop();
+          item.onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              IconTheme(
+                data: const IconThemeData(color: Colors.white, size: 22),
+                child: item.icon,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  item.label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Top zone: back button + two-line title (primary headline, secondary
+/// caption) + optional right-side [actions] (e.g. lock). Paints its own
+/// flat top scrim so the chrome needs no separate gradient.
 class PlayerTopBar extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback? onBack;
   final bool isTv;
   final FocusNode? backFocusNode;
+
+  /// Right-aligned icons (lock, settings, …). Rendered as plain white glyphs
+  /// over the scrim, mirroring Zangetsu's top-right cluster.
+  final List<Widget>? actions;
 
   const PlayerTopBar({
     super.key,
@@ -20,6 +280,7 @@ class PlayerTopBar extends StatelessWidget {
     this.onBack,
     this.isTv = false,
     this.backFocusNode,
+    this.actions,
   });
 
   @override
@@ -58,6 +319,18 @@ class PlayerTopBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: HotstarPlayerStyle.primaryText,
+                        fontSize: isTv ? 22 : 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (subtitle != null && subtitle!.isNotEmpty)
+                      const SizedBox(height: 2),
                     if (subtitle != null && subtitle!.isNotEmpty)
                       Text(
                         subtitle!,
@@ -69,19 +342,13 @@ class PlayerTopBar extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: HotstarPlayerStyle.primaryText,
-                        fontSize: isTv ? 22 : 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ],
                 ),
               ),
+              if (actions != null && actions!.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                ...actions!,
+              ],
             ],
           ),
         ),
@@ -156,6 +423,8 @@ class PlayerBottomBar extends StatelessWidget {
     final double rightPadding = isTv
         ? edge
         : (padding.right > edge ? padding.right : edge);
+    final hasLeading = leading.isNotEmpty;
+    final hasActions = actions.isNotEmpty;
     return SafeArea(
       left: false,
       right: false,
@@ -173,8 +442,9 @@ class PlayerBottomBar extends StatelessWidget {
                 onKeyEvent: isTv ? _handleRowKey : null,
                 child: Row(
                   children: [
-                    // Left group: play/pause, lock, next — always visible.
-                    ...leading,
+                    // Left capsule: play/pause, lock, next — always visible.
+                    if (hasLeading)
+                      _ZBarGroup(children: leading),
                     if (isTouch)
                       // Touch: right-anchored finger-scroll strip so a long
                       // action list is never clipped out of reach.
@@ -184,14 +454,16 @@ class PlayerBottomBar extends StatelessWidget {
                           reverse: true,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: actions,
+                            children: [
+                              if (hasActions) _ZBarGroup(children: actions),
+                            ],
                           ),
                         ),
                       )
                     else ...[
-                      // TV/desktop: fixed right-aligned group (D-pad nav).
+                      // TV/desktop: fixed right-aligned capsule (D-pad nav).
                       const Spacer(),
-                      ...actions,
+                      if (hasActions) _ZBarGroup(children: actions),
                     ],
                   ],
                 ),

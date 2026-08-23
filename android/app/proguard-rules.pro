@@ -103,3 +103,23 @@
 # ─────────────────────────────────────────────────────────────────────────
 -dontwarn javax.annotation.**
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+
+# ─────────────────────────────────────────────────────────────────────────
+# CloudStream native bridge (real .cs3 DEX plugins loaded at runtime).
+# The engine is referenced reflectively by CloudStreamBridge + the plugins,
+# so its classes must survive shrinking.
+# ─────────────────────────────────────────────────────────────────────────
+-keep class com.lagradost.cloudstream3.** { *; }
+-keep class com.lagradost.api.** { *; }
+-keep class io.alwayszihan.mixstream.cloudstream.** { *; }
+-dontwarn com.lagradost.**
+
+# ─────────────────────────────────────────────────────────────────────────
+# CloudStream engine (com.lagradost) bundles Rhino (org.mozilla.javascript)
+# for its JS extension path. Rhino references java.beans.* / javax.script.*
+# which do not exist on Android. We only use the engine's native provider
+# API, not the JS path, so suppress the R8 missing-class errors.
+# ─────────────────────────────────────────────────────────────────────────
+-dontwarn org.mozilla.javascript.**
+-dontwarn java.beans.**
+-dontwarn javax.script.**

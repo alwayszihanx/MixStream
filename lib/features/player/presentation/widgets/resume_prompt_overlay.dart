@@ -228,7 +228,7 @@ class _CountdownFillButtonState extends State<CountdownFillButton>
                           child: Row(
                             children: [
                               const AppIcon(
-                                'play_arrow_rounded',
+                                'play-bold',
                                 color: Colors.white,
                                 size: 22,
                               ),

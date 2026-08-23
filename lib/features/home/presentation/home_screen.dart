@@ -21,6 +21,7 @@ import '../../../core/extensions/models/extension_plugin.dart';
 import 'package:flutter/rendering.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'package:mixstream/core/extensions/extension_manager.dart';
+import 'package:mixstream/core/extensions/cloudstream/cloudstream_manager.dart';
 import 'package:mixstream/core/extensions/base_provider.dart';
 import 'package:mixstream/core/router/app_router.dart';
 import 'delegates/home_search_delegate.dart';
@@ -133,7 +134,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final history = ref.watch(watchHistoryProvider);
     final syncedProgressAsync = ref.watch(syncedProgressProvider);
     final generalSettings = ref.watch(generalSettingsProvider);
-    final l10n = AppLocalizations.of(context)!;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final overlayStyle = isDark
@@ -208,7 +208,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ).scaffoldBackgroundColor.withValues(alpha: opacity),
           ),
         ),
-        title: Text(l10n.appTitle),
+        title: Image.asset(
+          'assets/images/wordmark.png',
+          height: 26,
+          fit: BoxFit.contain,
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: LayoutConstants.spacingMd),
@@ -639,10 +643,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _showProviderSelector(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final extManager = ref.read(extensionManagerProvider.notifier);
     final activeProvider = ref.read(activeProviderProvider);
-    final providers = List<MixStreamProvider>.from(extManager.getAllProviders())
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    // Include both native MixStream (.mix) and CloudStream (.cs3) providers so
+    // installed CloudStream extensions appear in the home extension list.
+    final providers = List<MixStreamProvider>.from(
+      ref.read(allProvidersProvider),
+    )..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     if (providers.isEmpty) {
       showDialog<void>(

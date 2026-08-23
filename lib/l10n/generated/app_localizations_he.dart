@@ -961,6 +961,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get next => 'הבא';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'תמונה בתוך תמונה';
 
   @override

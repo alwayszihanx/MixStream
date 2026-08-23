@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:mixstream/core/domain/entity/multimedia_item.dart';
 import 'package:mixstream/core/extensions/extension_manager.dart';
+import 'package:mixstream/core/extensions/cloudstream/cloudstream_manager.dart';
 import 'package:mixstream/core/utils/image_fallbacks.dart';
 import 'package:mixstream/features/search/presentation/search_provider.dart';
 import '../../../../shared/widgets/cards_wrapper.dart';
@@ -23,7 +24,7 @@ part 'provider_search_section.g.dart';
 // fan-out, mapping, or filtering logic.
 @riverpod
 Stream<SearchAggregateState> providerSearch(Ref ref, String query) {
-  ref.watch(extensionManagerProvider);
+  ref.watch(allProvidersProvider);
   final manager = ref.read(extensionManagerProvider.notifier);
 
   var cancelled = false;
@@ -78,7 +79,7 @@ class _ProviderSearchSectionState extends ConsumerState<ProviderSearchSection> {
   Widget build(BuildContext context) {
     if (widget.query.isEmpty) return const SizedBox.shrink();
 
-    final plugins = ref.watch(extensionManagerProvider);
+    final plugins = ref.watch(allProvidersProvider);
     final searchAsync = ref.watch(providerSearchProvider(widget.query));
 
     Widget content;

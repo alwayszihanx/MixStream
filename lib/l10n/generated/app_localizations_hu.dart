@@ -977,6 +977,12 @@ class AppLocalizationsHu extends AppLocalizations {
   String get next => 'Következő';
 
   @override
+  String get previous => 'Previous';
+
+  @override
+  String get more => 'More';
+
+  @override
   String get pip => 'Kép a képben';
 
   @override

@@ -27,6 +27,10 @@ class SkipSegmentOverlay extends ConsumerStatefulWidget {
   final FocusNode? focusNode;
   final ValueChanged<bool>? onActiveSegmentChanged;
 
+  /// When true (default), the overlay auto-seeks past an intro/recap/outro
+  /// segment as soon as playback enters it, instead of only offering a button.
+  final bool autoSkip;
+
   const SkipSegmentOverlay({
     super.key,
     required this.player,
@@ -37,6 +41,7 @@ class SkipSegmentOverlay extends ConsumerStatefulWidget {
     this.onFocusReturned,
     this.focusNode,
     this.onActiveSegmentChanged,
+    this.autoSkip = true,
   });
 
   @override
@@ -46,6 +51,7 @@ class SkipSegmentOverlay extends ConsumerStatefulWidget {
 class _SkipSegmentOverlayState extends ConsumerState<SkipSegmentOverlay> {
   bool _isSkipping = false;
   Timer? _skipDebounceTimer;
+  Timer? _autoSkipTimer;
 
   late final FocusNode _focusNode;
 
@@ -131,6 +137,14 @@ class _SkipSegmentOverlayState extends ConsumerState<SkipSegmentOverlay> {
         _activeSegment = newSegment;
       });
       widget.onActiveSegmentChanged?.call(newSegment != null);
+    }
+
+    if (newSegment != null && widget.autoSkip && !_isSkipping) {
+      final segment = newSegment;
+      _autoSkipTimer?.cancel();
+      _autoSkipTimer = Timer(const Duration(milliseconds: 600), () {
+        if (mounted && segment == _activeSegment) _handleSkip(segment);
+      });
     }
   }
 
