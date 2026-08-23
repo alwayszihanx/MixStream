@@ -53,6 +53,22 @@ static void my_application_activate(GApplication* application) {
   }
 
   gtk_window_set_default_size(window, 1280, 720);
+
+  // Load the bundled app icon (placed next to the executable) so the window
+  // shows the MixStream logo instead of the toolkit default.
+  {
+    gchar* exe_path = g_file_read_link("/proc/self/exe", NULL);
+    if (exe_path != NULL) {
+      gchar* dir = g_path_get_dirname(exe_path);
+      gchar* icon_path = g_build_filename(dir, "logo-1.png", NULL);
+      if (g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+        gtk_window_set_icon_from_file(window, icon_path, NULL);
+      }
+      g_free(icon_path);
+      g_free(dir);
+      g_free(exe_path);
+    }
+  }
   // Enforce a minimum content size — prevents the user from collapsing
   // the window to a zero-pixel slit. 800×600 covers the smallest layout
   // we ship (sidebar + content row stays usable). Audit H12.
