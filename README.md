@@ -41,7 +41,23 @@
 
 ## ✨ Highlights (v3.6.9)
 
-- 🎬 **Cinematic 7-stage splash** – A brand-new intro: the screen opens on pure black, an ambient green glow blooms, real genre posters (Horror, Thriller, Action, Sci-Fi, Anime, Drama, Comedy, Documentary) emerge from every direction and collapse into the **MixStream** logo, a light sweep glides across it, and it fades seamlessly into the app.
+- 🎬 **Poster zoom overlay** — double-tap any poster to zoom with a floating action menu (Play, Bookmark, Download) for quick access without leaving the screen.
+- 📺 **Scroll-driven hero stretch** — the hero poster stretches and compresses as you scroll, giving a cinematic parallax depth effect on desktop/TV.
+- 🔄 **Watched progress tracking** — per-episode tracking with mark watched/unwatched, season-wide actions, and automatic detection based on playback position (90% threshold).
+- 📡 **Network offline card** — persistent connectivity indicator banner at the top of the details screen, auto-updating in real-time.
+- 🏠 **Continue Watching Hero Slot** — hero-sized carousel at the top of the home screen for instant access to where you left off.
+- ✅ **Error & empty states** — friendly error view with retry button and empty state instead of raw error text; graceful fallback when no provider matches.
+- 🎬 **Nuvio integration** — improved metadata handling, plugin sources sheet, and debrid integration for premium link resolution.
+- 🎨 **Cinematic details page** — rounded parallax hero card, floating glass action panel, a prominent circular back button, and a two-panel editorial layout for desktop/TV.
+- 🧭 **Floating pill navigation** — a gradient pill-shaped nav bar with glowing active states; the widescreen sidebar uses a rounded 28px dock.
+- 🏠 **First-run onboarding** — a 3-slide welcome flow introduces streaming, extensions, and offline downloads before the app opens.
+- 📚 **Rebuilt Library tabs** — Continue Watching | My List | Downloads | Queue, with a smarter continue-watching feed (progress 0–98%).
+- 🌞 **Solarized default theme** — fresh installs now boot into the curated Solarized theme.
+- 🎨 **Design system polish** — 32px pill nav, rounded cards, gradient section accent bars, and consistent corner radii across the app.
+
+## ✨ Highlights (v3.6.9)
+
+- 🎬 **Cinematic 7-stage splash** the screen opens on pure black, an ambient green glow blooms, real genre posters (Horror, Thriller, Action, Sci-Fi, Anime, Drama, Comedy, Documentary) emerge from every direction and collapse into the **MixStream** logo, a light sweep glides across it, and it fades seamlessly into the app.
 - 🌑 **Dark-only experience** – MixStream now boots and stays in **dark mode only** (no system/light toggle). The UI, splash, and home screen share one consistent deep-dark surface so the splash → app hand-off is perfectly seamless.
 - 🟢 **Wordmark branding** – The home screen AppBar now shows the **MixStream wordmark logo** instead of plain text, and the splash forms the logo from `mixstream.png` before cross-fading into the full wordmark.
 - 🎨 **Cinematic details page** – Rounded parallax hero card, floating glass action panel, a prominent circular back button, and a two-panel editorial layout for desktop/TV.
@@ -118,10 +134,10 @@ Download the APK that matches your device architecture:
 
 | Asset | Use for |
 |:------|:--------|
-| `MixStream-Android-universal-v3.6.9.apk` | Any device (larger file) |
-| `MixStream-Android-arm64-v8a-v3.6.9.apk` | Most modern phones (recommended) |
-| `MixStream-Android-armeabi-v7a-v3.6.9.apk` | Older 32-bit devices |
-| `MixStream-Android-x86_64-v3.6.9.apk` | Emulators / x86 devices |
+| `MixStream-Android-universal-v3.7.0.apk` | Any device (larger file) |
+| `MixStream-Android-arm64-v8a-v3.7.0.apk` | Most modern phones (recommended) |
+| `MixStream-Android-armeabi-v7a-v3.7.0.apk` | Older 32-bit devices |
+| `MixStream-Android-x86_64-v3.7.0.apk` | Emulators / x86 devices |
 
 1. Transfer the APK to your device (or download it directly).
 2. Open it and allow **"Install unknown apps"** when prompted.
@@ -131,7 +147,7 @@ Download the APK that matches your device architecture:
 
 ### 💻 Windows
 
-1. Download `MixStream-Windows-x64-Setup-v3.6.9.exe`.
+1. Download `MixStream-Windows-x64-Setup-v3.7.0.exe`.
 2. Run the installer (Inno Setup) and follow the prompts.
 3. Launch **MixStream** from the Start menu / desktop shortcut.
 
@@ -141,22 +157,22 @@ Download the APK that matches your device architecture:
 
 Choose the package for your distro:
 
-- **Debian / Ubuntu / derivatives** — `MixStream-Linux-x64-v3.6.9.deb`
+- **Debian / Ubuntu / derivatives** — `MixStream-Linux-x64-v3.7.0.deb`
   ```bash
-  sudo apt install ./MixStream-Linux-x64-v3.6.9.deb
+  sudo apt install ./MixStream-Linux-x64-v3.7.0.deb
   # or
-  sudo dpkg -i MixStream-Linux-x64-v3.6.9.deb && sudo apt-get -f install
+  sudo dpkg -i MixStream-Linux-x64-v3.7.0.deb && sudo apt-get -f install
   ```
-- **Fedora / openSUSE / RHEL** — `MixStream-Linux-x64-v3.6.9.rpm`
+- **Fedora / openSUSE / RHEL** — `MixStream-Linux-x64-v3.7.0.rpm`
   ```bash
-  sudo rpm -i MixStream-Linux-x64-v3.6.9.rpm
+  sudo rpm -i MixStream-Linux-x64-v3.7.0.rpm
   # or
-  sudo dnf install ./MixStream-Linux-x64-v3.6.9.rpm
+  sudo dnf install ./MixStream-Linux-x64-v3.7.0.rpm
   ```
-- **Portable bundle** — `MixStream-Linux-x64-v3.6.9.tar.xz`
+- **Portable bundle** — `MixStream-Linux-x64-v3.7.0.tar.xz`
   ```bash
-  tar -xf MixStream-Linux-x64-v3.6.9.tar.xz
-  cd MixStream-Linux-x64-v3.6.9
+  tar -xf MixStream-Linux-x64-v3.7.0.tar.xz
+  cd MixStream-Linux-x64-v3.7.0
   ./mixstream
   ```
   > Run the binary from inside its folder so it can find `data/` and `lib/`. For a menu entry, copy the folder to `~/.local/opt/mixstream` and add a `.desktop` file pointing at the executable.
@@ -165,7 +181,7 @@ ARM64 Linux builds (`MixStream-Linux-arm64-*`) are also provided in releases.
 
 ### 🍏 macOS
 
-1. Download `MixStream-macOS-<arch>-v3.6.9.dmg` (`arm64`, `x64`, or `universal`).
+1. Download `MixStream-macOS-<arch>-v3.7.0.dmg` (`arm64`, `x64`, or `universal`).
 2. Open the DMG and drag **MixStream** to **Applications**.
 3. Because the build is unsigned, macOS may block it. Right-click the app → **Open**, or run once:
    ```bash
@@ -175,7 +191,7 @@ ARM64 Linux builds (`MixStream-Linux-arm64-*`) are also provided in releases.
 
 ### 📱 iOS (Sideloading)
 
-1. Download `MixStream-iOS-v3.6.9.ipa` (unsigned).
+1. Download `MixStream-iOS-v3.7.0.ipa` (unsigned).
 2. Sideload it with [AltStore](https://altstore.io/), Sideloadly, or Xcode.
 3. Trust the developer profile in **Settings → General → VPN & Device Management** before opening.
 
