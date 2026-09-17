@@ -1,6 +1,9 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,6 +25,10 @@ import 'widgets/movie_seasons_list.dart';
 import '../../../../shared/widgets/thumbnail_error_placeholder.dart';
 import '../../../../shared/widgets/shimmer_placeholder.dart';
 import '../../../shared/widgets/app_icon.dart';
+import '../../sources/presentation/plugin_sources_sheet.dart';
+import '../../sources/presentation/source_sheet_widgets.dart';
+import '../../library/presentation/library_provider.dart';
+import '../../library/presentation/library_state.dart';
 
 class TmdbMovieDetailsScreen extends ConsumerStatefulWidget {
   final int movieId;
@@ -243,6 +250,12 @@ class _TmdbMovieDetailsScreenState
             foregroundColor: textColor,
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _TmdbBookmarkButton(data: data, circular: true),
+          ),
+        ],
       ),
       extendBodyBehindAppBar: true,
       body: TmdbDetailsDesktopHero(
@@ -259,6 +272,7 @@ class _TmdbMovieDetailsScreenState
                 seasons: seasons,
                 textColor: textColor,
                 source: widget.source,
+                data: data,
               ),
             ],
             if (isHeavyLoading || cast.isNotEmpty) ...[
@@ -338,9 +352,8 @@ class _TmdbMovieDetailsScreenState
         SliverAppBar(
           expandedHeight: expandedHeaderHeight,
           pinned: true,
-          backgroundColor: Theme.of(
-            context,
-          ).scaffoldBackgroundColor, // Theme aware
+          backgroundColor: Colors
+              .transparent, // Blur/scrim overlay lives in flexibleSpace
           leading: Padding(
             padding: const EdgeInsets.all(8.0),
             child: CircleAvatar(
@@ -357,6 +370,12 @@ class _TmdbMovieDetailsScreenState
               ),
             ),
           ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _TmdbBookmarkButton(data: data, circular: true),
+            ),
+          ],
           title: ValueListenableBuilder<double>(
             valueListenable: _titleOpacity,
             builder: (context, opacity, child) {
@@ -505,9 +524,107 @@ class _TmdbMovieDetailsScreenState
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  const SizedBox(height: 24),
-                                ],
+                                   const SizedBox(height: 24),
+                                   // Play via Nuvio / plugin sources
+                                   Row(
+                                     mainAxisSize: MainAxisSize.min,
+                                     children: [
+                                       SizedBox(
+                                         width: 170,
+                                         child: ElevatedButton.icon(
+                                           onPressed: () =>
+                                               PluginSourcesSheet.open(
+                                                 context,
+                                                 data,
+                                               ),
+                                           icon: const AppIcon(
+                                             'play_arrow_rounded',
+                                             size: 22,
+                                             color: Colors.white,
+                                           ),
+                                           label: Text(
+                                             isMovie
+                                                 ? l10n.play
+                                                 : l10n.selectSource,
+                                             style: const TextStyle(
+                                               color: Colors.white,
+                                               fontWeight: FontWeight.bold,
+                                               fontSize: 16,
+                                             ),
+                                           ),
+                                           style: ElevatedButton.styleFrom(
+                                             backgroundColor: Theme.of(
+                                               context,
+                                             ).colorScheme.primary,
+                                             padding: const EdgeInsets.symmetric(
+                                               horizontal: 24,
+                                               vertical: 14,
+                                             ),
+                                             shape: RoundedRectangleBorder(
+                                               borderRadius:
+                                                   BorderRadius.circular(8),
+                                             ),
+                                           ),
+                                         ),
+                                       ),
+                                        const SizedBox(width: 12),
+                                        SizedBox(
+                                          width: 44,
+                                          height: 50,
+                                          child: IconButton(
+                                            tooltip: l10n.download,
+                                            onPressed: () =>
+                                                PluginSourcesSheet.open(
+                                                  context,
+                                                  data,
+                                                  mode: SourcesMode.download,
+                                                ),
+                                            icon: AppIcon(
+                                              'file_download_rounded',
+                                              size: 22,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          width: 44,
+                                          height: 50,
+                                          child: _TmdbBookmarkButton(
+                                            data: data,
+                                            idleColor: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                 ],
                               ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    // Sticky glass bar: blurs + scrims the backdrop as the
+                    // hero collapses, replacing the old flat background.
+                    Positioned.fill(
+                      child: ValueListenableBuilder<double>(
+                        valueListenable: _scrollOffset,
+                        builder: (context, offset, _) {
+                          final t = ((offset - 250) / 200).clamp(0.0, 1.0);
+                          if (t <= 0) return const SizedBox.shrink();
+                          return BackdropFilter(
+                            filter: ImageFilter.blur(
+                              sigmaX: 16 * t,
+                              sigmaY: 16 * t,
+                            ),
+                            child: ColoredBox(
+                              color: Theme.of(
+                                context,
+                              ).scaffoldBackgroundColor.withValues(alpha: t),
                             ),
                           );
                         },
@@ -745,6 +862,7 @@ class _TmdbMovieDetailsScreenState
                     movieId: widget.movieId,
                     seasons: data.seasons,
                     source: widget.source,
+                    data: data,
                   ),
                 ],
 
@@ -904,6 +1022,101 @@ class _TmdbMovieDetailsScreenState
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TmdbBookmarkButton extends ConsumerStatefulWidget {
+  const _TmdbBookmarkButton({
+    required this.data,
+    this.circular = false,
+    this.idleColor,
+  });
+
+  final TmdbDetails data;
+  final bool circular;
+  final Color? idleColor;
+
+  @override
+  ConsumerState<_TmdbBookmarkButton> createState() =>
+      _TmdbBookmarkButtonState();
+}
+
+class _TmdbBookmarkButtonState extends ConsumerState<_TmdbBookmarkButton> {
+  bool _pop = false;
+
+  String get _key => widget.data.libraryUrl;
+
+  void _toggle(bool isBookmarked) {
+    HapticFeedback.lightImpact();
+    final notifier = ref.read(libraryProvider.notifier);
+    if (isBookmarked) {
+      notifier.removeItem(_key);
+    } else {
+      notifier.addItem(
+        widget.data.url == _key ? widget.data : widget.data.copyWith(url: _key),
+      );
+    }
+    setState(() => _pop = true);
+    Future<void>.delayed(const Duration(milliseconds: 170), () {
+      if (mounted) setState(() => _pop = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isBookmarked = ref.watch(
+      libraryProvider.select(
+        (state) =>
+            state is LibrarySuccess &&
+            state.items.any((i) => i.url == _key),
+      ),
+    );
+
+    final scheme = Theme.of(context).colorScheme;
+    final icon = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      transitionBuilder: (child, animation) => ScaleTransition(
+        scale: animation,
+        child: FadeTransition(opacity: animation, child: child),
+      ),
+      child: AppIcon(
+        isBookmarked ? 'bookmark_rounded' : 'bookmark_border_rounded',
+        key: ValueKey<bool>(isBookmarked),
+        size: 22,
+        color: isBookmarked
+            ? scheme.primary
+            : (widget.idleColor ?? scheme.onSurface),
+      ),
+    );
+
+    final tooltip = isBookmarked ? 'Remove from My List' : 'Add to My List';
+
+    final Widget button;
+    if (widget.circular) {
+      button = CircleAvatar(
+        backgroundColor: scheme.onSurface.withValues(alpha: 0.1),
+        radius: 18,
+        child: IconButton(
+          icon: icon,
+          tooltip: tooltip,
+          padding: EdgeInsets.zero,
+          onPressed: () => _toggle(isBookmarked),
+        ),
+      );
+    } else {
+      button = IconButton(
+        tooltip: tooltip,
+        onPressed: () => _toggle(isBookmarked),
+        icon: icon,
+      );
+    }
+
+    return AnimatedScale(
+      scale: _pop ? 1.25 : 1.0,
+      duration: const Duration(milliseconds: 170),
+      curve: Curves.easeOutBack,
+      child: button,
     );
   }
 }

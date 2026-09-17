@@ -111,6 +111,11 @@ class MultimediaItem {
   final String? imdbId;
   final String? source;
 
+  /// Manifest URL of the add-on that produced this item when it came from a
+  /// Stremio add-on catalog. Lets the home screen reopen it in the add-on
+  /// details stack instead of the plugin details screen.
+  final String? addonUrl;
+
   MultimediaItem({
     required this.title,
     required this.url,
@@ -139,6 +144,7 @@ class MultimediaItem {
     this.tmdbId,
     this.imdbId,
     this.source,
+    this.addonUrl,
   }) : episodes = episodes != null
            ? (List<Episode>.from(episodes)..sort((a, b) {
                if (a.season != b.season) return a.season.compareTo(b.season);
@@ -236,6 +242,7 @@ class MultimediaItem {
       tmdbId: json['tmdbId'] as int?,
       imdbId: json['imdbId'] as String?,
       source: json['source'] as String?,
+      addonUrl: json['addonUrl'] as String?,
     );
   }
 
@@ -313,7 +320,21 @@ class MultimediaItem {
   }
 
   String get tmdbMediaType =>
-      contentType == MultimediaContentType.series ? 'tv' : 'movie';
+      contentType == MultimediaContentType.series ||
+              contentType == MultimediaContentType.anime
+          ? 'tv'
+          : 'movie';
+
+  /// Stable key used by the personal library ("My List").
+  ///
+  /// Provider and add-on items already carry a real [url]. TMDB-only items
+  /// have an empty url, so fall back to a canonical `tmdb:<id>` key to keep
+  /// every title distinct instead of colliding on an empty string.
+  String get libraryUrl {
+    if (url.isNotEmpty) return url;
+    if (tmdbId != null) return 'tmdb:$tmdbId';
+    return url;
+  }
 
   String get backdropImageUrl => bannerUrl ?? posterUrl;
   String get posterImageUrl => posterUrl;
@@ -351,6 +372,7 @@ class MultimediaItem {
     int? tmdbId,
     String? imdbId,
     String? source,
+    String? addonUrl,
   }) {
     return MultimediaItem(
       title: title ?? this.title,
@@ -380,6 +402,7 @@ class MultimediaItem {
       tmdbId: tmdbId ?? this.tmdbId,
       imdbId: imdbId ?? this.imdbId,
       source: source ?? this.source,
+      addonUrl: addonUrl ?? this.addonUrl,
     );
   }
 
@@ -412,6 +435,7 @@ class MultimediaItem {
       'imdbId': imdbId,
       'streams': streams?.map((s) => s.toJson()).toList(),
       'source': source,
+      'addonUrl': addonUrl,
     };
   }
 
@@ -559,6 +583,10 @@ class Episode {
 class StreamResult {
   final String url;
   final String source;
+
+  /// Display name of the plugin/provider that produced this stream. Shown in
+  /// the player source list and used by cross-provider source switching.
+  final String providerName;
   final Map<String, String>? headers;
   final List<SubtitleFile>? subtitles;
   final String? drmKid;
@@ -568,6 +596,7 @@ class StreamResult {
   const StreamResult({
     required this.url,
     required this.source,
+    this.providerName = 'Unknown',
     this.headers,
     this.subtitles,
     this.drmKid,
@@ -575,9 +604,13 @@ class StreamResult {
     this.licenseUrl,
   });
 
+  String get displaySource =>
+      providerName.trim().isEmpty ? source : '$providerName · $source';
+
   Map<String, dynamic> toJson() => {
     'url': url,
     'source': source,
+    'providerName': providerName,
     'headers': headers,
     'subtitles': subtitles?.map((x) => x.toJson()).toList(),
     'drmKid': drmKid,
@@ -589,6 +622,7 @@ class StreamResult {
     return StreamResult(
       url: (json['url'] as String?) ?? '',
       source: (json['source'] as String?) ?? 'Unknown',
+      providerName: (json['providerName'] as String?) ?? 'Unknown',
       headers: json['headers'] != null
           ? Map<String, String>.from(json['headers'] as Map)
           : null,

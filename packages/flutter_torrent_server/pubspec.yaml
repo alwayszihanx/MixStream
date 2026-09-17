@@ -49,9 +49,15 @@ flutter:
       windows:
         dartPluginClass: FlutterTorrentServerDesktop
 
-  # To add assets to your plugin package, add an assets section, like this:
-  assets:
-    - assets/torrserver/
+  # NOTE: prebuilt desktop TorrServer executables used to live in
+  # assets/torrserver/ and were declared here. They added ~100 MB to every
+  # Android build even though Android runs TorrServer through the local AAR
+  # (libgojni.so) and never touches them. They now live in desktop_binaries/,
+  # which is intentionally NOT an asset directory, so they stay out of the APK.
+  # To re-enable desktop builds, move them back into assets/torrserver/ and
+  # restore the asset declaration below.
+  # assets:
+  #   - assets/torrserver/
   #
   # For details regarding assets in packages, see
   # https://flutter.dev/to/asset-from-package

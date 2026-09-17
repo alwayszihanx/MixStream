@@ -213,7 +213,14 @@ class DetailsController extends _$DetailsController {
         // Run Metadata Resolution in background silently (fire-and-forget).
         unawaited(_resolveMetadataInBackground(withProvider));
       } else {
-        throw Exception("No provider selected or found for this item");
+        // No registered extension matched this item. Show the original
+        // payload immediately so the screen is never blank, then try
+        // to enrich it in the background (TMDB id discovery, etc.).
+        state = state.copyWith(
+          details: AsyncData(item),
+          item: item,
+        );
+        unawaited(_resolveMetadataInBackground(item));
       }
     } catch (e, st) {
       if (ref.mounted) {

@@ -34,6 +34,66 @@ class SearchAggregateState {
   const SearchAggregateState({this.results = const [], this.isLoading = false});
 }
 
+/// Global TMDB results section. Search must work with zero MixStream
+/// extensions installed (NuvioMobile parity), and even when extensions are
+/// present the TMDB section answers instantly while the plugin bursts arrive.
+const String _tmdbProviderId = 'tmdb';
+
+class _TmdbSearchProvider implements MixStreamProvider {
+  final Ref _ref;
+
+  _TmdbSearchProvider(this._ref);
+
+  @override
+  String get packageName => 'tmdb';
+  @override
+  String get name => 'TMDB';
+  @override
+  String get mainUrl => 'https://www.themoviedb.org';
+  @override
+  String get version => '1.0';
+  @override
+  List<String> get languages => const ['en'];
+  @override
+  Set<ProviderType> get supportedTypes => const {
+    ProviderType.movie,
+    ProviderType.series,
+    ProviderType.anime,
+  };
+
+  @override
+  Future<List<MultimediaItem>> search(
+    String query, {
+    CancelToken? cancelToken,
+  }) async {
+    final tmdb = _ref.read(tmdbServiceProvider);
+    final results = await tmdb.multiSearch(query: query);
+    if (cancelToken?.isCancelled == true) {
+      throw DioException(
+        requestOptions: RequestOptions(path: packageName),
+        type: DioExceptionType.cancel,
+      );
+    }
+    return results;
+  }
+
+  @override
+  bool get hasSearch => true;
+  @override
+  bool get isDebug => false;
+  @override
+  void cancelInit() {}
+  @override
+  Future<Map<String, List<MultimediaItem>>> getHome() async => const {};
+
+  @override
+  Future<MultimediaItem> getDetails(String url) =>
+      throw UnsupportedError('TMDB search results open the TMDB details route');
+
+  @override
+  Future<List<StreamResult>> loadStreams(String url) async => const [];
+}
+
 // ---------------------------------------------------------------------------
 // Background isolate helper — runs title filtering off the main thread.
 // ---------------------------------------------------------------------------
@@ -72,6 +132,7 @@ Stream<SearchAggregateState> searchAllProviders(
   required bool Function() isCancelled,
 }) async* {
   final allProviders = <MixStreamProvider>[
+    if (filter != SearchFilter.live) _TmdbSearchProvider(ref),
     ...manager.getAllProviders(),
     ...ref.watch(cloudStreamManagerProvider),
   ];
@@ -233,20 +294,22 @@ Stream<SearchAggregateState> searchAllProviders(
             return;
           }
 
-          final providerItems = rawResults
-              .map(
-                (item) => MultimediaItem(
-                  title: item.title,
-                  url: item.url,
-                  posterUrl: item.posterUrl,
-                  bannerUrl: item.bannerUrl,
-                  description: item.description,
-                  contentType: item.contentType,
-                  episodes: item.episodes,
-                  provider: provider.packageName,
-                ),
-              )
-              .toList();
+          final providerItems = provider.packageName == _tmdbProviderId
+              ? rawResults
+              : rawResults
+                  .map(
+                    (item) => MultimediaItem(
+                      title: item.title,
+                      url: item.url,
+                      posterUrl: item.posterUrl,
+                      bannerUrl: item.bannerUrl,
+                      description: item.description,
+                      contentType: item.contentType,
+                      episodes: item.episodes,
+                      provider: provider.packageName,
+                    ),
+                  )
+                  .toList();
 
           // For small result sets, skip the compute() isolate overhead
           // (spawn + serialize + deserialize costs more than the filter work).
@@ -411,6 +474,11 @@ class SearchSuggestionController extends _$SearchSuggestionController {
     final trimmed = query.trim();
     if (trimmed.length < 2) {
       _debounce?.cancel();
+      // Clearing the field clears live results too.
+      if (trimmed.isEmpty &&
+          ref.read(searchQueryProvider).isNotEmpty) {
+        ref.read(searchQueryProvider.notifier).set('');
+      }
       state = state.copyWith(
         query: query,
         suggestions: const [],
@@ -423,6 +491,13 @@ class SearchSuggestionController extends _$SearchSuggestionController {
 
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () async {
+      // Live results: kick the full search off on each debounced keystroke so
+      // the grid fills in while the user is still typing. Suggestions remain
+      // visible only until the first result set arrives.
+      final trimmedQuery = query.trim();
+      if (ref.read(searchQueryProvider) != trimmedQuery) {
+        ref.read(searchQueryProvider.notifier).set(trimmedQuery);
+      }
       try {
         final tmdb = ref.read(tmdbServiceProvider);
         final suggestions = await tmdb.getSuggestions(

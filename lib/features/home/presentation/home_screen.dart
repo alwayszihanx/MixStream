@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_provider.dart';
 import 'home_state.dart';
 import 'package:mixstream/features/home/presentation/widgets/continue_watching_section.dart';
+import 'package:mixstream/features/home/presentation/widgets/continue_watching_hero_slot.dart';
 import 'package:mixstream/features/search/presentation/search_provider.dart';
 import 'package:mixstream/features/tracking/data/sync_manager.dart';
 import 'package:mixstream/features/tracking/domain/sync_progress_item.dart';
@@ -18,12 +19,15 @@ import '../../../shared/widgets/loading_indicator.dart';
 import '../../extensions/providers/extensions_controller.dart';
 import '../../../core/extensions/models/extension_plugin.dart';
 
-import 'package:flutter/rendering.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'package:mixstream/core/extensions/extension_manager.dart';
 import 'package:mixstream/core/extensions/cloudstream/cloudstream_manager.dart';
 import 'package:mixstream/core/extensions/base_provider.dart';
 import 'package:mixstream/core/router/app_router.dart';
+import 'package:mixstream/core/domain/entity/multimedia_item.dart';
+import 'package:mixstream/core/addons/models/addon_meta.dart';
+import '../../../core/nuvio/data/nuvio_repository.dart';
+import '../../../core/addons/data/addon_repository.dart';
 import 'delegates/home_search_delegate.dart';
 import '../../../shared/widgets/cards_wrapper.dart';
 import '../../../shared/widgets/custom_widgets.dart';
@@ -126,6 +130,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _wobbleController.dispose();
     super.dispose();
   }
+
+  void _openDetails(BuildContext context, MultimediaItem item) {
+    final hasProvider = ref.read(activeProviderProvider) != null;
+    final isAddon = item.source == kAddonItemSource;
+
+    // TMDB-backed titles always open the richer TMDB details page: it resolves
+    // seasons/episodes from TMDB and its sources sheet merges plugin + add-on
+    // links. The add-on details page is only used for add-on exclusives that
+    // have no TMDB id (its meta often lacks episode data).
+    if (item.tmdbId != null && (isAddon || !hasProvider)) {
+      TmdbDetailsRoute(
+        movieId: item.tmdbId!,
+        mediaType: item.tmdbMediaType,
+        heroTag: 'tmdb_home',
+        placeholderPoster: item.posterUrl,
+        source: item.source,
+      ).push<void>(context);
+      return;
+    }
+    if (isAddon) {
+      AddonDetailRoute(
+        type: item.contentType == MultimediaContentType.series ||
+                item.contentType == MultimediaContentType.anime
+            ? 'series'
+            : 'movie',
+        id: item.url,
+        addonUrl: item.addonUrl,
+      ).push<void>(context);
+      return;
+    }
+    DetailsRoute($extra: DetailsRouteExtra(item: item)).push<void>(context);
+  }
+
+  /// Slim, dismissible-free hint shown above the fallback catalog when no
+  /// MixStream provider is active — the rows beneath it still stream and
+  /// download through Nuvio plugins and Stremio add-ons.
+  Widget _buildNoProviderBanner(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: Row(
+            children: [
+              const AppIcon('extension_off_rounded', size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'No sources configured yet — showing TMDB catalogs. Add a '
+                  'Nuvio plugin or Stremio add-on, or select an extension '
+                  'provider, to start playing.',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+              TextButton(
+                onPressed: () => _showProviderSelector(context, ref),
+                child: const Text('Select Provider'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Add-on catalog sections carry their catalogue address in the key so
+  /// "View all" can open that exact catalog. Returns null for TMDB sections.
+  AddonCatalogTarget? _addonCatalogTarget(String key) =>
+      addonCatalogTarget(key);
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +370,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }) {
     final l10n = AppLocalizations.of(context)!;
     final isResolving = ref.watch(providerResolutionLoadingProvider);
+    final hasProvider = ref.watch(activeProviderProvider) != null;
+    // Provider-less is a supported steady state: Nuvio scrapers and Stremio
+    // add-ons both feed the sources sheet without an active extension. Only
+    // nag when the user has no source system configured at all.
+    final nuvioState = ref.watch(nuvioRepositoryProvider);
+    final addonState = ref.watch(addonRepositoryProvider);
+    final hasOtherSources =
+        nuvioState.activeScrapers.isNotEmpty || addonState.enabled.isNotEmpty;
+    final sourcesStillLoading = nuvioState.isLoading || addonState.isLoading;
+    final showNoProviderBanner =
+        !hasProvider && !hasOtherSources && !sourcesStillLoading;
 
     if (isResolving) {
       return Center(
@@ -301,10 +388,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           color: Theme.of(context).colorScheme.primary,
         ),
       );
-    }
-
-    if (ref.watch(activeProviderProvider) == null) {
-      return _buildNoProviderState(context, l10n, isWidescreen: isWidescreen);
     }
 
     return switch (state) {
@@ -332,6 +415,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: CustomScrollView(
             controller: _scrollController,
             slivers: [
+              if (showNoProviderBanner)
+                SliverToBoxAdapter(
+                  child: _buildNoProviderBanner(context, ref),
+                ),
+              if (watchHistoryEnabled)
+                SliverToBoxAdapter(
+                  child: ContinueWatchingHeroSlot(),
+                ),
               if (data.containsKey('Trending'))
                 SliverToBoxAdapter(
                   child: ExploreCarousel(
@@ -341,9 +432,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     onControllerReady: (c) =>
                         setState(() => _carouselController = c),
                     onTap: (item) {
-                      DetailsRoute(
-                        $extra: DetailsRouteExtra(item: item),
-                      ).push<void>(context);
+                      _openDetails(context, item);
                     },
                   ),
                 )
@@ -356,9 +445,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     onControllerReady: (c) =>
                         setState(() => _carouselController = c),
                     onTap: (item) {
-                      DetailsRoute(
-                        $extra: DetailsRouteExtra(item: item),
-                      ).push<void>(context);
+                      _openDetails(context, item);
                     },
                   ),
                 )
@@ -412,15 +499,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         .toList();
                     if (index >= filteredEntries.length) return null;
                     final entry = filteredEntries[index];
+                    final addonTarget = _addonCatalogTarget(entry.key);
                     return MediaHorizontalList(
-                      title: entry.key,
+                      title: addonTarget?.title ?? entry.key,
                       mediaList: entry.value,
                       category: ViewAllCategory.providerContent,
                       showViewAll: true,
+                      onViewAll: addonTarget == null
+                          ? null
+                          : () => AddonCatalogRoute(
+                              addonUrl: addonTarget.addonUrl,
+                              type: addonTarget.type,
+                              catalogId: addonTarget.catalogId,
+                              title: addonTarget.title,
+                            ).push<void>(context),
                       onTap: (item) {
-                        DetailsRoute(
-                          $extra: DetailsRouteExtra(item: item),
-                        ).push<void>(context);
+                        _openDetails(context, item);
                       },
                       heroTagPrefix: 'home',
                     );

@@ -247,9 +247,7 @@ class _BookmarksTabState extends ConsumerState<BookmarksTab>
                   ),
                 ],
               ),
-              onTap: () => DetailsRoute(
-                $extra: DetailsRouteExtra(item: item),
-              ).push<void>(context),
+              onTap: () => item.pushDetails(context),
             ),
           );
         },
@@ -280,9 +278,7 @@ class _BookmarksTabState extends ConsumerState<BookmarksTab>
                 heroTag: 'lib_bookmark_${item.url}_$index',
                 badgeText: item.score?.toStringAsFixed(1),
                 rating: item.score?.toStringAsFixed(1),
-                onTap: () => DetailsRoute(
-                  $extra: DetailsRouteExtra(item: item),
-                ).push<void>(context),
+                onTap: () => item.pushDetails(context),
               ),
             ),
             Positioned(
@@ -350,6 +346,12 @@ class _BookmarksTabState extends ConsumerState<BookmarksTab>
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => const HomeRoute().go(context),
+              icon: const AppIcon('home_rounded', size: 18),
+              label: const Text('Browse Home'),
             ),
           ],
         ),

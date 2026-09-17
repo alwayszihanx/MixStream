@@ -28,10 +28,12 @@ import '../../tracking/domain/sync_progress_item.dart';
 import '../../../../core/providers/device_info_provider.dart';
 import '../../../../core/utils/app_utils.dart';
 import '../../settings/presentation/player_settings_provider.dart';
+import 'subtitle_search_provider.dart';
 import '../../settings/presentation/general_settings_provider.dart';
 import '../../../../core/services/local_proxy_service.dart';
 import '../../../../core/network/http_defaults.dart';
 import '../../../../core/utils/stream_quality_sorter.dart';
+import '../domain/playback_recovery.dart';
 import '../../skip/data/intro_db_service.dart';
 import '../../skip/data/anime_skip_service.dart';
 import '../../skip/data/skip_service.dart';
@@ -404,6 +406,12 @@ class PlayerController extends Notifier<PlayerState> {
   late MultimediaItem _item;
   late String _videoUrl;
   Episode? _episode;
+
+  /// Streams handed in by a source sheet that already resolved them. Consumed
+  /// once on the first [_initStream] so later retries/episode changes fall back
+  /// to normal provider resolution.
+  List<StreamResult> _initialStreams = const [];
+  bool _initialStreamsConsumed = false;
   Timer? _torrentPollTimer;
   bool _isPolling = false;
   bool _isInitialized = false;
@@ -411,6 +419,7 @@ class PlayerController extends Notifier<PlayerState> {
 
   bool _hasScrobbleStarted = false;
   bool _hasMarkedWatched = false;
+  bool _subtitlesLanguageAutoSelected = false;
 
   Player get player => _player;
   VideoController? get videoViewController => _videoViewController;
@@ -510,6 +519,7 @@ class PlayerController extends Notifier<PlayerState> {
   Duration? _lastPosition;
   DateTime? _lastPositionUpdateTime;
   bool _isRecoveringFromStall = false;
+  StallAction _lastStallAction = StallAction.none;
   // Backstop timer for the stall-recovery flag. Primary path: clear the
   // flag in `_endStallRecovery()` immediately after `changeStream(...)`
   // completes. Backstop fires only if changeStream hangs longer than 10 s.
@@ -816,6 +826,7 @@ class PlayerController extends Notifier<PlayerState> {
     required MultimediaItem item,
     required String videoUrl,
     Episode? episode,
+    List<StreamResult> streams = const [],
     VideoController? videoViewController,
   }) async {
     state = const PlayerState(); // Resets all fields including errorMessage
@@ -832,6 +843,8 @@ class PlayerController extends Notifier<PlayerState> {
     _videoViewController = videoViewController;
     _videoUrl = videoUrl;
     _episode = episode;
+    _initialStreams = streams;
+    _initialStreamsConsumed = false;
     _pendingResumeSeekPosition = null;
     _isApplyingPendingResumeSeek = false;
     _userAddedExternalSubtitles.clear();
@@ -1123,6 +1136,25 @@ class PlayerController extends Notifier<PlayerState> {
           }
           pendingVideoViewSubtitleIdsBeforeReload = null;
           selectNewestVideoViewSubtitleAfterReload = false;
+
+          // Auto-select the user's preferred subtitle language on
+          // the first media-info update, so a side-car track in the
+          // language they chose starts immediately.
+          if (info.subtitleTracks.isNotEmpty &&
+              !_subtitlesLanguageAutoSelected &&
+              _videoViewController!.overrideSubtitle.value == null) {
+            _subtitlesLanguageAutoSelected = true;
+            final preferred = ref.read(subtitleLanguageProvider);
+            if (preferred.isNotEmpty) {
+              final match = info.subtitleTracks.entries.firstWhereOrNull(
+                (entry) => entry.value.language == preferred,
+              );
+              if (match != null && match.key.isNotEmpty) {
+                _videoViewController!.setShowSubtitle(true);
+                _videoViewController!.setOverrideSubtitle(match.key);
+              }
+            }
+          }
         }
       }
     });
@@ -1773,23 +1805,29 @@ class PlayerController extends Notifier<PlayerState> {
       final now = DateTime.now();
 
       // --- Stall Watchdog Logic ---
+      // Bounded: each stall window is classified exactly once per
+      // rung (it is cleared the moment the position advances) so the
+      // ladder cannot be re-fired for the same freeze. A stalled
+      // source is nudged (re-issue position) briefly, then escalated
+      // to full recovery (changeStream) so a bad host is abandoned
+      // quickly instead of retrying blindly.
       if (_player.state.playing && !state.isBuffering && !state.isLoading) {
         if (_lastPosition != null && _lastPosition == pos) {
           final stallDuration = _lastPositionUpdateTime != null
               ? now.difference(_lastPositionUpdateTime!)
               : Duration.zero;
 
-          if (stallDuration.inSeconds >= 5 && !_isRecoveringFromStall) {
-            if (kDebugMode) {
-              debugPrint(
-                "Watchdog: Silent stall detected (5s). Kicking engine...",
-              );
-            }
+          final action = stallActionFor(
+            stalledFor: stallDuration,
+            hadFrames: _hasConfirmedPlaybackFrame,
+            lastAction: _lastStallAction,
+          );
 
-            // Recovery: reconnect live streams from scratch; kick VOD.
-            // For live we hand changeStream to the recovery helper so the
-            // flag clears the instant the reconnect resolves. For VOD,
-            // _player.play() is sync — fall back to the time-based backstop.
+          if (action != StallAction.none && !_isRecoveringFromStall) {
+            _lastStallAction = action;
+            if (kDebugMode) {
+              debugPrint("Watchdog: stall action $action.");
+            }
             if (state.isLive && state.currentStream != null) {
               _beginStallRecovery(
                 perform: changeStream(
@@ -1798,15 +1836,30 @@ class PlayerController extends Notifier<PlayerState> {
                 ),
               );
             } else {
-              _beginStallRecovery();
-              _player.play();
+              // VOD: nudge first (cheap re-issue), escalate to
+              // changeStream on recover.
+              if (action == StallAction.nudge) {
+                _beginStallRecovery();
+                _player.play();
+              } else {
+                _beginStallRecovery(
+                  perform: changeStream(
+                    state.currentStream!,
+                    resetPosition: true,
+                  ),
+                );
+              }
             }
           }
         } else {
+          // Position advanced: reset the ladder and record.
+          _lastStallAction = StallAction.none;
           _lastPosition = pos;
           _lastPositionUpdateTime = now;
         }
       } else {
+        // Not actively playing: reset the ladder and record.
+        _lastStallAction = StallAction.none;
         _lastPosition = pos;
         _lastPositionUpdateTime = now;
       }
@@ -1940,9 +1993,21 @@ class PlayerController extends Notifier<PlayerState> {
 
     final activeProvider = _resolveProvider();
     if (activeProvider == null) {
+      // Provider-less playback: a source sheet already resolved these streams
+      // (Nuvio scrapers / Stremio add-ons), so play the caller's list directly
+      // instead of failing with "No provider selected."
+      if (!_initialStreamsConsumed && _initialStreams.isNotEmpty) {
+        _initialStreamsConsumed = true;
+        final streams = _initialStreams;
+        state = state.copyWith(streams: streams, currentStreamIndex: 0);
+        _setSourceAttemptsFromStreams(streams, activeIndex: 0);
+        await loadStreamAtIndex(0, sourceSessionId: sourceSessionId);
+        return;
+      }
       state = state.copyWith(errorMessage: "No provider selected.");
       return;
     }
+    _initialStreamsConsumed = true;
 
     try {
       if (_videoUrl.isNotEmpty) {

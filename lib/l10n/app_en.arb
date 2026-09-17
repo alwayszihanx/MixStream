@@ -557,6 +557,28 @@
   "subSource": "SubSource",
   "wifiQualityPreference": "Wi-Fi Quality Preference",
   "mobileQualityPreference": "Mobile Quality Preference",
+  "networkBuffer": "Network buffer",
+  "subtitleDefault": "Subtitles by default",
+  "unmeteredQualityPreference": "Wi-Fi & Wired Quality Preference",
+  "playerControls": "Player Controls",
+  "playerControlsSubtitle": "Show or hide player control buttons",
+  "sourcesSearching": "Searching scrapers…",
+  "sourcesEmptyFiltered": "No links match the current filters.",
+  "sourcesEmptyNoTmdbId": "No TMDB id for this title. Use 'Search manually' to enter one.",
+  "sourcesEmptyNoScrapers": "No scrapers enabled. Add one in 'Nuvio Plugins'.",
+  "sourcesEmptyAllFailed": "Every scraper failed. Check your connection or update your scrapers.",
+  "sourcesEmptyNothingFound": "None of your scrapers have this title.",
+  "sourcesEmptySomeFailed": "No links found. {failed} of {total} scrapers failed.",
+  "@sourcesEmptySomeFailed": {
+    "placeholders": {
+      "failed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "anyNoPreference": "Any (no preference)",
   "subtitleAccounts": "Subtitle Accounts",
   "accounts": "Accounts",
@@ -594,5 +616,6 @@
   "openLink": "Open link",
   "diagnostics": "Diagnostics",
   "viewLogs": "View Logs",
-  "viewLogsSubtitle": "View application activity & errors"
+  "viewLogsSubtitle": "View application activity & errors",
+  "restartApp": "Restart App"
 }

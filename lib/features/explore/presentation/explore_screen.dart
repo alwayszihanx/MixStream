@@ -1,5 +1,4 @@
 import 'package:flutter/services.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/widgets/cards_wrapper.dart';
@@ -371,16 +370,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
           if (entry.key != 'Trending')
             SliverToBoxAdapter(
               child: MediaHorizontalList(
-                title: entry.key,
+                title: addonCatalogTarget(entry.key)?.title ?? entry.key,
                 mediaList: entry.value,
                 category: ViewAllCategory.providerContent,
                 showViewAll: true,
                 heroTagPrefix: 'explore',
-                onTap: (item) {
-                  DetailsRoute(
-                    $extra: DetailsRouteExtra(item: item),
-                  ).push<void>(context);
-                },
+                onTap: (item) => item.pushDetails(context),
               ),
             ),
       ],

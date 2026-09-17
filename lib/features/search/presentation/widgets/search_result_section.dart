@@ -12,6 +12,39 @@ import 'package:mixstream/shared/widgets/multimedia_card.dart';
 import 'stamp_in_label.dart';
 import 'bouncy_entry_animation.dart';
 
+/// Animated count pill beside a provider section title.
+class _ResultCountBadge extends StatelessWidget {
+  final int count;
+
+  const _ResultCountBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: TweenAnimationBuilder<int>(
+        tween: IntTween(begin: 0, end: count),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOut,
+        builder: (context, value, _) => Text(
+          '$value',
+          style: TextStyle(
+            color: cs.primary,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class SearchResultSection extends ConsumerStatefulWidget {
   final String providerName;
   final String providerId;
@@ -33,6 +66,10 @@ class SearchResultSection extends ConsumerStatefulWidget {
 
 class _SearchResultSectionState extends ConsumerState<SearchResultSection> {
   final ScrollController _scrollController = ScrollController();
+
+  void _openResult(BuildContext context, MultimediaItem item) {
+    item.pushDetails(context);
+  }
 
   @override
   void dispose() {
@@ -76,17 +113,27 @@ class _SearchResultSectionState extends ConsumerState<SearchResultSection> {
                               ),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          _ResultCountBadge(count: widget.results.length),
                           _buildDebugTag(context, ref),
                         ],
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Container(
-                      width: isLarge ? 30 : 20,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(2),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(
+                        begin: 0,
+                        end: isLarge ? 30 : 20,
+                      ),
+                      duration: const Duration(milliseconds: 450),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, _) => Container(
+                        width: value,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                   ],
@@ -135,9 +182,7 @@ class _SearchResultSectionState extends ConsumerState<SearchResultSection> {
                           badgeText: item.score?.toStringAsFixed(1),
                           rating: item.score?.toStringAsFixed(1),
                           metadata: _buildMetadata(item),
-                          onTap: () => DetailsRoute(
-                            $extra: DetailsRouteExtra(item: item),
-                          ).push<void>(context),
+                          onTap: () => _openResult(context, item),
                         ),
                       ),
                     );

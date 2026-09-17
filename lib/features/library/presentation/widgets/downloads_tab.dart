@@ -9,6 +9,7 @@ import 'package:mixstream/core/utils/image_fallbacks.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../../../core/services/download_service.dart';
 import '../../../../core/utils/layout_constants.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../details/presentation/playback_launcher.dart';
 import '../downloads_provider.dart';
 import '../../../../l10n/generated/app_localizations.dart';
@@ -291,6 +292,12 @@ class _DownloadsTabState extends ConsumerState<DownloadsTab>
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: () => const HomeRoute().go(context),
+            icon: const AppIcon('home_rounded', size: 18),
+            label: const Text('Browse Home'),
+          ),
         ],
       ),
     );
@@ -406,7 +413,6 @@ class _GroupedDownloadTile extends ConsumerWidget {
     }).length;
 
     // Calculate total size for the group from active progress data
-    final downloadService = ref.read(downloadServiceProvider);
     int totalBytes = 0;
     for (final i in items) {
       final trackingUrl = i.task.metaData;
@@ -618,25 +624,57 @@ class _DownloadItemTile extends ConsumerWidget {
     final content = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Poster
-        ClipRRect(
-          borderRadius: BorderRadius.circular(LayoutConstants.radiusMd),
-          child: CachedNetworkImage(
-            imageUrl:
-                AppImageFallbacks.poster(
-                  item.item.posterUrl,
-                  label: item.item.title,
-                ) ??
-                '',
-            width: 80,
-            height: 120,
-            fit: BoxFit.cover,
-            errorWidget: (context, url, error) => Container(
-              width: 80,
-              height: 120,
-              color: theme.dividerColor,
-              child: const AppIcon('movie_outlined'),
-            ),
+        // Poster + circular progress ring while a transfer is in flight
+        SizedBox(
+          width: 80,
+          height: 120,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(LayoutConstants.radiusMd),
+                child: CachedNetworkImage(
+                  imageUrl:
+                      AppImageFallbacks.poster(
+                        item.item.posterUrl,
+                        label: item.item.title,
+                      ) ??
+                      '',
+                  width: 80,
+                  height: 120,
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, error) => Container(
+                    width: 80,
+                    height: 120,
+                    color: theme.dividerColor,
+                    child: const AppIcon('movie_outlined'),
+                  ),
+                ),
+              ),
+              if (!isDone)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(
+                        LayoutConstants.radiusMd,
+                      ),
+                    ),
+                    child: Center(
+                      child: SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: CircularProgressIndicator(
+                          value: progress > 0 ? progress : null,
+                          strokeWidth: 3,
+                          color: theme.colorScheme.primary,
+                          backgroundColor: Colors.white24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
         const SizedBox(width: LayoutConstants.spacingMd),

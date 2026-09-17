@@ -2257,6 +2257,78 @@ abstract class AppLocalizations {
   /// **'Mobile Quality Preference'**
   String get mobileQualityPreference;
 
+  /// No description provided for @networkBuffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Network buffer'**
+  String get networkBuffer;
+
+  /// No description provided for @subtitleDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtitles by default'**
+  String get subtitleDefault;
+
+  /// No description provided for @unmeteredQualityPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi & Wired Quality Preference'**
+  String get unmeteredQualityPreference;
+
+  /// No description provided for @playerControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Player Controls'**
+  String get playerControls;
+
+  /// No description provided for @playerControlsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show or hide player control buttons'**
+  String get playerControlsSubtitle;
+
+  /// No description provided for @sourcesSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching scrapers…'**
+  String get sourcesSearching;
+
+  /// No description provided for @sourcesEmptyFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'No links match the current filters.'**
+  String get sourcesEmptyFiltered;
+
+  /// No description provided for @sourcesEmptyNoTmdbId.
+  ///
+  /// In en, this message translates to:
+  /// **'No TMDB id for this title. Use \'Search manually\' to enter one.'**
+  String get sourcesEmptyNoTmdbId;
+
+  /// No description provided for @sourcesEmptyNoScrapers.
+  ///
+  /// In en, this message translates to:
+  /// **'No scrapers enabled. Add one in \'Nuvio Plugins\'.'**
+  String get sourcesEmptyNoScrapers;
+
+  /// No description provided for @sourcesEmptyAllFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Every scraper failed. Check your connection or update your scrapers.'**
+  String get sourcesEmptyAllFailed;
+
+  /// No description provided for @sourcesEmptyNothingFound.
+  ///
+  /// In en, this message translates to:
+  /// **'None of your scrapers have this title.'**
+  String get sourcesEmptyNothingFound;
+
+  /// No description provided for @sourcesEmptySomeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No links found. {failed} of {total} scrapers failed.'**
+  String sourcesEmptySomeFailed(int failed, int total);
+
   /// No description provided for @anyNoPreference.
   ///
   /// In en, this message translates to:
@@ -2442,6 +2514,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View application activity & errors'**
   String get viewLogsSubtitle;
+
+  /// No description provided for @restartApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart App'**
+  String get restartApp;
 }
 
 class _AppLocalizationsDelegate

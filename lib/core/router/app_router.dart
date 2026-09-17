@@ -14,7 +14,13 @@ import '../../features/details/presentation/tmdb_movie_details_screen.dart';
 import '../../features/explore/presentation/view_all_screen.dart';
 import '../../features/player/presentation/player_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
+import '../../features/addons/presentation/addons_screen.dart';
+import '../../features/addons/presentation/addon_detail_screen.dart';
+import '../../features/addons/presentation/addon_catalog_screen.dart';
+import '../../features/settings/presentation/player_settings_screen.dart';
+import '../../features/nuvio/presentation/nuvio_plugins_screen.dart';
 import '../domain/entity/multimedia_item.dart';
+import '../addons/models/addon_meta.dart';
 import 'package:mixstream/shared/widgets/app_scaffold.dart';
 import '../../core/storage/settings_repository.dart';
 import 'package:talker_flutter/talker_flutter.dart';
@@ -45,6 +51,10 @@ part 'app_router.g.dart';
           path: '/settings',
           routes: [
             TypedGoRoute<ExtensionsRoute>(path: 'extensions'),
+            TypedGoRoute<PlayerSettingsRoute>(path: 'player'),
+            TypedGoRoute<ExtensionsRoute>(path: 'extensions'),
+            TypedGoRoute<NuvioPluginsRoute>(path: 'nuvio'),
+            TypedGoRoute<AddonsRoute>(path: 'stremio'),
             TypedGoRoute<DeveloperOptionsRoute>(path: 'developer'),
             TypedGoRoute<AboutRoute>(path: 'about'),
           ],
@@ -143,6 +153,57 @@ class AboutRoute extends GoRouteData with $AboutRoute {
       const AboutScreen();
 }
 
+class PlayerSettingsRoute extends GoRouteData with $PlayerSettingsRoute {
+  const PlayerSettingsRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const PlayerSettingsScreen();
+}
+
+class NuvioPluginsRoute extends GoRouteData with $NuvioPluginsRoute {
+  const NuvioPluginsRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const NuvioPluginsScreen();
+}
+
+class AddonsRoute extends GoRouteData with $AddonsRoute {
+  final int? initialTab;
+  const AddonsRoute({this.initialTab});
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      AddonsScreen(initialTab: initialTab ?? 0);
+}
+
+@TypedGoRoute<AddonDetailRoute>(path: '/addon-detail')
+class AddonDetailRoute extends GoRouteData with $AddonDetailRoute {
+  final String type;
+  final String id;
+  final String? addonUrl;
+  const AddonDetailRoute({required this.type, required this.id, this.addonUrl});
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      AddonDetailScreen(type: type, id: id, addonUrl: addonUrl);
+}
+
+@TypedGoRoute<AddonCatalogRoute>(path: '/addon-catalog')
+class AddonCatalogRoute extends GoRouteData with $AddonCatalogRoute {
+  final String addonUrl;
+  final String type;
+  final String catalogId;
+  final String title;
+  const AddonCatalogRoute({
+    required this.addonUrl,
+    required this.type,
+    required this.catalogId,
+    required this.title,
+  });
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      AddonCatalogScreen(
+          addonUrl: addonUrl, type: type, catalogId: catalogId, title: title);
+}
+
 @TypedGoRoute<AppLogsRoute>(path: '/logs')
 class AppLogsRoute extends GoRouteData with $AppLogsRoute {
   const AppLogsRoute();
@@ -172,10 +233,16 @@ class PlayerRouteExtra {
     required this.item,
     required this.videoUrl,
     this.episode,
+    this.streams = const [],
   });
   final MultimediaItem item;
   final String videoUrl;
   final Episode? episode;
+
+  /// Streams the caller has already resolved (Nuvio / Stremio add-on sheets).
+  /// When present and no extension provider is active, the player uses these
+  /// directly instead of trying to re-scrape via a provider.
+  final List<StreamResult> streams;
 }
 
 class ViewAllRouteExtra {
@@ -209,8 +276,14 @@ class DetailsRoute extends GoRouteData with $DetailsRoute {
       key: state.pageKey,
       child: build(context, state),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(-1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+          )),
           child: child,
         );
       },
@@ -252,8 +325,14 @@ class TmdbDetailsRoute extends GoRouteData with $TmdbDetailsRoute {
       key: state.pageKey,
       child: build(context, state),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(-1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+          )),
           child: child,
         );
       },
@@ -309,6 +388,7 @@ class PlayerRoute extends GoRouteData with $PlayerRoute {
       item: $extra.item,
       videoUrl: $extra.videoUrl,
       episode: $extra.episode,
+      streams: $extra.streams,
     );
   }
 
@@ -333,6 +413,20 @@ class PlayerRoute extends GoRouteData with $PlayerRoute {
 }
 
 // --- GoRouter Definition ---
+
+const String kPlayerRoutePath = '/player';
+
+/// Whether the full-screen player is the route on top of the stack.
+///
+/// Every entry point *pushes* [kPlayerRoutePath], so a plain path comparison
+/// is enough. Used by the global toast layer to stand down so background
+/// toasts cannot land on the player's own controls.
+bool playerRouteIsOnTop(GoRouter router) {
+  // `state` reads `currentConfiguration.last`, which throws on the empty match
+  // list the delegate starts life with.
+  if (router.routerDelegate.currentConfiguration.isEmpty) return false;
+  return router.state.uri.path == kPlayerRoutePath;
+}
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -378,3 +472,37 @@ GoRouter appRouter(Ref ref) {
 }
 
 // End of Routes
+
+/// Provider-less-aware navigation shared by every catalog (home, explore,
+/// search, watch history, recommendations). Add-on rows stay in the add-on
+/// stack, TMDB rows open the merged Nuvio+add-on sources details, and rows
+/// produced by MixStream extensions fall through to the provider details
+/// screen.
+extension MultimediaItemNavigation on MultimediaItem {
+  void pushDetails(BuildContext context, {bool autoPlay = false}) {
+    final addonType = contentType == MultimediaContentType.series ||
+            contentType == MultimediaContentType.anime
+        ? 'series'
+        : 'movie';
+
+    if (tmdbId != null) {
+      TmdbDetailsRoute(
+        movieId: tmdbId!,
+        mediaType: tmdbMediaType,
+        heroTag: 'tmdb_nav_${tmdbId}_${url.hashCode}',
+        placeholderPoster: posterUrl,
+        source: source,
+      ).push<void>(context);
+    } else if (source == kAddonItemSource) {
+      AddonDetailRoute(
+        type: addonType,
+        id: url,
+        addonUrl: addonUrl,
+      ).push<void>(context);
+    } else {
+      DetailsRoute(
+        $extra: DetailsRouteExtra(item: this, autoPlay: autoPlay),
+      ).push<void>(context);
+    }
+  }
+}

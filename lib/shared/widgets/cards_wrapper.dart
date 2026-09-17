@@ -2,6 +2,69 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mixstream/core/utils/responsive_breakpoints.dart';
 
+/// The focus affordance shared by every card-like surface in the app.
+///
+/// Three layers, because one of them alone is not legible on top of a bright
+/// poster on a television:
+///  * a **ring**, painted with [BorderSide.strokeAlignOutside] so it sits
+///    entirely OUTSIDE the card;
+///  * a **tint**, painted in FRONT of the child so it survives a full-bleed
+///    poster;
+///  * a **glow**, painted BEHIND the child so it only reads outside the card.
+class CardFocusAffordance {
+  const CardFocusAffordance._();
+
+  /// Ring thickness, in logical pixels. Painted outside the card.
+  static const double ringWidth = 3;
+
+  /// Alpha of the accent wash drawn over the child.
+  static const double tintOpacity = 0.18;
+
+  /// Alpha of the glow drawn behind the card.
+  static const double glowOpacity = 0.35;
+
+  /// Blur of the glow.
+  static const double glowBlurRadius = 8;
+
+  /// Background layer (behind the child): the glow.
+  static BoxDecoration glow({
+    required BorderRadius borderRadius,
+    required Color accent,
+    required bool focused,
+  }) {
+    return BoxDecoration(
+      borderRadius: borderRadius,
+      boxShadow: focused
+          ? <BoxShadow>[
+              BoxShadow(
+                color: accent.withValues(alpha: glowOpacity),
+                blurRadius: glowBlurRadius,
+              ),
+            ]
+          : null,
+    );
+  }
+
+  /// Foreground layer (in front of the child): the ring and the tint.
+  static BoxDecoration ring({
+    required BorderRadius borderRadius,
+    required Color accent,
+    required bool focused,
+  }) {
+    return BoxDecoration(
+      borderRadius: borderRadius,
+      color: focused ? accent.withValues(alpha: tintOpacity) : null,
+      border: focused
+          ? Border.all(
+              color: accent,
+              width: ringWidth,
+              strokeAlign: BorderSide.strokeAlignOutside,
+            )
+          : null,
+    );
+  }
+}
+
 class CardsWrapper extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;

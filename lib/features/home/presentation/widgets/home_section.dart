@@ -11,7 +11,6 @@ import '../../../../shared/widgets/desktop_scroll_wrapper.dart';
 import '../../../../shared/widgets/multimedia_card.dart';
 import '../../../../shared/widgets/app_icon.dart';
 import '../../../../features/library/presentation/library_provider.dart';
-import '../../../../features/library/presentation/library_state.dart';
 
 class HomeSection extends ConsumerStatefulWidget {
   final String title;
@@ -176,10 +175,15 @@ class _HomeSectionState extends ConsumerState<HomeSection> {
                               case 'bookmark':
                                 final libraryNotifier =
                                     ref.read(libraryProvider.notifier);
-                                if (libraryNotifier.isBookmarked(item.url)) {
-                                  libraryNotifier.removeItem(item.url);
+                                final key = item.libraryUrl;
+                                if (libraryNotifier.isBookmarked(key)) {
+                                  libraryNotifier.removeItem(key);
                                 } else {
-                                  libraryNotifier.addItem(item);
+                                  libraryNotifier.addItem(
+                                    item.url == key
+                                        ? item
+                                        : item.copyWith(url: key),
+                                  );
                                 }
                               case 'share':
                                 await Share.share(
@@ -187,9 +191,7 @@ class _HomeSectionState extends ConsumerState<HomeSection> {
                                 );
                             }
                           },
-                          onTap: () => DetailsRoute(
-                            $extra: DetailsRouteExtra(item: item),
-                          ).push<void>(context),
+                          onTap: () => item.pushDetails(context),
                         ),
                       );
                     },

@@ -82,6 +82,51 @@ class PlaybackLauncher {
     }
   }
 
+  /// Launches playback for a source the caller has ALREADY resolved.
+  ///
+  /// Unlike [play] this does not go back to the details pipeline; the caller
+  /// (add-on / plugin source sheets) owns the stream list and just needs the
+  /// launcher's player preference to decide internal vs external. Internal
+  /// playback simply opens the player with the chosen [videoUrl]; external
+  /// hand-off sends the first stream of [streams].
+  Future<void> playResolved(
+    BuildContext context, {
+    required MultimediaItem item,
+    required String videoUrl,
+    Episode? episode,
+    List<StreamResult> streams = const <StreamResult>[],
+  }) async {
+    // Callers pop themselves before handing over, so avoid awaiting against a
+    // context that is on its way out unless the settings box is still cold.
+    final settings = await _ref.read(playerSettingsProvider.future);
+    if (!context.mounted) return;
+
+    final playerId = settings.preferredPlayer;
+    if (playerId == null) {
+      await PlayerRoute(
+        $extra: PlayerRouteExtra(
+          item: item,
+          videoUrl: videoUrl,
+          episode: episode,
+          streams: streams,
+        ),
+      ).push<void>(context);
+      return;
+    }
+
+    final stream = streams.isEmpty
+        ? StreamResult(url: videoUrl, source: 'Direct')
+        : streams.first;
+    await _launchStream(
+      context,
+      stream,
+      item,
+      videoUrl,
+      playerId,
+      episode: episode,
+    );
+  }
+
   Future<void> _launchExternal(
     BuildContext context,
     String episodeDataUrl,
@@ -143,11 +188,11 @@ class PlaybackLauncher {
             .showError(
               AppLocalizations.of(context)!.playerNotDetected(playerName),
             );
-        unawaited(
-          PlayerRoute(
-            $extra: PlayerRouteExtra(item: item, videoUrl: episodeDataUrl),
-          ).push<void>(context),
-        );
+      unawaited(
+        PlayerRoute(
+          $extra: PlayerRouteExtra(item: item, videoUrl: episodeDataUrl),
+        ).push<void>(context),
+      );
         return;
       }
 
@@ -193,8 +238,9 @@ class PlaybackLauncher {
     StreamResult stream,
     MultimediaItem item,
     String episodeDataUrl,
-    String playerId,
-  ) async {
+    String playerId, {
+    Episode? episode,
+  }) async {
     String playUrl = stream.url;
     if (stream.url.startsWith("magnet:") ||
         stream.url.endsWith(".torrent") ||
@@ -225,7 +271,12 @@ class PlaybackLauncher {
           );
       unawaited(
         PlayerRoute(
-          $extra: PlayerRouteExtra(item: item, videoUrl: episodeDataUrl),
+          $extra: PlayerRouteExtra(
+            item: item,
+            videoUrl: episodeDataUrl,
+            episode: episode,
+            streams: [stream],
+          ),
         ).push<void>(context),
       );
     }

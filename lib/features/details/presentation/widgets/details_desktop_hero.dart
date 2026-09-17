@@ -22,6 +22,7 @@ import 'download_management_dialog.dart';
 import '../../../library/presentation/library_provider.dart';
 import '../../../library/presentation/library_state.dart';
 import 'package:mixstream/l10n/generated/app_localizations.dart';
+import 'poster_zoom_overlay.dart';
 
 /// Cinematic editorial hero for desktop/TV details.
 ///
@@ -129,32 +130,35 @@ class DetailsDesktopHero extends HookConsumerWidget {
           )
         : _titleText();
 
-    final poster = ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.45),
-              blurRadius: 30,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: AspectRatio(
-          aspectRatio: 2 / 3,
-          child: CachedNetworkImage(
-            imageUrl: posterUrl,
-            fit: BoxFit.cover,
-            memCacheWidth:
-                (260 * MediaQuery.devicePixelRatioOf(context)).round(),
-            placeholder: (context, url) => Container(color: theme.dividerColor),
-            errorWidget: (_, _, _) =>
-                ThumbnailErrorPlaceholder(label: displayItem.title),
-          ),
-        ),
-      ),
+    final poster = PosterZoomOverlay(
+      imageUrl: posterUrl,
+      onPlay: canPlay
+          ? () => ref
+              .read(detailsControllerProvider(itemUrl).notifier)
+              .handlePlayPress(context, details!)
+          : null,
+      onDownload: showDownload && downloadedFile != null
+          ? () => DownloadManagementDialog.show(
+                context,
+                details ?? displayItem,
+                downloadedFile,
+                episode: epList?.firstWhereOrNull((e) => e.url == episodeUrl),
+              )
+          : showDownload
+          ? () => ref
+              .read(downloadLauncherProvider)
+              .launch(context, details ?? displayItem,
+                  episodeUrl: episodeUrl)
+          : null,
+      isBookmarked: isBookmarked,
+      onBookmarkToggle: () {
+        if (isBookmarked) {
+          libraryNotifier.removeItem(itemUrl);
+        } else {
+          libraryNotifier.addItem(displayItem);
+        }
+      },
+      onAddToList: null,
     );
 
     final infoBlock = Column(

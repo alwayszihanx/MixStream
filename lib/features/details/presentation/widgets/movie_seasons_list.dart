@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../../../core/utils/image_fallbacks.dart';
 import '../../../../shared/widgets/cards_wrapper.dart';
 import '../../../../shared/widgets/shimmer_placeholder.dart';
@@ -11,15 +12,16 @@ import '../../../../core/utils/responsive_breakpoints.dart';
 import '../../../../core/models/tmdb_details.dart';
 import '../tmdb_details_controller.dart';
 import 'package:mixstream/l10n/generated/app_localizations.dart';
-import '../../../../core/services/notification_service.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/app_icon.dart';
+import '../../../sources/presentation/plugin_sources_sheet.dart';
 
 class MovieSeasonsList extends ConsumerStatefulWidget {
   final int movieId;
   final List<TmdbSeason> seasons;
   final Color? textColor;
   final String? source;
+  final TmdbDetails? data;
 
   const MovieSeasonsList({
     super.key,
@@ -27,6 +29,7 @@ class MovieSeasonsList extends ConsumerStatefulWidget {
     required this.seasons,
     this.textColor,
     this.source,
+    this.data,
   });
 
   @override
@@ -205,6 +208,7 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                             .selectedSeason ==
                         seasonNum;
 
+                    final primary = Theme.of(context).colorScheme.primary;
                     return GestureDetector(
                       onTap: () {
                         setState(() {
@@ -219,57 +223,74 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                             )
                             .fetchEpisodes(seasonNum, source: widget.source);
                       },
-                      child: Container(
-                        width: 120,
-                        decoration: BoxDecoration(
-                          border: isSelected
-                              ? Border.all(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  width: 2,
-                                )
-                              : null,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: CachedNetworkImage(
-                                  imageUrl: season.posterImageUrl ?? '',
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  errorWidget: (_, _, _) =>
-                                      ThumbnailErrorPlaceholder(
-                                        label: season.name,
-                                      ),
+                      child: AnimatedScale(
+                        scale: isSelected ? 1.0 : 0.94,
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutBack,
+                        child: AnimatedContainer(
+                          width: 120,
+                          duration: const Duration(milliseconds: 220),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isSelected
+                                  ? primary
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: primary.withValues(alpha: 0.35),
+                                      blurRadius: 12,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: CachedNetworkImage(
+                                    imageUrl: season.posterImageUrl ?? '',
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    errorWidget: (_, _, _) =>
+                                        ThumbnailErrorPlaceholder(
+                                          label: season.name,
+                                        ),
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              season.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: widget.textColor,
-                                fontSize: 14,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
+                              const SizedBox(height: 8),
+                              Text(
+                                season.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: widget.textColor,
+                                  fontSize: 14,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
                               ),
-                            ),
-                            Text(
-                              AppLocalizations.of(
-                                context,
-                              )!.episodeCountOnly(season.episodeCount),
-                              style: TextStyle(
-                                color: widget.textColor?.withValues(alpha: 0.7),
-                                fontSize: 12,
+                              Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.episodeCountOnly(season.episodeCount),
+                                style: TextStyle(
+                                  color: widget.textColor?.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -279,7 +300,38 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
             ),
           ),
           const SizedBox(height: 24),
-          _buildMobileEpisodesList(context),
+          Consumer(
+            builder: (context, ref, _) {
+              final selectedSeason = ref
+                  .watch(
+                    tmdbDetailsControllerProvider(
+                      widget.movieId,
+                      source: widget.source,
+                    ),
+                  )
+                  .selectedSeason;
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position:
+                        Tween<Offset>(
+                          begin: const Offset(0, 0.04),
+                          end: Offset.zero,
+                        ).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: KeyedSubtree(
+                  key: ValueKey('season_$selectedSeason'),
+                  child: _buildMobileEpisodesList(context),
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 32),
         ],
       );
@@ -349,11 +401,22 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
 
                     return CardsWrapper(
                       onTap: () {
-                        ref
-                            .read(notificationServiceProvider)
-                            .showInfo(
-                              AppLocalizations.of(context)!.selectSourceToPlay,
-                            );
+                        if (widget.data == null) return;
+                        final epModel = Episode(
+                          name: (ep['name'] as String?) ?? 'Episode',
+                          url: '',
+                          season: ep['season_number'] as int? ?? 0,
+                          episode: ep['episode_number'] as int? ?? 0,
+                          airDate: ep['air_date'] as String?,
+                          description: ep['overview'] as String?,
+                          rating: (ep['vote_average'] as num?)?.toDouble(),
+                          runtime: ep['runtime'] as int?,
+                        );
+                        PluginSourcesSheet.open(
+                          context,
+                          widget.data!,
+                          episode: epModel,
+                        );
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
@@ -598,11 +661,22 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
 
                     return CardsWrapper(
                       onTap: () {
-                        ref
-                            .read(notificationServiceProvider)
-                            .showInfo(
-                              AppLocalizations.of(context)!.selectSourceToPlay,
-                            );
+                        if (widget.data == null) return;
+                        final epModel = Episode(
+                          name: (ep['name'] as String?) ?? 'Episode',
+                          url: '',
+                          season: ep['season_number'] as int? ?? 0,
+                          episode: ep['episode_number'] as int? ?? 0,
+                          airDate: ep['air_date'] as String?,
+                          description: ep['overview'] as String?,
+                          rating: (ep['vote_average'] as num?)?.toDouble(),
+                          runtime: ep['runtime'] as int?,
+                        );
+                        PluginSourcesSheet.open(
+                          context,
+                          widget.data!,
+                          episode: epModel,
+                        );
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Container(

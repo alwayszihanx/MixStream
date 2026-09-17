@@ -15,6 +15,8 @@ import 'core/storage/storage_service.dart';
 import 'core/storage/settings_repository.dart';
 import 'core/services/launcher_icon_service.dart';
 import 'core/network/doh_service.dart';
+import 'core/widgets/app_error_boundary.dart';
+import 'core/widgets/m3_toast_overlay.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'core/utils/app_utils.dart';
 import 'features/extensions/providers/extensions_controller.dart';
@@ -32,11 +34,11 @@ import 'core/config/tmdb_config.dart';
 import 'core/providers/device_info_provider.dart';
 import 'features/settings/presentation/general_settings_provider.dart';
 import './shared/widgets/app_icon.dart';
-import './shared/widgets/splash_screen.dart';
 import 'features/onboarding/presentation/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  installGlobalErrorHandlers();
   MediaKit.ensureInitialized();
 
   // Cap Flutter's image cache. Default is 1000 entries / 100 MB which is too
@@ -89,8 +91,6 @@ class AppRoot extends StatefulWidget {
 class _AppRootState extends State<AppRoot> {
   late StorageService _storageService;
   bool _initialized = false;
-  bool _showSplash = true;
-  bool _showOnboarding = false;
   bool _onboardingPending = false;
   Object? _error;
   StackTrace? _stackTrace;
@@ -101,13 +101,9 @@ class _AppRootState extends State<AppRoot> {
     _init();
   }
 
-  void _onSplashFinished() {
-    if (mounted) setState(() => _showSplash = false);
-  }
-
   void _onOnboardingDone() {
     if (!mounted) return;
-    setState(() => _showOnboarding = false);
+    setState(() => _onboardingPending = false);
     unawaited(_storageService.setHasCompletedOnboarding(true));
   }
 
@@ -132,7 +128,6 @@ class _AppRootState extends State<AppRoot> {
         setState(() {
           _initialized = true;
           _onboardingPending = !_storageService.hasCompletedOnboarding();
-          if (_onboardingPending) _showOnboarding = true;
         });
         // Pre-warm the system WebView after the first frame so the initial
         // render isn't delayed. This eliminates the frame jank that occurs
@@ -171,18 +166,10 @@ class _AppRootState extends State<AppRoot> {
       );
     }
 
-    // Show exactly ONE screen at a time. Building MyApp *behind* an opaque
-    // splash/onboarding overlay leaves it in a broken (pure-black) state under
-    // the Impeller/Vulkan backend when the overlay is later removed, so we
-    // never stack it under the overlays.
-    final Widget body;
-    if (_showSplash) {
-      body = AppSplashScreen(onFinished: _onSplashFinished);
-    } else if (_showOnboarding) {
-      body = OnboardingScreen(onDone: _onOnboardingDone);
-    } else {
-      body = const MyApp();
-    }
+    // Onboarding only on first boot; everything else goes straight to MyApp.
+    final Widget body = _onboardingPending
+        ? OnboardingScreen(onDone: _onOnboardingDone)
+        : const MyApp();
 
     return ProviderScope(
       overrides: [storageServiceProvider.overrideWithValue(_storageService)],
@@ -429,7 +416,9 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener {
               }
             }
 
-            return result;
+            result = M3ToastOverlay(child: result);
+
+            return Dpad.wrap()(context, result);
           },
         );
 
@@ -443,7 +432,7 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener {
             }
             return KeyEventResult.ignored;
           },
-          child: DpadNavigator(child: materialApp),
+          child: materialApp,
         );
 
         if (Platform.isMacOS) {

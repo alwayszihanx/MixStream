@@ -43,11 +43,16 @@ class PlayerScreen extends ConsumerStatefulWidget {
   final String videoUrl;
   final Episode? episode;
 
+  /// Already-resolved streams from the Nuvio / add-on source sheets. Empty
+  /// when the player is opened through the legacy provider pipeline.
+  final List<StreamResult> streams;
+
   const PlayerScreen({
     super.key,
     required this.item,
     required this.videoUrl,
     this.episode,
+    this.streams = const [],
   });
 
   @override
@@ -163,6 +168,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         item: widget.item,
         videoUrl: widget.videoUrl,
         episode: widget.episode,
+        streams: widget.streams,
         videoViewController: _videoViewController,
       );
     });

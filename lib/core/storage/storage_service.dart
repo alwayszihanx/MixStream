@@ -107,6 +107,11 @@ class StorageService {
       'description': item.description,
       'type': item.contentType.name,
       'provider': item.provider,
+      'score': item.score,
+      'year': item.year,
+      'tmdbId': item.tmdbId,
+      'source': item.source,
+      'addonUrl': item.addonUrl,
     });
   }
 
@@ -123,19 +128,24 @@ class StorageService {
     for (var i = 0; i < _libraryBox.length; i++) {
       final key = _libraryBox.keyAt(i);
       final map = Map<String, dynamic>.from(_libraryBox.get(key) as Map);
-      items.add(
-        MultimediaItem(
-          title: (map['title'] as String?) ?? '',
-          url: (map['url'] as String?) ?? '',
-          posterUrl: (map['posterUrl'] as String?) ?? '',
-          bannerUrl: map['bannerUrl'] as String?,
-          description: map['description'] as String?,
-          contentType: MultimediaItem.parseContentType(
-            (map['type'] as String?) ?? (map['contentType'] as String?),
+        items.add(
+          MultimediaItem(
+            title: (map['title'] as String?) ?? '',
+            url: (map['url'] as String?) ?? '',
+            posterUrl: (map['posterUrl'] as String?) ?? '',
+            bannerUrl: map['bannerUrl'] as String?,
+            description: map['description'] as String?,
+            contentType: MultimediaItem.parseContentType(
+              (map['type'] as String?) ?? (map['contentType'] as String?),
+            ),
+            provider: map['provider'] as String?,
+            score: (map['score'] as num?)?.toDouble(),
+            year: (map['year'] as num?)?.toInt(),
+            tmdbId: (map['tmdbId'] as num?)?.toInt(),
+            source: map['source'] as String?,
+            addonUrl: map['addonUrl'] as String?,
           ),
-          provider: map['provider'] as String?,
-        ),
-      );
+        );
     }
     return items;
   }

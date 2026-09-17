@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/router/app_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../core/utils/layout_constants.dart';
@@ -13,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/device_info_provider.dart';
 
 import '../../../../shared/widgets/thumbnail_error_placeholder.dart';
+import '../../../../shared/widgets/progressive_image.dart';
 import '../../../../shared/widgets/app_icon.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../../../features/library/presentation/library_provider.dart';
@@ -423,6 +423,43 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
             bottom: 14,
             child: _buildDotIndicators(),
           ),
+
+        // Auto-advance progress bar — hugs the bottom edge and mirrors the
+        // fill timer that drives the 5s/12s slide loop, so the user can see
+        // how long until the next slide without a separate timer widget.
+        if (widget.movies.length > 1)
+          Positioned(
+            left: isDesktop ? 16 : 0,
+            right: isDesktop ? 16 : 0,
+            bottom: isDesktop ? 4 : 0,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: SizedBox(
+                height: 3,
+                child: AnimatedBuilder(
+                  animation: _fillController,
+                  builder: (context, _) {
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Stack(
+                          children: [
+                            Container(
+                              color: Colors.white.withValues(alpha: 0.20),
+                            ),
+                            Container(
+                              width:
+                                  constraints.maxWidth * _fillController.value,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -573,12 +610,10 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
             bottom: -bleed - parallaxOffset,
             left: 0,
             right: 0,
-            child: CachedNetworkImage(
+            child: ProgressiveImage(
               imageUrl: imageUrl,
               fit: BoxFit.cover,
-              placeholder: (context, url) =>
-                  Container(color: theme.colorScheme.surfaceContainerHighest),
-              errorWidget: (_, _, _) =>
+              errorBuilder: (_, _, _) =>
                   ThumbnailErrorPlaceholder(label: title, isBackdrop: true),
             ),
           ),
@@ -870,7 +905,7 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
       libraryProvider.select(
         (state) =>
             state is LibrarySuccess &&
-            state.items.any((i) => i.url == movie.url),
+            state.items.any((i) => i.url == movie.libraryUrl),
       ),
     );
     final libraryNotifier = ref.read(libraryProvider.notifier);
@@ -882,10 +917,13 @@ class _ExploreCarouselState extends ConsumerState<ExploreCarousel>
           highlight: isBookmarked,
           onTap: () {
             HapticFeedback.lightImpact();
+            final key = movie.libraryUrl;
             if (isBookmarked) {
-              libraryNotifier.removeItem(movie.url);
+              libraryNotifier.removeItem(key);
             } else {
-              libraryNotifier.addItem(movie);
+              libraryNotifier.addItem(
+                movie.url == key ? movie : movie.copyWith(url: key),
+              );
             }
           },
         ),

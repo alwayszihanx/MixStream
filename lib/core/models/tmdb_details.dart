@@ -27,6 +27,7 @@ class TmdbDetails extends MultimediaItem {
     required int id,
     required String mediaType,
     required super.title,
+    String? url,
     String? posterPath,
     String? backdropPath,
     required String releaseDate,
@@ -36,6 +37,7 @@ class TmdbDetails extends MultimediaItem {
     String? genresStr,
     super.imdbId,
     super.source,
+    super.addonUrl,
     super.nextAiring,
     dynamic sourceItem,
     int? tmdbId,
@@ -55,7 +57,7 @@ class TmdbDetails extends MultimediaItem {
     required this.originalLanguage,
     required this.releaseDateFull,
   }) : super(
-         url: '', // Resolved via provider
+         url: url ?? '', // Resolved via provider when empty
          posterUrl: posterPath != null
              ? (posterPath.startsWith('http')
                    ? posterPath
@@ -300,6 +302,7 @@ class TmdbDetails extends MultimediaItem {
     int? tmdbId,
     String? imdbId,
     String? source,
+    String? addonUrl,
     // Subclass specific fields:
     int? id,
     String? mediaType,
@@ -325,6 +328,7 @@ class TmdbDetails extends MultimediaItem {
   }) {
     return TmdbDetails(
       id: id ?? this.id,
+      url: url ?? this.url,
       mediaType:
           mediaType ??
           (contentType != null
@@ -342,6 +346,7 @@ class TmdbDetails extends MultimediaItem {
       genresStr: genresStr ?? this.genresStr,
       imdbId: imdbId ?? this.imdbId,
       source: source ?? this.source,
+      addonUrl: addonUrl ?? this.addonUrl,
       nextAiring: nextAiring ?? this.nextAiring,
       tmdbId: tmdbId ?? this.tmdbId,
       runtime: runtime ?? this.runtime,

@@ -7,6 +7,8 @@ import '../../../../core/models/tmdb_details.dart';
 import '../../../../core/storage/history_repository.dart';
 import 'provider_search_section.dart';
 import '../../../../shared/widgets/app_icon.dart';
+import '../../../sources/presentation/plugin_sources_sheet.dart';
+import '../../../sources/presentation/source_sheet_widgets.dart';
 
 class TmdbDetailsDesktopHero extends ConsumerWidget {
   const TmdbDetailsDesktopHero({
@@ -264,6 +266,76 @@ class TmdbDetailsDesktopHero extends ConsumerWidget {
                             ),
                             fontSize: 13,
                           ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Play via Nuvio / plugin sources
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 180,
+                              child: ElevatedButton.icon(
+                                onPressed: () => PluginSourcesSheet.open(
+                                  context,
+                                  data,
+                                ),
+                                icon: AppIcon(
+                                  'play_arrow_rounded',
+                                  size: 20,
+                                  color: theme.colorScheme.onPrimary,
+                                ),
+                                label: Text(
+                                  isMovie ? 'Play' : 'Select Source',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 150,
+                              height: 44,
+                              child: OutlinedButton.icon(
+                                onPressed: () => PluginSourcesSheet.open(
+                                  context,
+                                  data,
+                                  mode: SourcesMode.download,
+                                ),
+                                icon: AppIcon(
+                                  'file_download_rounded',
+                                  size: 18,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                label: Text(
+                                  'Download',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: theme.colorScheme.primary,
+                                    width: 1.5,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 20),
                         // Sources header

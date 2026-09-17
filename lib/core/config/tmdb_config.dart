@@ -16,9 +16,19 @@ import '../providers/device_info_provider.dart';
 /// listener on `deviceProfileProvider` fires (within milliseconds of app
 /// boot), TV / desktop devices switch to higher-res sources.
 class TmdbConfig {
-  /// TMDB API key loaded from environment.
-  /// Pass via: flutter run --dart-define=TMDB_API_KEY=your_key_here
-  static const String apiKey = String.fromEnvironment('TMDB_API_KEY');
+  /// TMDB API key – compile-time override takes priority, fallback is the
+  /// bundled key so the app works out of the box.
+  static const String apiKey = String.fromEnvironment(
+    'TMDB_API_KEY',
+    defaultValue: '1865f43a0549ca50d341dd9ab8b29f49',
+  );
+
+  /// Separate key used by Nuvio scrapers / logo fetches.
+  static const String logoApiKey = String.fromEnvironment(
+    'TMDB_LOGO_API_KEY',
+    defaultValue: '98ae14df2b8d8f8f8136499daf79f0e0',
+  );
+
   static const String baseUrl = 'https://api.themoviedb.org/3';
   static const String _imageRoot = 'https://image.tmdb.org/t/p';
 
@@ -52,4 +62,20 @@ class TmdbConfig {
 
   /// Generic fallback (logos, stills, etc.) — same default as poster.
   static String get imageBaseUrl => posterSizeUrl;
+
+  static String _nuvioApiKey = '';
+
+  /// TMDB key used by Nuvio scrapers and the Nuvio tab. Kept separate from
+  /// [apiKey]; falls back to it when empty.
+  static String get nuvioApiKey {
+    if (_nuvioApiKey.isNotEmpty) return _nuvioApiKey;
+    return apiKey;
+  }
+
+  static void setNuvioApiKey(String key) {
+    _nuvioApiKey = key;
+  }
+
+  /// TMDB image base with original quality (for full-size assets).
+  static String get tmdbImageBase => '$_imageRoot/original';
 }

@@ -4,7 +4,7 @@ import java.io.FileInputStream
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -28,6 +28,17 @@ android {
         targetSdk = rootProject.extra["projectTargetSdk"] as Int
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    // flutter_torrent_server ships prebuilt TorrServer executables for macOS,
+    // Linux and Windows as package assets. They are dead weight on Android
+    // (Android uses libgojni.so), and account for ~100 MB of the APK. Keep
+    // the aapt defaults and additionally ignore the desktop binaries.
+    androidResources {
+        ignoreAssetsPattern =
+            "!.svn:!.git:!.ds_store:!*.scc:.*:<dir>_*:!CVS:!thumbs.db:" +
+            "!picasa.ini:!*~:TorrServer-darwin-*:TorrServer-linux-*:" +
+            "TorrServer-windows-*"
     }
 
     val keystoreProperties = Properties()

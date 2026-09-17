@@ -171,11 +171,7 @@ class _ContinueWatchingCardState extends ConsumerState<ContinueWatchingCard> {
           return;
         }
 
-        unawaited(
-          DetailsRoute(
-            $extra: DetailsRouteExtra(item: item, autoPlay: true),
-          ).push<void>(context),
-        );
+        item.pushDetails(context, autoPlay: true);
       },
       onLongPress: () {
         showModalBottomSheet<void>(
@@ -193,11 +189,7 @@ class _ContinueWatchingCardState extends ConsumerState<ContinueWatchingCard> {
                   title: Text(AppLocalizations.of(context)!.viewDetails),
                   onTap: () {
                     Navigator.pop(context);
-                    unawaited(
-                      DetailsRoute(
-                        $extra: DetailsRouteExtra(item: item),
-                      ).push<void>(context),
-                    );
+                    item.pushDetails(context);
                   },
                 ),
                 ListTile(
@@ -244,11 +236,17 @@ class _ContinueWatchingCardState extends ConsumerState<ContinueWatchingCard> {
                 child: Container(
                   color: Theme.of(context).colorScheme.surfaceContainer,
                   child: bannerUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: bannerUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (_, _) => const SizedBox.shrink(),
-                          errorWidget: (_, _, _) => const SizedBox.shrink(),
+                      ? RepaintBoundary(
+                          child: CachedNetworkImage(
+                            imageUrl: bannerUrl,
+                            fit: BoxFit.cover,
+                            memCacheWidth:
+                                (widget.width *
+                                        MediaQuery.devicePixelRatioOf(context))
+                                    .round(),
+                            placeholder: (_, _) => const SizedBox.shrink(),
+                            errorWidget: (_, _, _) => const SizedBox.shrink(),
+                          ),
                         )
                       : null,
                 ),

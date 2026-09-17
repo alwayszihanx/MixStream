@@ -20,6 +20,7 @@ class MediaHorizontalList extends StatefulWidget {
   final ViewAllCategory category;
   final void Function(MultimediaItem)? onTap;
   final bool showViewAll;
+  final VoidCallback? onViewAll;
   final String? heroTagPrefix;
 
   const MediaHorizontalList({
@@ -29,6 +30,7 @@ class MediaHorizontalList extends StatefulWidget {
     required this.category,
     this.onTap,
     this.showViewAll = true,
+    this.onViewAll,
     this.heroTagPrefix,
   });
 
@@ -195,6 +197,8 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    _CountBadge(count: widget.mediaList.length),
                   ],
                 ),
               ),
@@ -213,8 +217,13 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                 const SizedBox(width: LayoutConstants.spacingXs),
               const SizedBox(width: 8),
               if (widget.showViewAll)
-                CardsWrapper(
+                _SeeAllButton(
+                  label: l10n.viewAll,
                   onTap: () {
+                    if (widget.onViewAll != null) {
+                      widget.onViewAll!();
+                      return;
+                    }
                     ViewAllRoute(
                       $extra: ViewAllRouteExtra(
                         title: widget.title,
@@ -224,29 +233,6 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
                       ),
                     ).push<void>(context);
                   },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: LayoutConstants.spacingSm,
-                      vertical: 6,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          l10n.viewAll,
-                          style: TextStyle(
-                            color: cs.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        AppIcon('arrow_forward_ios', size: 10,
-                          color: cs.primary,
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
             ],
           ),
@@ -329,6 +315,88 @@ class _MediaHorizontalListState extends State<MediaHorizontalList> {
       if (type != null) type,
     ];
     return parts.join(' • ');
+  }
+}
+
+/// Small count pill shown beside a section title (e.g. "24").
+class _CountBadge extends StatelessWidget {
+  final int count;
+
+  const _CountBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: cs.onSurface.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$count',
+        style: TextStyle(
+          color: cs.onSurfaceVariant,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// "See all" affordance whose chevron slides right on hover / focus.
+class _SeeAllButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _SeeAllButton({required this.label, required this.onTap});
+
+  @override
+  State<_SeeAllButton> createState() => _SeeAllButtonState();
+}
+
+class _SeeAllButtonState extends State<_SeeAllButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: CardsWrapper(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: LayoutConstants.spacingSm,
+            vertical: 6,
+          ),
+          child: Row(
+            children: [
+              Text(
+                widget.label,
+                style: TextStyle(
+                  color: cs.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              AnimatedSlide(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                offset: Offset(_hovered ? 0.35 : 0, 0),
+                child: AppIcon('arrow_forward_ios', size: 10, color: cs.primary),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

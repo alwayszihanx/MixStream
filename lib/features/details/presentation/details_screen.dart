@@ -32,6 +32,8 @@ import "../../../shared/widgets/expandable_text.dart";
 import "../../../shared/widgets/loading_indicator.dart";
 import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../shared/widgets/app_icon.dart';
+import 'widgets/episode_watched_action_sheet.dart';
+import '../../../shared/widgets/network_offline_card.dart';
 
 class DetailsScreen extends ConsumerStatefulWidget {
   final MultimediaItem item;
@@ -334,6 +336,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                   const SizedBox(width: 16),
                 ],
               ),
+              // ── Network offline banner ──
+              const SizedBox(height: 8),
+              const NetworkOfflineCard(),
+              // ── Hero stretch section ──
               ..._buildMobileSlivers(
                 context,
                 item,
@@ -766,15 +772,24 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const NetworkOfflineCard(),
         // Loading / Error / Season chips
         if (detailsState is AsyncLoading)
           const Center(child: AppLoadingIndicator())
         else if (detailsState is AsyncError)
-          Text(
-            "Error: ${detailsState.error}",
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          _DetailsErrorView(
+            error: detailsState.error.toString(),
+            onRetry: () => ref
+                .read(
+                  detailsControllerProvider(
+                    widget.item.url,
+                  ).notifier,
+                )
+                .loadDetails(details ?? widget.item),
           )
-        else if (!isMovie && details?.episodes != null)
+        else if (details == null)
+          const _DetailsEmptyView()
+        else if (!isMovie && details!.episodes!.isNotEmpty)
           DetailsSeasonListWrapper(itemUrl: widget.item.url),
 
         const SizedBox(height: 16),
@@ -805,11 +820,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
           const SizedBox(height: 32),
           RecommendationsCarousel(
             items: item.recommendations!,
-            onItemTap: (rec) {
-              DetailsRoute(
-                $extra: DetailsRouteExtra(item: rec),
-              ).push<void>(context);
-            },
+            onItemTap: (rec) => rec.pushDetails(context),
           ),
         ],
 
@@ -971,11 +982,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                   RecommendationsCarousel(
                     title: 'Because you watched',
                     items: becauseYouWatched,
-                    onItemTap: (rec) {
-                      DetailsRoute(
-                        $extra: DetailsRouteExtra(item: rec),
-                      ).push<void>(context);
-                    },
+                    onItemTap: (rec) => rec.pushDetails(context),
                   ),
                 ],
               ],
@@ -987,22 +994,22 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-          child: detailsState is AsyncLoading
-              ? const Center(child: AppLoadingIndicator())
-              : detailsState is AsyncError
-              ? Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cs.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(
-                      context,
-                    )!.errorPrefix(detailsState.error.toString()),
-                  ),
-                )
-              : const SizedBox.shrink(),
+child: detailsState is AsyncLoading
+                  ? const Center(child: AppLoadingIndicator())
+                  : detailsState is AsyncError
+                  ? _DetailsErrorView(
+                      error: detailsState.error.toString(),
+                      onRetry: () => ref
+                          .read(
+                            detailsControllerProvider(
+                              widget.item.url,
+                            ).notifier,
+                          )
+                          .loadDetails(details ?? widget.item),
+                    )
+                  : details == null
+                  ? const _DetailsEmptyView()
+                  : const SizedBox.shrink(),
         ),
       ),
       // ── Section tabs ──
@@ -1078,11 +1085,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                   key: _similarKey,
                   child: RecommendationsCarousel(
                     items: item.recommendations!,
-                    onItemTap: (rec) {
-                      DetailsRoute(
-                        $extra: DetailsRouteExtra(item: rec),
-                      ).push<void>(context);
-                    },
+                    onItemTap: (rec) => rec.pushDetails(context),
                   ),
                 ),
               ],
@@ -1092,6 +1095,99 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
         ),
       ),
     ];
+  }
+}
+
+/// Friendly error state with a retry button.
+class _DetailsErrorView extends ConsumerWidget {
+  final Object error;
+  final VoidCallback onRetry;
+
+  const _DetailsErrorView({
+    super.key,
+    required this.error,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline_rounded, size: 48, color: cs.error),
+            const SizedBox(height: 12),
+            Text(
+              l10n.generalError,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(l10n.retry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when a provider returned no usable metadata.
+class _DetailsEmptyView extends StatelessWidget {
+  const _DetailsEmptyView();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.info_outline_rounded, size: 48, color: cs.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(
+              'No details available',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This title has no metadata from the selected source. '
+              'Try another source or install a metadata extension.',
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

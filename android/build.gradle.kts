@@ -15,7 +15,7 @@ allprojects {
  * Centralized Project Settings
  * These versions are enforced across the app and all plugins.
  */
-extra["projectCompileSdk"] = 36
+extra["projectCompileSdk"] = 37
 extra["projectTargetSdk"] = 36
 val projectJvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 

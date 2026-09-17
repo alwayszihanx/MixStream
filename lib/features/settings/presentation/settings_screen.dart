@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_icon.dart';
 
 import 'widgets/settings_widgets.dart';
 import 'widgets/settings_dialogs.dart';
+import 'backup_restore_screen.dart';
 import 'player_settings_provider.dart';
 import 'general_settings_provider.dart';
 
@@ -18,6 +19,8 @@ import '../../../core/providers/locale_provider.dart';
 import '../../../core/network/doh_service.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/providers/app_logo_provider.dart';
+import '../../../core/nuvio/data/nuvio_repository.dart';
+import '../../../shared/widgets/text_input_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -186,6 +189,90 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: LayoutConstants.spacingLg),
+            Builder(
+              builder: (context) {
+                final nuvio = ref.watch(nuvioRepositoryProvider);
+                final repoCount = nuvio.repos.length;
+                final scraperCount = nuvio.repos.fold<int>(
+                  0,
+                  (total, repo) =>
+                      total + (repo.manifest?.scrapers.length ?? 0),
+                );
+                return SettingsGroup(
+                  title: 'Nuvio Plugins',
+                  icon: const AppIcon('extension_rounded', size: 20),
+                  description: 'Add a manifest link to scrape streams',
+                  children: [
+                    SettingsTile(
+                      icon: const AppIcon('add_circle_rounded', size: 20),
+                      title: 'Add Manifest Link',
+                      subtitle:
+                          'Paste a Nuvio repository or plugin manifest URL',
+                      onTap: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final url = await TextInputDialog.show(
+                          context,
+                          title: 'Add Nuvio Repository',
+                          message:
+                              'Paste the plugin manifest URL (JSON listing "scrapers"). A bare host works too.',
+                          hintText:
+                              'https://example.com/plugins/manifest.json',
+                          confirmLabel: 'Add',
+                          width: 480,
+                          showPasteButton: true,
+                        );
+                        if (url == null || url.isEmpty || !context.mounted) {
+                          return;
+                        }
+                        try {
+                          final repo = await ref
+                              .read(nuvioRepositoryProvider.notifier)
+                              .addRepository(url);
+                          if (!context.mounted) return;
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Added ${repo.displayName} ${repo.manifest?.version ?? ''} · ${repo.manifest?.scrapers.length ?? 0} plugins',
+                              ),
+                            ),
+                          );
+                        } catch (error) {
+                          messenger.showSnackBar(
+                            SnackBar(content: Text('Failed: $error')),
+                          );
+                        }
+                      },
+                    ),
+                    SettingsTile(
+                      icon: const AppIcon('extension_rounded', size: 20),
+                      title: 'Manage Nuvio Plugins',
+                      subtitle: repoCount == 0
+                          ? 'No repositories added yet'
+                          : '$repoCount repositor${repoCount == 1 ? 'y' : 'ies'} · $scraperCount plugins',
+                      isLast: true,
+                      onTap: () => const NuvioPluginsRoute().go(context),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: LayoutConstants.spacingLg),
+            SettingsGroup(
+              title: 'Stremio Add-ons',
+              icon: const AppIcon('apps_rounded', size: 20),
+              description: 'Catalogs and streams from Stremio add-ons',
+              children: [
+                SettingsTile(
+                  icon: const AppIcon('apps_rounded', size: 20),
+                  title: 'Manage Stremio Add-ons',
+                  subtitle: 'Install add-ons (Torrentio, radu…), browse '
+                      'their catalogs, configure debrid',
+                  isLast: true,
+                  onTap: () => const AddonsRoute().go(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: LayoutConstants.spacingLg),
             SettingsGroup(
               title: l10n.player,
               icon: const AppIcon('play_arrow', size: 20),
@@ -281,6 +368,16 @@ class SettingsScreen extends ConsumerWidget {
               title: l10n.appData,
               description: 'Reset and clear application data',
               children: [
+                SettingsTile(
+                  icon: const AppIcon('backup_rounded'),
+                  title: 'Backup & Restore',
+                  subtitle: 'Export or import your library, history and settings',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const BackupRestoreScreen(),
+                    ),
+                  ),
+                ),
                 SettingsTile(
                   icon: const AppIcon('restore_rounded'),
                   title: l10n.resetDataKeepExtensions,

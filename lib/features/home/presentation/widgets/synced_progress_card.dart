@@ -91,18 +91,23 @@ class SyncedProgressCard extends ConsumerWidget {
               ),
               child: AspectRatio(
                 aspectRatio: 2 / 3,
-                child: CachedNetworkImage(
-                  imageUrl:
-                      AppImageFallbacks.tmdbPoster(
-                        item.posterUrl,
-                        label: item.title,
-                      ) ??
-                      '',
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) =>
-                      Container(color: cs.surfaceContainerHighest),
-                  errorWidget: (_, _, _) =>
-                      ThumbnailErrorPlaceholder(label: item.title),
+                child: RepaintBoundary(
+                  child: CachedNetworkImage(
+                    imageUrl:
+                        AppImageFallbacks.tmdbPoster(
+                          item.posterUrl,
+                          label: item.title,
+                        ) ??
+                        '',
+                    fit: BoxFit.cover,
+                    memCacheWidth:
+                        (width * MediaQuery.devicePixelRatioOf(context))
+                            .round(),
+                    placeholder: (context, url) =>
+                        Container(color: cs.surfaceContainerHighest),
+                    errorWidget: (_, _, _) =>
+                        ThumbnailErrorPlaceholder(label: item.title),
+                  ),
                 ),
               ),
             ),

@@ -328,6 +328,45 @@ class JsBasedProvider extends MixStreamProvider {
     } catch (_) {}
   }
 
+  /// Calls the optional JS `getSettings()` export.
+  ///
+  /// The plugin may return either a list directly or
+  /// `{ settings: [...] }`. Invalid definitions are ignored.
+  Future<List<PluginSettingDefinition>> getSettings() async {
+    await _ensureReady();
+    if (_error != null) return const [];
+
+    return _serializedInvoke(() async {
+      try {
+        final result = await _jsEngine.invokeAsync(_fn('getSettings'));
+        final dynamic rawSettings = result is Map && result['settings'] is List
+            ? result['settings']
+            : result;
+
+        if (rawSettings is! List) return const [];
+
+        return rawSettings
+            .take(100)
+            .whereType<Map<dynamic, dynamic>>()
+            .map(
+              (raw) => PluginSettingDefinition.fromJson(
+                Map<String, dynamic>.from(raw),
+              ),
+            )
+            .where((setting) => setting.key.isNotEmpty)
+            .toList(growable: false);
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint(
+            'JsBasedProvider: getSettings unavailable for '
+            '$_packageName: $error',
+          );
+        }
+        return const [];
+      }
+    });
+  }
+
   String _fn(String name) => _namespace != null ? '$_namespace.$name' : name;
 
   @override

@@ -305,9 +305,7 @@ class _HomeSearchResultsState extends ConsumerState<_HomeSearchResults> {
           heroTag: uniqueTag,
           badgeText: item.score?.toStringAsFixed(1),
           rating: item.score?.toStringAsFixed(1),
-          onTap: () => DetailsRoute(
-            $extra: DetailsRouteExtra(item: item),
-          ).push<void>(context),
+          onTap: () => item.pushDetails(context),
         );
       },
     );

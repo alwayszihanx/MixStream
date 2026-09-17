@@ -1148,6 +1148,48 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mobileQualityPreference => 'تفضيل جودة الهاتف المحمول';
 
   @override
+  String get networkBuffer => 'Network buffer';
+
+  @override
+  String get subtitleDefault => 'Subtitles by default';
+
+  @override
+  String get unmeteredQualityPreference => 'Wi-Fi & Wired Quality Preference';
+
+  @override
+  String get playerControls => 'Player Controls';
+
+  @override
+  String get playerControlsSubtitle => 'Show or hide player control buttons';
+
+  @override
+  String get sourcesSearching => 'Searching scrapers…';
+
+  @override
+  String get sourcesEmptyFiltered => 'No links match the current filters.';
+
+  @override
+  String get sourcesEmptyNoTmdbId =>
+      'No TMDB id for this title. Use \'Search manually\' to enter one.';
+
+  @override
+  String get sourcesEmptyNoScrapers =>
+      'No scrapers enabled. Add one in \'Nuvio Plugins\'.';
+
+  @override
+  String get sourcesEmptyAllFailed =>
+      'Every scraper failed. Check your connection or update your scrapers.';
+
+  @override
+  String get sourcesEmptyNothingFound =>
+      'None of your scrapers have this title.';
+
+  @override
+  String sourcesEmptySomeFailed(int failed, int total) {
+    return 'No links found. $failed of $total scrapers failed.';
+  }
+
+  @override
   String get anyNoPreference => 'أي نوع (لا يوجد تفضيل)';
 
   @override
@@ -1246,6 +1288,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get viewLogsSubtitle => 'عرض نشاط التطبيق والأخطاء';
+
+  @override
+  String get restartApp => 'Restart App';
 }
 
 /// The translations for Arabic (`ar_apc`).

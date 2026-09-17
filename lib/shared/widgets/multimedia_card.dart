@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/utils/responsive_breakpoints.dart';
 import '../../core/utils/app_utils.dart';
 import 'cards_wrapper.dart';
-import 'shimmer_placeholder.dart';
+import 'progressive_image.dart';
 import 'thumbnail_error_placeholder.dart';
 
 class MultimediaCard extends StatefulWidget {
@@ -77,12 +76,10 @@ class _MultimediaCardState extends State<MultimediaCard> {
                     children: [
                       Hero(
                         tag: widget.heroTag,
-                        child: CachedNetworkImage(
+                        child: ProgressiveImage(
                           imageUrl: widget.imageUrl ?? '',
                           fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              ShimmerPlaceholder(borderRadius: _posterRadius),
-                          errorWidget: (_, _, _) =>
+                          errorBuilder: (_, _, _) =>
                               ThumbnailErrorPlaceholder(label: displayTitle),
                         ),
                       ),

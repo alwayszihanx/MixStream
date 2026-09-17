@@ -50,9 +50,11 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
   static const double _sliderTrackInset = 24;
   ProviderSubscription<int>? _streamIndexSub;
 
-  // ValueNotifiers so position/duration updates don't setState the whole widget.
+  // ValueNotifiers so position/duration/buffer updates don't
+  // setState the whole widget.
   final _vvPositionNotifier = ValueNotifier<int>(0);
   final _vvDurationNotifier = ValueNotifier<int>(0);
+  final _vvBufferEndNotifier = ValueNotifier<int>(0);
 
   @override
   void initState() {
@@ -60,6 +62,7 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
     _scrubFocusNode = widget.focusNode ?? FocusNode(debugLabel: 'scrubber');
     widget.videoViewController?.position.addListener(_onVvPosition);
     widget.videoViewController?.mediaInfo.addListener(_onVvMediaInfo);
+    widget.videoViewController?.bufferRange.addListener(_onVvBufferRange);
     _syncVideoViewProgress();
     _watchStreamChanges();
   }
@@ -84,8 +87,10 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
     if (old.videoViewController != widget.videoViewController) {
       old.videoViewController?.position.removeListener(_onVvPosition);
       old.videoViewController?.mediaInfo.removeListener(_onVvMediaInfo);
+      old.videoViewController?.bufferRange.removeListener(_onVvBufferRange);
       widget.videoViewController?.position.addListener(_onVvPosition);
       widget.videoViewController?.mediaInfo.addListener(_onVvMediaInfo);
+      widget.videoViewController?.bufferRange.addListener(_onVvBufferRange);
       _syncVideoViewProgress();
     }
   }
@@ -104,10 +109,16 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
         widget.videoViewController?.mediaInfo.value?.duration ?? 0;
   }
 
+  void _onVvBufferRange() {
+    _vvBufferEndNotifier.value =
+        widget.videoViewController?.bufferRange.value.end ?? 0;
+  }
+
   @override
   void dispose() {
     widget.videoViewController?.position.removeListener(_onVvPosition);
     widget.videoViewController?.mediaInfo.removeListener(_onVvMediaInfo);
+    widget.videoViewController?.bufferRange.removeListener(_onVvBufferRange);
     _streamIndexSub?.close();
     _vvPositionNotifier.dispose();
     _vvDurationNotifier.dispose();
@@ -273,26 +284,34 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
         return ValueListenableBuilder<int>(
           valueListenable: _vvPositionNotifier,
           builder: (context, positionMs, _) {
-            final durationMsD = durationMs.toDouble();
-            final positionMsD = positionMs.toDouble();
-            final displayValue = _dragValue ?? positionMsD;
-            final displayDuration = Duration(
-              milliseconds: (_dragValue ?? positionMsD).toInt(),
-            );
-            final duration = Duration(milliseconds: durationMs);
+            return ValueListenableBuilder<int>(
+              valueListenable: _vvBufferEndNotifier,
+              builder: (context, bufferEnd, _) {
+                final durationMsD = durationMs.toDouble();
+                final positionMsD = positionMs.toDouble();
+                final displayValue = _dragValue ?? positionMsD;
+                final displayDuration = Duration(
+                  milliseconds: (_dragValue ?? positionMsD).toInt(),
+                );
+                final duration = Duration(milliseconds: durationMs);
+                final bufferRatio = durationMsD > 0
+                    ? (bufferEnd / durationMsD).clamp(0.0, 1.0)
+                    : 0.0;
 
-            return _buildRow(
-              duration: duration,
-              durationMs: durationMsD,
-              displayValue: displayValue,
-              displayDuration: displayDuration,
-              bufferRatio: 0.0,
-              canSeek: canSeek,
-              onSeekEnd: (val) => ref
-                  .read(playerControllerProvider.notifier)
-                  .seekTo(Duration(milliseconds: val.toInt())),
-              isLive: isLive,
-              skipSegments: skipSegments,
+                return _buildRow(
+                  duration: duration,
+                  durationMs: durationMsD,
+                  displayValue: displayValue,
+                  displayDuration: displayDuration,
+                  bufferRatio: bufferRatio,
+                  canSeek: canSeek,
+                  onSeekEnd: (val) => ref
+                      .read(playerControllerProvider.notifier)
+                      .seekTo(Duration(milliseconds: val.toInt())),
+                  isLive: isLive,
+                  skipSegments: skipSegments,
+                );
+              },
             );
           },
         );

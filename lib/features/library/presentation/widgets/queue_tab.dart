@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixstream/core/utils/layout_constants.dart';
 import '../../../../core/services/download_service.dart';
+import '../../../../core/router/app_router.dart';
 import '../downloads_provider.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -190,6 +191,12 @@ class _QueueTabState extends ConsumerState<QueueTab>
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: () => const HomeRoute().go(context),
+            icon: const AppIcon('home_rounded', size: 18),
+            label: const Text('Browse Home'),
           ),
         ],
       ),

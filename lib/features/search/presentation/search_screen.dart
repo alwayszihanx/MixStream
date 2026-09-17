@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/layout_constants.dart';
 import '../../../core/utils/responsive_breakpoints.dart';
 import '../../../core/providers/device_info_provider.dart';
+import '../../../core/providers/search_history_provider.dart';
 import 'search_provider.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'widgets/search_result_section.dart';
@@ -610,6 +611,86 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     );
   }
 
+  static const List<String> _yearTokens = ['2026', '2025', '2024', '2023'];
+  static const List<String> _languageTokens = [
+    'English',
+    'Hindi',
+    'Korean',
+    'Japanese',
+    'Tamil',
+    'Telugu',
+    'Kannada',
+    'Malayalam',
+  ];
+
+  /// Compact year/language filter chips. TMDB's multi-search already parses
+  /// "2024" / "Korean" style tokens out of the query, so the chips just
+  /// insert or replace the matching token instead of reimplementing filters.
+  Widget _buildFilterChipsBar(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final current = _controller.text.toLowerCase();
+    final isLive = ref.watch(searchFilterProvider) == SearchFilter.live;
+    if (isLive) return const SizedBox.shrink();
+
+    Widget chip(String token) {
+      final selected = current.contains(token.toLowerCase());
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: FilterChip(
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          label: Text(token),
+          selected: selected,
+          showCheckmark: false,
+          selectedColor: cs.primary.withValues(alpha: 0.18),
+          onSelected: (_) => _applyFilterToken(token),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        children: [
+          for (final y in _yearTokens) chip(y),
+          Container(
+            width: 1,
+            margin: const EdgeInsets.only(right: 8),
+            color: cs.outlineVariant,
+          ),
+          for (final l in _languageTokens) chip(l),
+        ],
+      ),
+    );
+  }
+
+  void _applyFilterToken(String token) {
+    var text = _controller.text.trim();
+    final isYear = _yearTokens.contains(token);
+    final sameCategory = isYear ? _yearTokens : _languageTokens;
+
+    // Toggle off when already present, else replace the same-category token.
+    final alreadyApplied = text.toLowerCase().contains(token.toLowerCase());
+    for (final t in sameCategory) {
+      text = text.replaceAll(
+        RegExp('\\b${RegExp.escape(t)}\\b', caseSensitive: false),
+        '',
+      );
+    }
+    text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    final newQuery = alreadyApplied
+        ? text
+        : (text.isEmpty ? token : '$text $token');
+    _controller.value = TextEditingValue(
+      text: newQuery,
+      selection: TextSelection.collapsed(offset: newQuery.length),
+    );
+    ref.read(searchQueryProvider.notifier).set(newQuery);
+  }
+
   Widget _buildBody(BuildContext context) {
     final searchResultsAsync = ref.watch(searchResultsProvider);
     final suggestionState = ref.watch(searchSuggestionControllerProvider);
@@ -617,7 +698,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     final typedLongEnough = suggestionState.query.trim().length >= 2;
     final hasSuggestionContent =
         suggestionState.isLoading || suggestionState.suggestions.isNotEmpty;
-    final showSuggestions = typedLongEnough && hasSuggestionContent;
+    // Live results win over suggestions once they land, so results stream in
+    // while the user is still typing instead of hiding behind the dropdown.
+    final hasResults =
+        searchResultsAsync.asData?.value.results.any(
+          (r) => r.results.isNotEmpty,
+        ) ??
+        false;
+    final showSuggestions =
+        typedLongEnough && hasSuggestionContent && !hasResults;
 
     return showSuggestions
         ? _buildSuggestionsView(context, suggestionState)
@@ -637,23 +726,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               // screen (app bar, background) so each incremental result update
               // only repaints the list — not the entire scaffold.
               return RepaintBoundary(
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(
-                    bottom: LayoutConstants.spacingMd,
-                  ),
-                  itemCount: state.results.length,
-                  itemBuilder: (context, index) {
-                    final pResult = state.results[index];
-                    return SearchResultSection(
-                      key: ValueKey(pResult.providerId),
-                      providerName: pResult.providerName,
-                      providerId: pResult.providerId,
-                      results: pResult.results,
-                      firstCardFocusNode: index == 0
-                          ? _firstResultFocusNode
-                          : null,
-                    );
-                  },
+                child: Column(
+                  children: [
+                    _buildFilterChipsBar(context),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(
+                          bottom: LayoutConstants.spacingMd,
+                        ),
+                        itemCount: state.results.length,
+                        itemBuilder: (context, index) {
+                          final pResult = state.results[index];
+                          return SearchResultSection(
+                            key: ValueKey(pResult.providerId),
+                            providerName: pResult.providerName,
+                            providerId: pResult.providerId,
+                            results: pResult.results,
+                            firstCardFocusNode: index == 0
+                                ? _firstResultFocusNode
+                                : null,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -663,15 +759,125 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
           );
   }
 
+  Widget _buildSuggestionSectionHeader(
+    BuildContext context, {
+    required String label,
+    required String icon,
+    Widget? trailing,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+      child: Row(
+        children: [
+          AppIcon(icon, size: 16, color: cs.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          const Spacer(),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
+
   Widget _buildSuggestionsView(
     BuildContext context,
     SearchSuggestionState suggestionState,
   ) {
-    if (suggestionState.isLoading) {
-      return const Center(child: AppLoadingIndicator());
+    final history = ref.watch(searchHistoryProvider).take(8).toList();
+    final children = <Widget>[];
+
+    // ── Recent searches (chips + clear all) ──
+    if (history.isNotEmpty) {
+      children.add(
+        _buildSuggestionSectionHeader(
+          context,
+          label: 'Recent',
+          icon: 'history_rounded',
+          trailing: TextButton.icon(
+            onPressed: () => ref.read(searchHistoryProvider.notifier).clear(),
+            icon: const AppIcon('delete_sweep_rounded', size: 16),
+            label: const Text('Clear'),
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+          ),
+        ),
+      );
+      children.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final term in history)
+                ActionChip(
+                  avatar: const AppIcon('history_rounded', size: 16),
+                  label: Text(term),
+                  onPressed: () => _submitSearch(term),
+                ),
+            ],
+          ),
+        ),
+      );
     }
 
-    if (suggestionState.suggestions.isEmpty) {
+    // ── Trending suggestions ──
+    if (suggestionState.isLoading) {
+      if (children.isEmpty) {
+        return const Center(child: AppLoadingIndicator());
+      }
+      children.add(
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: LinearProgressIndicator(minHeight: 2),
+        ),
+      );
+    } else if (suggestionState.suggestions.isNotEmpty) {
+      children.add(
+        _buildSuggestionSectionHeader(
+          context,
+          label: 'Trending searches',
+          icon: 'trending_up_rounded',
+        ),
+      );
+      for (var i = 0; i < suggestionState.suggestions.length; i++) {
+        final suggestion = suggestionState.suggestions[i];
+        children.add(
+          BouncyEntryAnimation(
+            delay: Duration(milliseconds: i * 40),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: _SuggestionCard(
+                suggestion: suggestion,
+                focusNode: i == 0 ? _firstSuggestionFocusNode : null,
+                isFirst: i == 0,
+                onFocusSearch: () {
+                  final filter = ref.read(searchFilterProvider);
+                  if (filter == SearchFilter.live) {
+                    _liveTvFocusNode.requestFocus();
+                  } else {
+                    _moviesShowsFocusNode.requestFocus();
+                  }
+                },
+                onTap: () => _submitSearch(suggestion),
+                onFill: () => _fillSuggestion(suggestion),
+              ),
+            ),
+          ),
+        );
+      }
+    } else if (children.isEmpty) {
       return Center(
         child: Text(
           'No results found',
@@ -682,32 +888,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
       );
     }
 
-    return ListView.builder(
-      itemCount: suggestionState.suggestions.length,
-      itemBuilder: (context, index) {
-        final suggestion = suggestionState.suggestions[index];
-        return BouncyEntryAnimation(
-          delay: Duration(milliseconds: index * 40),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: _SuggestionCard(
-              suggestion: suggestion,
-              focusNode: index == 0 ? _firstSuggestionFocusNode : null,
-              isFirst: index == 0,
-              onFocusSearch: () {
-                final filter = ref.read(searchFilterProvider);
-                if (filter == SearchFilter.live) {
-                  _liveTvFocusNode.requestFocus();
-                } else {
-                  _moviesShowsFocusNode.requestFocus();
-                }
-              },
-              onTap: () => _submitSearch(suggestion),
-              onFill: () => _fillSuggestion(suggestion),
-            ),
-          ),
-        );
-      },
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: children,
     );
   }
 
