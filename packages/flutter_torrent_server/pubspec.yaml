@@ -49,15 +49,23 @@ flutter:
       windows:
         dartPluginClass: FlutterTorrentServerDesktop
 
-  # NOTE: prebuilt desktop TorrServer executables used to live in
-  # assets/torrserver/ and were declared here. They added ~100 MB to every
-  # Android build even though Android runs TorrServer through the local AAR
-  # (libgojni.so) and never touches them. They now live in desktop_binaries/,
-  # which is intentionally NOT an asset directory, so they stay out of the APK.
-  # To re-enable desktop builds, move them back into assets/torrserver/ and
-  # restore the asset declaration below.
-  # assets:
-  #   - assets/torrserver/
+  # The desktop TorrServer executables are committed to desktop_binaries/,
+  # which is NOT an asset directory, because all six together are ~100 MB and
+  # Android runs TorrServer through the local AAR (libgojni.so) and never
+  # touches them - committing them as assets put 100 MB in every APK.
+  #
+  # Desktop builds need exactly one of them, so the build workflows copy that
+  # one into assets/torrserver/ before compiling; only what is staged gets
+  # bundled. flutter_torrent_server_desktop.dart loads it from
+  # rootBundle at packages/flutter_torrent_server/assets/torrserver/<name>,
+  # which is why this declaration has to stay.
+  #
+  # assets/torrserver/ tracks a .gitkeep so the declared directory always
+  # exists after a fresh clone. With nothing staged, the bundle is empty and
+  # an Android build stays small; desktop builds that forget the staging step
+  # will fail at runtime, not at build time - stage it.
+  assets:
+    - assets/torrserver/
   #
   # For details regarding assets in packages, see
   # https://flutter.dev/to/asset-from-package

@@ -86,8 +86,11 @@ jobs:
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
 
-      # Remove desktop TorrServer binaries to reduce APK size by ~170MB
-      # These are only needed for macOS, Windows, and Linux
+      # Belt and braces: the desktop binaries are committed under
+      # desktop_binaries/ and only the desktop jobs copy one into the asset
+      # directory, so an APK should already find nothing here. This keeps it
+      # true if a future job stages one before Android runs. Android plays
+      # TorrServer through the local AAR (libgojni.so) and never reads them.
       - name: Strip Desktop Binaries
         run: rm -f packages/flutter_torrent_server/assets/torrserver/TorrServer-*
 
@@ -259,7 +262,9 @@ jobs:
             torrserver_binary: TorrServer-darwin-amd64
             xcode_arch: x86_64
           - arch: universal
-            torrserver_binary: TorrServer-darwin-amd64
+            # One binary has to serve both slices: an arm64 Mac runs it
+            # natively, an Intel one through the Rosetta that ships with macOS.
+            torrserver_binary: TorrServer-darwin-arm64
             xcode_arch: "arm64 x86_64"
     steps:
       - uses: actions/checkout@v5
@@ -278,16 +283,10 @@ jobs:
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
 
-      # Keep only the required TorrServer binary for this architecture
-      - name: Strip Unused Binaries
-        run: |
-          cd packages/flutter_torrent_server/assets/torrserver
-          # For universal builds keep the arm64 binary (works via Rosetta fallback)
-          KEEP="${{ matrix.torrserver_binary }}"
-          if [ "${{ matrix.arch }}" = "universal" ]; then
-            KEEP="TorrServer-darwin-arm64"
-          fi
-          find . -type f ! -name "$KEEP" -delete
+      - name: Stage TorrServer Binary
+        uses: ./.github/actions/stage-torrserver
+        with:
+          binary: ${{ matrix.torrserver_binary }}
 
       - name: Generate dart-defines file
         shell: bash
@@ -382,13 +381,10 @@ jobs:
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
 
-      # Keep only the Windows TorrServer binary
-      - name: Strip Unused Binaries
-        shell: pwsh
-        run: |
-          cd packages/flutter_torrent_server/assets/torrserver
-          Get-ChildItem -File | Where-Object { $_.Name -ne "${{ matrix.torrserver_binary }}" } | Remove-Item
-          Get-ChildItem
+      - name: Stage TorrServer Binary
+        uses: ./.github/actions/stage-torrserver
+        with:
+          binary: ${{ matrix.torrserver_binary }}
 
       - name: Download libmpv-2.dll
         shell: pwsh
@@ -505,11 +501,10 @@ jobs:
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
 
-      # Keep only the Linux TorrServer binary
-      - name: Strip Unused Binaries
-        run: |
-          cd packages/flutter_torrent_server/assets/torrserver
-          find . -type f ! -name "${{ matrix.torrserver_binary }}" -delete
+      - name: Stage TorrServer Binary
+        uses: ./.github/actions/stage-torrserver
+        with:
+          binary: ${{ matrix.torrserver_binary }}
 
       - name: Generate dart-defines file
         shell: bash

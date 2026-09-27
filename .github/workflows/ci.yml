@@ -9,7 +9,7 @@
 #   Pull requests that touch anything a native toolchain compiles or links
 #     (packages/**, android/**, ios/**, macos/**, windows/**, linux/**,
 #     pubspec.*, this file): also Windows, macOS and iOS. That is the set that
-#     covers the vendored vlc_player C++/Kotlin/Swift, which is the code most
+#     covers the vendored video_view C plugin, which is the code most
 #     likely to break on one platform only.
 #   Push to master, the nightly schedule, and manual dispatch: all five
 #     shipping platforms unconditionally, so a break that no path filter could
@@ -183,11 +183,16 @@ jobs:
       - name: Test
         run: flutter test
 
-  # The two vendored Dart packages, in parallel with the app suite rather than
-  # appended to it. Both are path dependencies, so each needs its own
+  # The vendored Dart packages, in parallel with the app suite rather than
+  # appended to it. Each is a path dependency, so it needs its own
   # package_config; the root analysis_options excludes packages/**, so this job
-  # is the only place either is analysed. Neither has generated code, so
-  # neither needs a build_runner step.
+  # is the only place any of them is analysed. None has generated code, so none
+  # needs a build_runner step.
+  #
+  # vlc_player was in this matrix until the mpv-based video_view replaced it;
+  # the directory is gone, so the leg could only ever fail on the missing
+  # working directory. Its native side is now covered by video_view, which the
+  # build matrix below compiles on every platform that has a toolchain.
   #
   # packages/flutter_js_ng is deliberately NOT here, and that is a known gap:
   # it ships no analysis_options.yaml of its own, so the analyzer walks up to
@@ -204,7 +209,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [vlc_player, flutter_torrent_server]
+        package: [flutter_torrent_server]
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
@@ -225,7 +230,15 @@ jobs:
         run: |
           flutter pub get
           flutter analyze
-          flutter test
+          # `flutter test` exits 1 on a package with no test/ directory, which
+          # is a fact about the package rather than a failure - it turns this
+          # job red on every run. The first test file added will make the
+          # branch below run it.
+          if [ -d test ]; then
+            flutter test
+          else
+            echo "::notice::${{ matrix.package }} has no test/ directory; skipping."
+          fi
 
   # The Go source the TorrServer binaries and the Android .aar are built from.
   # Nothing else in this workflow compiles it, and `go test` is seconds.
@@ -352,8 +365,10 @@ jobs:
           xcode-version: latest-stable
 
       # Same set the release workflow installs, which is the only evidence we
-      # have that it is sufficient. libvlc-dev is what the vendored vlc_player
-      # plugin links against; libsecret-1-dev is flutter_secure_storage_linux.
+      # have that it is sufficient. libmpv-dev and libicu-dev are what the
+      # vendored video_view plugin's CMakeLists.txt asks pkg-config for; the
+      # release workflow got libicu-dev transitively, so naming it here makes
+      # the dependency explicit rather than incidental.
       # package:jni is an FFI plugin here and looks for a JDK, but its CMake
       # falls through to an empty target when one is absent, so it needs no
       # apt package of its own.
@@ -363,7 +378,8 @@ jobs:
           sudo apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=30
           sudo apt-get install -y --no-install-recommends \
             clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libvlc-dev libasound2-dev libsecret-1-dev
+            libgtk-3-dev liblzma-dev libmpv-dev libicu-dev \
+            libasound2-dev libsecret-1-dev
 
       - name: Cache Pub Dependencies
         uses: actions/cache@v4
@@ -386,8 +402,9 @@ jobs:
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
 
-      # Mirrors the release workflow: the five desktop TorrServer binaries are
-      # ~170 MB of assets that an APK never carries.
+      # Mirrors the release workflow. A fresh checkout stages no desktop
+      # TorrServer binary, so this has nothing to remove; it is here so an APK
+      # stays small if that ever stops being true.
       - name: Strip Desktop TorrServer Binaries
         if: matrix.name == 'Android'
         run: rm -f packages/flutter_torrent_server/assets/torrserver/TorrServer-*

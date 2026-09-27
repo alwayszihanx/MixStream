@@ -1,10 +1,14 @@
 // Probe test: drives the REAL JS plugin pipeline (worker isolate + QuickJS +
 // HTTP bridge) for an installed default MixStream plugin, then calls
-// getDetails() — the exact path the details screen uses. Run manually:
+// getDetails() — the exact path the details screen uses.
 //
-//   flutter test test/probe/plugin_details_probe_test.dart --timeout 10m
+// This file is deliberately NOT named *_test.dart. A bare `flutter test`
+// collects every file under test/ that ends in _test.dart, and this one needs
+// network access to raw.githubusercontent.com (it downloads a plugin), a
+// QuickJS worker isolate, and minutes of wall clock — a few seconds of CI per
+// run to fail, or twelve to hit the timeout. Run it by naming it explicitly:
 //
-// Requires network access to raw.githubusercontent.com (plugin download).
+//   flutter test test/probe/plugin_details_probe.dart --timeout 10m
 import 'dart:io';
 
 import 'package:dio/dio.dart';

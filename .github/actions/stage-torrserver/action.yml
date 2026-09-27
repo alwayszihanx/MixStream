@@ -1,0 +1,44 @@
+name: Stage TorrServer binary
+description: >-
+  Copy one prebuilt TorrServer executable into the plugin's asset directory so
+  that `flutter build` bundles it for this desktop target.
+
+  The six binaries live in packages/flutter_torrent_server/desktop_binaries/,
+  not in the asset directory, because together they are ~100 MB and Android
+  runs TorrServer through the local AAR and never reads them. Staging exactly
+  one before the build keeps every bundle at a single ~17 MB binary and keeps
+  the APK at zero.
+
+inputs:
+  binary:
+    description: >-
+      File name under desktop_binaries/, e.g. TorrServer-linux-amd64. Must be
+      the binary the plugin will pick for the runner's platform and CPU, since
+      flutter_torrent_server_desktop.dart looks it up by name at runtime.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Stage ${{ inputs.binary }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        src="packages/flutter_torrent_server/desktop_binaries/${{ inputs.binary }}"
+        dst="packages/flutter_torrent_server/assets/torrserver"
+
+        # Fail here rather than as a confusing "unable to load asset" at
+        # runtime, which is the only symptom otherwise: the build succeeds
+        # with an empty asset directory.
+        if [ ! -f "$src" ]; then
+          echo "::error::TorrServer binary not found: $src"
+          exit 1
+        fi
+
+        mkdir -p "$dst"
+        # The directory tracks a .gitkeep so the pubspec asset declaration
+        # always resolves; everything else in it is a stale stage.
+        find "$dst" -type f ! -name '.gitkeep' -delete
+        cp "$src" "$dst/"
+        chmod +x "$dst/${{ inputs.binary }}"
+        ls -l "$dst"

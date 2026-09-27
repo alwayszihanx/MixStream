@@ -58,7 +58,9 @@ jobs:
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
 
-      # Remove desktop TorrServer binaries to reduce APK size
+      # Nothing to strip on a fresh checkout: the desktop binaries are
+      # committed under desktop_binaries/ and only the desktop jobs stage one
+      # into the asset directory. Kept as a guard against that changing.
       - name: Strip Desktop Binaries
         run: rm -f packages/flutter_torrent_server/assets/torrserver/TorrServer-*
 
@@ -197,10 +199,10 @@ jobs:
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
 
-      - name: Strip Unused Binaries
-        run: |
-          cd packages/flutter_torrent_server/assets/torrserver
-          find . -type f ! -name "${{ matrix.torrserver_binary }}" -delete
+      - name: Stage TorrServer Binary
+        uses: ./.github/actions/stage-torrserver
+        with:
+          binary: ${{ matrix.torrserver_binary }}
 
       - name: Generate dart-defines file
         shell: bash
@@ -302,11 +304,10 @@ jobs:
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
 
-      - name: Strip Unused Binaries
-        shell: pwsh
-        run: |
-          cd packages/flutter_torrent_server/assets/torrserver
-          Get-ChildItem -File | Where-Object { $_.Name -ne "${{ matrix.torrserver_binary }}" } | Remove-Item
+      - name: Stage TorrServer Binary
+        uses: ./.github/actions/stage-torrserver
+        with:
+          binary: ${{ matrix.torrserver_binary }}
 
       - name: Download libmpv-2.dll
         shell: pwsh
@@ -416,10 +417,10 @@ jobs:
           flutter pub get
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
-      - name: Strip Unused Binaries
-        run: |
-          cd packages/flutter_torrent_server/assets/torrserver
-          find . -type f ! -name "${{ matrix.torrserver_binary }}" -delete
+      - name: Stage TorrServer Binary
+        uses: ./.github/actions/stage-torrserver
+        with:
+          binary: ${{ matrix.torrserver_binary }}
 
       - name: Generate dart-defines file
         shell: bash
