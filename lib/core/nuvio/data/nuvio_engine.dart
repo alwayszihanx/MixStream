@@ -271,12 +271,13 @@ class NuvioEngine {
         request.mode == 'settings' ? settingsCall : _streamsCall(request),
       );
 
-      return await completer.future.timeout(
+      final raw = await completer.future.timeout(
         Duration(milliseconds: request.timeoutMs),
         onTimeout: () => jsonEncode({
           'error': 'Timed out after ${request.timeoutMs ~/ 1000}s',
         }),
       );
+      return _attachCookies(raw, http.collectedCookieHeaders);
     } finally {
       pump?.cancel();
       disposed = true;
@@ -287,6 +288,30 @@ class NuvioEngine {
       } catch (_) {
         // Disposal races with in-flight jobs on some platforms; harmless.
       }
+    }
+  }
+
+  /// Key carrying the run's cookie jar (host → Cookie header value) out of the
+  /// isolate. Read by `NuvioRuntime` and folded into each stream's headers.
+  static const String cookiesKey = '__nuvioCookies';
+
+  /// Folds the run's cookie jar into the scraper's result document so the
+  /// caller can attach those cookies to whichever host each stream needs.
+  ///
+  /// The payload is left untouched when it isn't the expected
+  /// `{streams: [...]}` shape, or when no cookies were collected.
+  static String _attachCookies(String raw, Map<String, String> cookies) {
+    if (cookies.isEmpty) return raw;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return raw;
+      final map = Map<String, dynamic>.from(decoded);
+      if (map['streams'] is! List) return raw;
+      map[cookiesKey] = cookies;
+      return jsonEncode(map);
+    } catch (_) {
+      // A non-JSON or unexpected payload simply carries no cookies over.
+      return raw;
     }
   }
 
@@ -380,6 +405,20 @@ class NuvioEngineHttp {
     if (jar == null || jar.isEmpty) return '';
     return jar.entries.map((e) => '${e.key}=${e.value}').join('; ');
   }
+
+  /// Every cookie collected during the run, as `host -> Cookie header value`.
+  ///
+  /// Scrapers routinely authenticate with a cookie and then return a bare CDN
+  /// URL. Without exporting this jar the download would 403 even though
+  /// playback worked, so the run's cookies are handed back to the caller and
+  /// attached to the matching stream.
+  Map<String, String> get collectedCookieHeaders => {
+    for (final entry in _cookies.entries)
+      if (entry.value.isNotEmpty)
+        entry.key: entry.value.entries
+            .map((e) => '${e.key}=${e.value}')
+            .join('; '),
+  };
 
   void _storeCookies(Uri uri, HttpClientResponse response) {
     for (final cookie in response.cookies) {

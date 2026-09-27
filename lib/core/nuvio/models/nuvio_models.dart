@@ -630,6 +630,42 @@ class NuvioStreamResult {
   bool get isTorrent =>
       url.startsWith('magnet:') || (infoHash?.isNotEmpty ?? false);
 
+  /// Returns a copy whose headers carry the run's cookies for this stream's
+  /// host (or the whole jar's first entry when the host isn't in it, since
+  /// scrapers commonly hand back a CDN host that redirected from the auth
+  /// host).
+  ///
+  /// A scraper that authenticates with a cookie and then returns a bare video
+  /// URL used to play fine but fail to download with a 403, because the cookie
+  /// jar lived and died inside the scraper isolate. Existing scraper-supplied
+  /// headers win: they are usually more specific (Referer, User-Agent).
+  NuvioStreamResult withCookies(Map<String, String> cookieJar) {
+    if (cookieJar.isEmpty) return this;
+
+    final host = Uri.tryParse(url)?.host;
+    var cookie = host == null ? null : cookieJar[host];
+    cookie ??= cookieJar.values.first;
+
+    final next = <String, String>{...?headers};
+    next['Cookie'] = cookie;
+    return NuvioStreamResult(
+      scraperId: scraperId,
+      scraperName: scraperName,
+      title: title,
+      name: name,
+      url: url,
+      quality: quality,
+      size: size,
+      language: language,
+      provider: provider,
+      type: type,
+      seeders: seeders,
+      infoHash: infoHash,
+      headers: next,
+      subtitles: subtitles,
+    );
+  }
+
   /// Label shown in the sources list / player.
   String get label {
     final parts = <String>[

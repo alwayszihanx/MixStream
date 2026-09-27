@@ -31,6 +31,15 @@ class DetailsState {
   final int selectedRangeIndex;
   final DubStatus selectedDubStatus;
 
+  /// Multi-select mode for batch episode downloads.
+  final bool isSelectingEpisodes;
+
+  /// Episodes picked for batch download, keyed by `S<season>-E<episode>`
+  /// (see [DownloadService.episodeDownloadKey]). Keys rather than URLs
+  /// because TMDB/Nuvio episodes carry an empty [Episode.url], which would
+  /// make every episode in the list collide on one key.
+  final Set<String> selectedEpisodeKeys;
+
   const DetailsState({
     this.details = const AsyncLoading(),
     this.seasonMap = const {},
@@ -42,6 +51,8 @@ class DetailsState {
     this.isAscending = true,
     this.selectedRangeIndex = 0,
     this.selectedDubStatus = DubStatus.none,
+    this.isSelectingEpisodes = false,
+    this.selectedEpisodeKeys = const {},
   });
 
   DetailsState copyWith({
@@ -55,6 +66,8 @@ class DetailsState {
     bool? isAscending,
     int? selectedRangeIndex,
     DubStatus? selectedDubStatus,
+    bool? isSelectingEpisodes,
+    Set<String>? selectedEpisodeKeys,
   }) {
     return DetailsState(
       details: details ?? this.details,
@@ -67,6 +80,8 @@ class DetailsState {
       isAscending: isAscending ?? this.isAscending,
       selectedRangeIndex: selectedRangeIndex ?? this.selectedRangeIndex,
       selectedDubStatus: selectedDubStatus ?? this.selectedDubStatus,
+      isSelectingEpisodes: isSelectingEpisodes ?? this.isSelectingEpisodes,
+      selectedEpisodeKeys: selectedEpisodeKeys ?? this.selectedEpisodeKeys,
     );
   }
 }
@@ -138,6 +153,87 @@ class DetailsController extends _$DetailsController {
 
   void setDubStatus(DubStatus status) {
     state = state.copyWith(selectedDubStatus: status, selectedRangeIndex: 0);
+  }
+
+  // ── Batch episode selection ───────────────────────────────────────────────
+
+  static String keyFor(Episode episode) =>
+      DownloadService.episodeDownloadKey(episode);
+
+  void beginEpisodeSelection([Episode? initial]) {
+    state = state.copyWith(
+      isSelectingEpisodes: true,
+      selectedEpisodeKeys: initial == null
+          ? state.selectedEpisodeKeys
+          : {...state.selectedEpisodeKeys, keyFor(initial)},
+    );
+  }
+
+  void endEpisodeSelection() {
+    state = state.copyWith(
+      isSelectingEpisodes: false,
+      selectedEpisodeKeys: const {},
+    );
+  }
+
+  void toggleEpisodeSelection(Episode episode) {
+    final key = keyFor(episode);
+    final next = {...state.selectedEpisodeKeys};
+    if (!next.remove(key)) next.add(key);
+    state = state.copyWith(
+      isSelectingEpisodes: true,
+      selectedEpisodeKeys: next,
+    );
+  }
+
+  /// Adds the given episodes to the selection.
+  void addEpisodesToSelection(Iterable<Episode> episodes) {
+    state = state.copyWith(
+      isSelectingEpisodes: true,
+      selectedEpisodeKeys: {
+        ...state.selectedEpisodeKeys,
+        for (final e in episodes) keyFor(e),
+      },
+    );
+  }
+
+  /// Selects every episode in [episodes] when the set is incomplete, otherwise
+  /// clears the selection (the usual "select all" toggle behaviour).
+  void toggleSelectAllEpisodes(List<Episode> episodes) {
+    final keys = episodes.map(keyFor).toSet();
+    final allSelected =
+        keys.isNotEmpty && state.selectedEpisodeKeys.containsAll(keys);
+    state = state.copyWith(
+      isSelectingEpisodes: true,
+      selectedEpisodeKeys: allSelected
+          ? state.selectedEpisodeKeys.difference(keys).toSet()
+          : {...state.selectedEpisodeKeys, ...keys},
+    );
+  }
+
+  void clearEpisodeSelection() {
+    state = state.copyWith(selectedEpisodeKeys: const {});
+  }
+
+  /// Resolves the currently selected episodes, honouring the active dub
+  /// filter and ascending/descending order.
+  ///
+  /// Reads from [seasonMap] rather than the visible page so the selection
+  /// survives paging, sorting and filter changes — what the user picked is
+  /// always what gets downloaded.
+  List<Episode> getSelectedEpisodes() {
+    final all = state.seasonMap[state.selectedSeason] ?? const <Episode>[];
+    var visible = all;
+    if (state.selectedDubStatus != DubStatus.none) {
+      visible = all
+          .where((e) => e.dubStatus == state.selectedDubStatus)
+          .toList();
+    }
+    final selected = visible
+        .where((e) => state.selectedEpisodeKeys.contains(keyFor(e)))
+        .toList();
+    if (!state.isAscending) return selected.reversed.toList();
+    return selected;
   }
 
   void setLaunching(bool value) {

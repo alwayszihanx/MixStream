@@ -522,6 +522,60 @@ class TmdbService {
     }
   }
 
+  /// Regional movie shelf used by the home page.
+  ///
+  /// [originCountries] is a pipe-separated ISO 3166-1 list (TMDB treats a pipe
+  /// as OR), e.g. `US|GB|CA|AU`. [originalLanguages] is an optional
+  /// pipe-separated ISO 639-1 list, used to split Indian cinema into
+  /// Bollywood (hi) vs South Indian (te|ta|ml|kn).
+  Future<List<MultimediaItem>> getRegionMovies(
+    String originCountries, {
+    String? originalLanguages,
+    String sortBy = 'popularity.desc',
+    int? minVotes,
+    int page = 1,
+    Map<String, dynamic>? additionalParams,
+  }) {
+    return _getDiscoveryResults(
+      '/discover/movie',
+      'en-US',
+      sortBy,
+      page: page,
+      minVotes: minVotes,
+      additionalParams: {
+        if (originCountries.isNotEmpty) 'with_origin_country': originCountries,
+        if (originalLanguages != null && originalLanguages.isNotEmpty)
+          'with_original_language': originalLanguages,
+        ...?additionalParams,
+      },
+    );
+  }
+
+  /// Regional TV shelf used by the home page. Same filters as
+  /// [getRegionMovies].
+  Future<List<MultimediaItem>> getRegionTV(
+    String originCountries, {
+    String? originalLanguages,
+    String sortBy = 'popularity.desc',
+    int? minVotes,
+    int page = 1,
+    Map<String, dynamic>? additionalParams,
+  }) {
+    return _getDiscoveryResults(
+      '/discover/tv',
+      'en-US',
+      sortBy,
+      page: page,
+      minVotes: minVotes,
+      additionalParams: {
+        if (originCountries.isNotEmpty) 'with_origin_country': originCountries,
+        if (originalLanguages != null && originalLanguages.isNotEmpty)
+          'with_original_language': originalLanguages,
+        ...?additionalParams,
+      },
+    );
+  }
+
   Future<List<MultimediaItem>> _getDiscoveryResults(
     String path,
     String fullLanguageCode,
@@ -530,6 +584,7 @@ class TmdbService {
     int? genreId,
     int? year,
     double? minRating,
+    int? minVotes,
     int page = 1,
   }) async {
     final isoCode = fullLanguageCode.split('-')[0];
@@ -544,7 +599,12 @@ class TmdbService {
       'include_null_first_air_dates': false,
       // Skip vote threshold for recency-sorted queries so new releases
       // (especially regional language films with few votes yet) show up.
-      if (!sortBy.contains('release_date') &&
+      // An explicit minVotes is always honoured — including for date-sorted
+      // queries, where the default heuristic would otherwise be skipped and
+      // unrated placeholder entries would flood the top of the results.
+      if (minVotes != null)
+        'vote_count.gte': minVotes
+      else if (!sortBy.contains('release_date') &&
           !sortBy.contains('first_air_date'))
         'vote_count.gte': minVoteCount(fullLanguageCode),
       // Content Filter: Original Language

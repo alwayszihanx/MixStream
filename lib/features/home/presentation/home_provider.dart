@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/addons/data/addon_client.dart';
 import '../../../../core/addons/data/addon_repository.dart';
@@ -10,6 +11,7 @@ import '../../../../core/extensions/base_provider.dart';
 import '../../explore/data/explore_tmdb_provider.dart';
 import '../../explore/data/explore_language_provider.dart';
 
+import 'regional_sections.dart';
 import './home_state.dart';
 
 part 'home_provider.g.dart';
@@ -74,17 +76,137 @@ class HomeData extends _$HomeData {
     }
 
     try {
-      final items = activeProvider == null
+      // 1. Get the provider (or TMDB fallback) catalog first so the hero and
+      //    familiar rows appear immediately.
+      final providerItems = activeProvider == null
           ? await _fetchFallbackCatalog()
-          : await activeProvider.getHome();
+          : await activeProvider.getHome().catchError(
+              (_) => <String, List<MultimediaItem>>{},
+            );
 
-      if (items.isEmpty) {
-        state = const HomeSuccess({});
-      } else {
-        state = HomeSuccess(items);
+      final shelves = <String, List<MultimediaItem>>{};
+
+      void publish() {
+        // Regional shelves sit directly under the hero; provider rows follow.
+        final merged = <String, List<MultimediaItem>>{};
+        for (final entry in shelves.entries) {
+          if (entry.value.isNotEmpty) merged[entry.key] = entry.value;
+        }
+        for (final entry in providerItems.entries) {
+          if (!kRegionalSectionKeys.contains(entry.key) &&
+              !merged.containsKey(entry.key)) {
+            merged[entry.key] = entry.value;
+          }
+        }
+        // Keep the loading shimmer up rather than flashing an empty page when
+        // the provider catalog is empty and shelves are still in flight.
+        if (merged.isNotEmpty) state = HomeSuccess(merged);
       }
+
+      publish();
+
+      // 2. Stream the regional shelves in as each one resolves, so a slow
+      //    region never blocks the rest of the page.
+      await _fetchRegionalShelves(onShelf: (key, items) {
+        shelves[key] = items;
+        publish();
+      });
     } catch (e) {
-      state = HomeError(e.toString());
+      if (state is! HomeSuccess) state = HomeError(e.toString());
+    }
+  }
+
+  /// Loads the "Latest" plus every per-industry regional shelf.
+  ///
+  /// Each shelf merges 2 pages of movies (40) with 1 page of series (20) for
+  /// ~60 entries, sorted newest-first by the API so a new release lands at the
+  /// top of its section automatically. Failures and empty shelves are skipped.
+  Future<void> _fetchRegionalShelves({
+    required void Function(String key, List<MultimediaItem> items) onShelf,
+  }) async {
+    final service = ref.read(tmdbServiceProvider);
+
+    Future<void> load(
+      String key,
+      String? originCountries,
+      String? originalLanguages,
+      int minVotes, {
+      Map<String, dynamic>? movieExtra,
+      Map<String, dynamic>? tvExtra,
+      String movieSort = 'primary_release_date.desc',
+      String tvSort = 'first_air_date.desc',
+    }) async {
+      try {
+        final results = await Future.wait([
+          service.getRegionMovies(
+            originCountries ?? '',
+            originalLanguages: originalLanguages,
+            minVotes: minVotes,
+            sortBy: movieSort,
+            page: 1,
+            additionalParams: movieExtra,
+          ),
+          service.getRegionMovies(
+            originCountries ?? '',
+            originalLanguages: originalLanguages,
+            minVotes: minVotes,
+            sortBy: movieSort,
+            page: 2,
+            additionalParams: movieExtra,
+          ),
+          service.getRegionTV(
+            originCountries ?? '',
+            originalLanguages: originalLanguages,
+            minVotes: minVotes,
+            sortBy: tvSort,
+            page: 1,
+            additionalParams: tvExtra,
+          ),
+        ]);
+
+        final seen = <int>{};
+        final merged = <MultimediaItem>[];
+        for (final list in results) {
+          for (final item in list) {
+            if (seen.add(item.tmdbId ?? item.url.hashCode)) merged.add(item);
+          }
+        }
+        if (merged.length >= 40) onShelf(key, merged);
+      } catch (e) {
+        if (kDebugMode) debugPrint('[HomeData] shelf $key failed: $e');
+      }
+    }
+
+    // Small concurrency cap so we don't burst ~40 requests at once on mobile.
+    const chunkSize = 4;
+
+    // "Latest" = anything released in the recent past, ranked by popularity.
+    // Using a date *window* (rather than sorting all-time by date) is what
+    // keeps freshly-released titles at the top instead of the newest-indexed
+    // unrated placeholder entries.
+    final recentFrom = DateTime.now()
+        .subtract(const Duration(days: LatestSection.windowDays))
+        .toIso8601String()
+        .split('T')
+        .first;
+
+    final jobs = <Future<void>>[
+      load(
+        LatestSection.key,
+        null,
+        null,
+        LatestSection.minVotes,
+        movieSort: 'popularity.desc',
+        tvSort: 'popularity.desc',
+        movieExtra: {'primary_release_date.gte': recentFrom},
+        tvExtra: {'first_air_date.gte': recentFrom},
+      ),
+      for (final s in kRegionalSections)
+        load(s.key, s.originCountries, s.originalLanguages, s.minVotes),
+    ];
+
+    for (var i = 0; i < jobs.length; i += chunkSize) {
+      await Future.wait(jobs.sublist(i, (i + chunkSize).clamp(0, jobs.length)));
     }
   }
 

@@ -17,13 +17,13 @@ class _NetworkOfflineCardState extends ConsumerState<NetworkOfflineCard> {
     super.initState();
     _checkConnectivity();
     Connectivity().onConnectivityChanged.listen((result) {
-      setState(() => _isOffline = result == ConnectivityResult.none);
+      setState(() => _isOffline = result.contains(ConnectivityResult.none));
     });
   }
 
   Future<void> _checkConnectivity() async {
     final result = await Connectivity().checkConnectivity();
-    setState(() => _isOffline = result == ConnectivityResult.none);
+    setState(() => _isOffline = result.contains(ConnectivityResult.none));
   }
 
   @override

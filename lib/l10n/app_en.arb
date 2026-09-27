@@ -68,6 +68,52 @@
   "none": "None",
   "confirmDownload": "Confirm Download",
   "downloadNow": "Download Now",
+  "selectEpisodes": "Select",
+  "downloadSelectedCount": "Download ({count})",
+  "@downloadSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectAll": "Select All",
+  "selectAllCount": "All ({count})",
+  "@selectAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectThisPage": "This page",
+  "episodesDownloaded": "{count} of {total} downloaded",
+  "@episodesDownloaded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "deselectAll": "Deselect All",
+  "done": "Done",
+  "preparingDownloads": "Preparing downloads...",
+  "batchDownloadSummary": "Started {started} of {total} downloads",
+  "@batchDownloadSummary": {
+    "placeholders": {
+      "started": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "batchDownloadNoneStarted": "No episodes could be downloaded",
+  "noEpisodesSelected": "Select at least one episode",
   "selectSource": "Select Source",
   "downloadUnavailable": "Download Unavailable",
   "selectAnotherSource": "Select Another Source",
@@ -148,6 +194,16 @@
   "completed": "Completed",
   "statusQueued": "Queued...",
   "statusDownloading": "Downloading...",
+  "statusConverting": "Converting to MKV...",
+  "statusConvertingProgress": "Converting to MKV... {percent}%",
+  "@statusConvertingProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "statusConversionFailed": "Kept as MP4 (MKV conversion failed)",
   "statusFinished": "Finished",
   "statusFailed": "Failed",
   "statusCanceled": "Canceled",
@@ -465,6 +521,20 @@
   "availableSources": "Available Sources",
   "seasons": "Seasons",
   "episodes": "Episodes",
+  "sectionLatest": "Latest Movies & Series",
+  "sectionHollywood": "Hollywood Movies & Series",
+  "sectionBollywood": "Bollywood Movies & Series",
+  "sectionSouthIndian": "South Indian Movies & Series",
+  "sectionBritish": "British Movies & Series",
+  "sectionFrench": "French Movies & Series",
+  "sectionGerman": "German Movies & Series",
+  "sectionRussian": "Russian Movies & Series",
+  "sectionChinese": "Chinese Movies & Series",
+  "sectionJapanese": "Japanese Movies & Series",
+  "sectionKorean": "Korean Movies & Series",
+  "sectionTurkish": "Turkish Movies & Series",
+  "sectionArabic": "Arabic Movies & Series",
+  "sectionIndonesian": "Indonesian Movies & Series",
   "selectSourceToPlay": "Please select a source from 'Available Sources' above to play.",
   "episodeCountOnly": "{count, plural, =1{1 Episode} other{{count} Episodes}}",
   "noEpisodesFound": "No episodes found",

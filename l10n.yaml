@@ -2,3 +2,8 @@ arb-dir: lib/l10n
 template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
 output-dir: lib/l10n/generated
+
+# The per-locale translation backlog report. CI's "Translation Coverage" step
+# reads this file to enforce the backlog ratchet, so it has to be generated on
+# every `flutter gen-l10n` run — it is opt-in, not a default.
+untranslated-messages-file: build/l10n_untranslated.json

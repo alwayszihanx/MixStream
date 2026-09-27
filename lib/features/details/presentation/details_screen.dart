@@ -337,8 +337,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                 ],
               ),
               // ── Network offline banner ──
-              const SizedBox(height: 8),
-              const NetworkOfflineCard(),
+              SliverToBoxAdapter(
+                child: const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: NetworkOfflineCard(),
+                ),
+              ),
               // ── Hero stretch section ──
               ..._buildMobileSlivers(
                 context,

@@ -22,6 +22,7 @@ import '../download_launcher.dart';
 import 'download_progress_dialog.dart';
 import 'download_management_dialog.dart';
 import 'episode_card.dart';
+import '../season_downloaded_provider.dart';
 import 'package:mixstream/core/providers/device_info_provider.dart';
 import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../../shared/widgets/app_icon.dart';
@@ -626,24 +627,16 @@ class SliverDetailsEpisodeList extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(bottom: LayoutConstants.spacingMd),
-            child: Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 12,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.episodes,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                DetailsEpisodeFilterBar(
-                  itemUrl: itemUrl,
-                  totalEpisodes: episodes.length,
-                  batchSize: batchSize,
-                ),
-              ],
+            child: DetailsEpisodesHeader(
+              parentItem: parentItem,
+              itemUrl: itemUrl,
+              episodes: episodes,
+              visibleEpisodes: displayedEpisodes,
+              totalEpisodes: episodes.length,
+              batchSize: batchSize,
+              titleStyle: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -656,6 +649,220 @@ class SliverDetailsEpisodeList extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// Shared header for the episodes section.
+///
+/// Normally it shows the "Episodes" title plus the season/range/filter bar.
+/// While batch-select is active it swaps to an action bar with the selection
+/// count, select-all toggle, "Download (N)" and "Done".
+class DetailsEpisodesHeader extends ConsumerWidget {
+  final MultimediaItem parentItem;
+  final String itemUrl;
+  final List<Episode> episodes;
+  final int totalEpisodes;
+  final int batchSize;
+  final TextStyle? titleStyle;
+
+  /// The episodes currently rendered (the active range/page), so "select
+  /// page" can act on just those.
+  final List<Episode> visibleEpisodes;
+
+  const DetailsEpisodesHeader({
+    super.key,
+    required this.parentItem,
+    required this.itemUrl,
+    required this.episodes,
+    required this.totalEpisodes,
+    required this.batchSize,
+    required this.visibleEpisodes,
+    this.titleStyle,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final detailsState = ref.watch(detailsControllerProvider(itemUrl));
+    final notifier = ref.read(detailsControllerProvider(itemUrl).notifier);
+    final isSelecting = detailsState.isSelectingEpisodes;
+    final selectedCount = detailsState.selectedEpisodeKeys.length;
+
+    // "3 of 12 downloaded" so users can see what is still missing before
+    // starting a batch.
+    final downloaded = ref.watch(
+      seasonDownloadedCountProvider(itemUrl: itemUrl, item: parentItem),
+    );
+    final downloadedCount = downloaded.value?.count ?? 0;
+    final hasDownloads = downloadedCount > 0;
+
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 12,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(l10n.episodes, style: titleStyle),
+            if (hasDownloads) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(
+                    alpha: 0.15,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  l10n.episodesDownloaded(downloadedCount, episodes.length),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (isSelecting)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _HeaderChipButton(
+                label: selectedCount > 0
+                    ? l10n.downloadSelectedCount(selectedCount)
+                    : l10n.selectEpisodes,
+                icon: 'file_download_outlined',
+                enabled: selectedCount > 0,
+                filled: true,
+                onPressed: selectedCount == 0
+                    ? null
+                    : () {
+                        final selected = notifier.getSelectedEpisodes();
+                        notifier.endEpisodeSelection();
+                        ref
+                            .read(downloadLauncherProvider)
+                            .downloadEpisodes(
+                              context,
+                              parentItem,
+                              selected,
+                              skipExisting: true,
+                            );
+                      },
+              ),
+              const SizedBox(width: 8),
+              // Whole season/filter result in one action — the point of #1 for
+              // long-running shows where a page is only 20 episodes.
+              _HeaderChipButton(
+                label: selectedCount >= episodes.length
+                    ? l10n.deselectAll
+                    : l10n.selectAllCount(episodes.length),
+                icon: 'done_all_rounded',
+                onPressed: () => notifier.toggleSelectAllEpisodes(episodes),
+              ),
+              if (visibleEpisodes.length < episodes.length) ...[
+                const SizedBox(width: 8),
+                _HeaderChipButton(
+                  label: l10n.selectThisPage,
+                  icon: 'view_list_rounded',
+                  onPressed: () =>
+                      notifier.addEpisodesToSelection(visibleEpisodes),
+                ),
+              ],
+              const SizedBox(width: 8),
+              _HeaderChipButton(
+                label: l10n.done,
+                icon: 'close_rounded',
+                onPressed: notifier.endEpisodeSelection,
+              ),
+            ],
+          )
+        else
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _HeaderChipButton(
+                label: l10n.selectEpisodes,
+                icon: 'checklist_rounded',
+                onPressed: () => notifier.beginEpisodeSelection(),
+              ),
+              const SizedBox(width: 8),
+              DetailsEpisodeFilterBar(
+                itemUrl: itemUrl,
+                totalEpisodes: totalEpisodes,
+                batchSize: batchSize,
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+/// Small pill button used by [DetailsEpisodesHeader] (and its select-mode bar).
+class _HeaderChipButton extends StatelessWidget {
+  final String label;
+  final String icon;
+  final VoidCallback? onPressed;
+  final bool filled;
+  final bool enabled;
+
+  const _HeaderChipButton({
+    required this.label,
+    required this.icon,
+    this.onPressed,
+    this.filled = false,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDisabled = !enabled || onPressed == null;
+    final bg = filled
+        ? theme.colorScheme.primary
+        : theme.colorScheme.surfaceContainer;
+    final fg = filled
+        ? theme.colorScheme.onPrimary
+        : theme.colorScheme.onSurfaceVariant;
+
+    return Material(
+      color: isDisabled ? theme.colorScheme.surfaceContainer : bg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onPressed,
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: isDisabled ? theme.colorScheme.surfaceContainer : bg,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppIcon(icon, size: 20, color: fg),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1168,24 +1375,16 @@ class DetailsDesktopEpisodeColumn extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: LayoutConstants.spacingMd),
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 12,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.episodes,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              DetailsEpisodeFilterBar(
-                itemUrl: itemUrl,
-                totalEpisodes: episodes.length,
-                batchSize: batchSize,
-              ),
-            ],
+          child: DetailsEpisodesHeader(
+            parentItem: parentItem,
+            itemUrl: itemUrl,
+            episodes: episodes,
+            visibleEpisodes: displayedEpisodes,
+            totalEpisodes: episodes.length,
+            batchSize: batchSize,
+            titleStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         LayoutBuilder(

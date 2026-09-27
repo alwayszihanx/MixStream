@@ -39,6 +39,15 @@
 
 </div>
 
+## ✨ Highlights (v3.7.1)
+
+- 📥 **Batch episode download** — select episodes and download a whole season at once, with "Select all (N)" / "This page", skip-already-downloaded, and parallel resolution so long batches finish fast.
+- 🎬 **Real MKV downloads** — every download is remuxed from MP4 into a genuine `.mkv` by a pure-Dart remuxer (no FFmpeg, no quality loss, A/V sync preserved), with live conversion progress.
+- 📡 **HLS support** — `.m3u8` sources are downloadable, including **AES-128 encrypted** playlists, with live streams rejected cleanly.
+- 🏠 **14 regional shelves** — Latest, Hollywood, Bollywood, South Indian, Indonesian, Korean, Turkish, British, French, German, Russian, Chinese, Japanese and Arabic. Filtered by real industry origin, sorted newest-first so new releases show up automatically.
+- 🎬 **Nuvio batch download** — Nuvio scraper sources are now resolvable for batch downloads, scraper cookies carry through to the download (fixing 403s that playback didn't hit), and sources rank by how often each scraper has actually delivered.
+- ✅ **Downloaded progress** — a "3 of 12 downloaded" badge per season, and the converted MKV is preferred over the MP4 it replaced.
+
 ## ✨ Highlights (v3.6.9)
 
 - 🎬 **Poster zoom overlay** — double-tap any poster to zoom with a floating action menu (Play, Bookmark, Download) for quick access without leaving the screen.
@@ -79,6 +88,9 @@
 - 🌍 **40+ languages** with smart skip (Intro/Outro) support
 - 📺 **Live streaming** with improved reliability
 - ⏱️ **Offline viewing** with download support
+- 📥 **Batch episode download** — select multiple episodes and save a whole season in one go, skipping what you already have
+- 🎞️ **HLS & MKV downloads** — downloads (including AES-128 encrypted `.m3u8` streams) are remuxed into genuine `.mkv` files with no quality loss
+- 🌍 **Regional discovery** — dedicated shelves for Hollywood, Bollywood, South Indian, Korean, Turkish, Indonesian, Chinese, Japanese, Russian, French, German and British cinema
 - 🎨 **23 curated themes** (Solarized default, AMOLED Black, Synthwave, and more) plus dynamic color
 - 🎞️ **Netflix-style experience** — cinematic hero banner, carousels, cast/staff, trailers, recommendations
 - 🎵 **Torrent streaming** support
@@ -134,10 +146,10 @@ Download the APK that matches your device architecture:
 
 | Asset | Use for |
 |:------|:--------|
-| `MixStream-Android-universal-v3.7.0.apk` | Any device (larger file) |
-| `MixStream-Android-arm64-v8a-v3.7.0.apk` | Most modern phones (recommended) |
-| `MixStream-Android-armeabi-v7a-v3.7.0.apk` | Older 32-bit devices |
-| `MixStream-Android-x86_64-v3.7.0.apk` | Emulators / x86 devices |
+| `MixStream-Android-universal-v3.7.1.apk` | Any device (larger file) |
+| `MixStream-Android-arm64-v8a-v3.7.1.apk` | Most modern phones (recommended) |
+| `MixStream-Android-armeabi-v7a-v3.7.1.apk` | Older 32-bit devices |
+| `MixStream-Android-x86_64-v3.7.1.apk` | Emulators / x86 devices |
 
 1. Transfer the APK to your device (or download it directly).
 2. Open it and allow **"Install unknown apps"** when prompted.
@@ -147,7 +159,7 @@ Download the APK that matches your device architecture:
 
 ### 💻 Windows
 
-1. Download `MixStream-Windows-x64-Setup-v3.7.0.exe`.
+1. Download `MixStream-Windows-x64-Setup-v3.7.1.exe`.
 2. Run the installer (Inno Setup) and follow the prompts.
 3. Launch **MixStream** from the Start menu / desktop shortcut.
 
@@ -157,22 +169,22 @@ Download the APK that matches your device architecture:
 
 Choose the package for your distro:
 
-- **Debian / Ubuntu / derivatives** — `MixStream-Linux-x64-v3.7.0.deb`
+- **Debian / Ubuntu / derivatives** — `MixStream-Linux-x64-v3.7.1.deb`
   ```bash
-  sudo apt install ./MixStream-Linux-x64-v3.7.0.deb
+  sudo apt install ./MixStream-Linux-x64-v3.7.1.deb
   # or
-  sudo dpkg -i MixStream-Linux-x64-v3.7.0.deb && sudo apt-get -f install
+  sudo dpkg -i MixStream-Linux-x64-v3.7.1.deb && sudo apt-get -f install
   ```
-- **Fedora / openSUSE / RHEL** — `MixStream-Linux-x64-v3.7.0.rpm`
+- **Fedora / openSUSE / RHEL** — `MixStream-Linux-x64-v3.7.1.rpm`
   ```bash
-  sudo rpm -i MixStream-Linux-x64-v3.7.0.rpm
+  sudo rpm -i MixStream-Linux-x64-v3.7.1.rpm
   # or
-  sudo dnf install ./MixStream-Linux-x64-v3.7.0.rpm
+  sudo dnf install ./MixStream-Linux-x64-v3.7.1.rpm
   ```
-- **Portable bundle** — `MixStream-Linux-x64-v3.7.0.tar.xz`
+- **Portable bundle** — `MixStream-Linux-x64-v3.7.1.tar.xz`
   ```bash
-  tar -xf MixStream-Linux-x64-v3.7.0.tar.xz
-  cd MixStream-Linux-x64-v3.7.0
+  tar -xf MixStream-Linux-x64-v3.7.1.tar.xz
+  cd MixStream-Linux-x64-v3.7.1
   ./mixstream
   ```
   > Run the binary from inside its folder so it can find `data/` and `lib/`. For a menu entry, copy the folder to `~/.local/opt/mixstream` and add a `.desktop` file pointing at the executable.
@@ -181,7 +193,7 @@ ARM64 Linux builds (`MixStream-Linux-arm64-*`) are also provided in releases.
 
 ### 🍏 macOS
 
-1. Download `MixStream-macOS-<arch>-v3.7.0.dmg` (`arm64`, `x64`, or `universal`).
+1. Download `MixStream-macOS-<arch>-v3.7.1.dmg` (`arm64`, `x64`, or `universal`).
 2. Open the DMG and drag **MixStream** to **Applications**.
 3. Because the build is unsigned, macOS may block it. Right-click the app → **Open**, or run once:
    ```bash
@@ -191,7 +203,7 @@ ARM64 Linux builds (`MixStream-Linux-arm64-*`) are also provided in releases.
 
 ### 📱 iOS (Sideloading)
 
-1. Download `MixStream-iOS-v3.7.0.ipa` (unsigned).
+1. Download `MixStream-iOS-v3.7.1.ipa` (unsigned).
 2. Sideload it with [AltStore](https://altstore.io/), Sideloadly, or Xcode.
 3. Trust the developer profile in **Settings → General → VPN & Device Management** before opening.
 

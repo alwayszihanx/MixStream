@@ -13,6 +13,7 @@ import '../../../core/addons/models/addon_stream_source.dart';
 import '../../../core/domain/entity/multimedia_item.dart';
 import '../../../core/network/link_probe_service.dart';
 import '../../../core/nuvio/data/nuvio_stream_service.dart';
+import '../../../core/nuvio/data/nuvio_scraper_stats.dart';
 import '../../../core/nuvio/models/nuvio_models.dart';
 import '../../../core/services/download_service.dart';
 import '../../../core/utils/source_text.dart';
@@ -148,7 +149,23 @@ class _Row {
 
   bool get isDebrid => debrid != null;
 
-  bool get canDownload => url.startsWith('http') && !isTorrent;
+  /// The URL actually handed to the downloader.
+  ///
+  /// Nuvio scrapers sometimes emit protocol-relative links (`//host/x.mp4`).
+  /// Those play fine but do not start with `http`, so they used to be
+  /// silently dropped from download mode — normalise them to HTTPS here.
+  String get downloadUrl {
+    final raw = debrid?.url ?? nuvio.url;
+    if (raw.startsWith('//')) return 'https:$raw';
+    return raw;
+  }
+
+  /// Direct HTTP(S) links are downloadable once debrid has unlocked a torrent.
+  bool get canDownload {
+    final u = downloadUrl;
+    if (u.startsWith('http')) return true;
+    return false;
+  }
 
   static final RegExp _res = RegExp(
     r'(\d{3,4})\s*[pi]\b',
@@ -528,6 +545,7 @@ class _PluginSourcesSheetState extends ConsumerState<PluginSourcesSheet> {
 
   void _scheduleProbes() {
     final service = ref.read(linkProbeServiceProvider);
+    final stats = ref.read(nuvioScraperStatsProvider.notifier);
     for (final row in _allRows) {
       if (_probing.length >= _maxParallelProbes) return;
       final url = row.url;
@@ -537,6 +555,9 @@ class _PluginSourcesSheetState extends ConsumerState<PluginSourcesSheet> {
       unawaited(
         service.probe(url, headers: row.headers).then((result) {
           if (_disposed) return;
+          // Learn which scrapers actually deliver, so future sheets can rank
+          // the reliable one first.
+          stats.record(row.nuvio.scraperId, success: result.reachable);
           setState(() {
             _probes[url] = result;
             _probing.remove(url);
@@ -593,7 +614,15 @@ class _PluginSourcesSheetState extends ConsumerState<PluginSourcesSheet> {
       for (final stream in _nuvioResult.streams) wrap(stream),
       for (final source in _addonResult.streams) wrap(_addonToNuvio(source)),
     ];
+    // Scraper reliability, so a proven-good scraper outranks an equally good
+    // link from one that has been serving dead links.
+    final reliability = ref.read(nuvioScraperStatsProvider);
+    double score(_Row row) =>
+        reliability[row.nuvio.scraperId]?.reliability ?? ScraperStat().reliability;
+
     rows.sort((a, b) {
+      final byReliability = score(b).compareTo(score(a));
+      if (byReliability.abs() > 0.05) return byReliability;
       final byQuality = b.qualityScore.compareTo(a.qualityScore);
       if (byQuality != 0) return byQuality;
       if (a.isHdr != b.isHdr) return a.isHdr ? -1 : 1;
@@ -608,16 +637,24 @@ class _PluginSourcesSheetState extends ConsumerState<PluginSourcesSheet> {
     ];
   }
 
-  List<_Row> get _visible => _allRows.where((row) {
-    if (_providerFilter.isNotEmpty &&
+  /// A torrent row is downloadable once debrid can turn the magnet into a
+  /// direct HTTP link. Mirrors the per-row button's rule.
+  bool _torrentRowIsDownloadable(_Row row) =>
+      row.isTorrent &&
+      ref.read(debridSettingsProvider).isConfigured;
+
+  List<_Row> get _visible => _allRows.where((row) {    if (_providerFilter.isNotEmpty &&
         !_providerFilter.contains(row.providerName)) {
       return false;
     }
     if (_hdOnly && row.qualityScore < 1080) return false;
-    // Opened to download: a stream-only link is not a candidate. Matches the
-    // addon sheet, and restores the filter PR #98 dropped along with the
-    // Play/Download toggle.
-    if (_downloadMode && !row.canDownload) return false;
+    // Opened to download: a stream-only link is not a candidate. A torrent row
+    // still counts when debrid is configured, because resolving it yields a
+    // direct link — this must stay in step with the per-row download button,
+    // which used the same rule and hid these rows from the list entirely.
+    if (_downloadMode && !row.canDownload && !_torrentRowIsDownloadable(row)) {
+      return false;
+    }
     if (_verifiedOnly) {
       final probe = _probes[row.url];
       if (probe == null || !probe.reachable) return false;
@@ -734,9 +771,17 @@ class _PluginSourcesSheetState extends ConsumerState<PluginSourcesSheet> {
 
     // A debrid account unlocks a torrent row into a downloadable direct link.
     final target = await _resolveForPlayback(row);
-    if (!target.canDownload) {
+    if (!target.canDownload && !_torrentRowIsDownloadable(target)) {
       messenger.showSnackBar(
         const SnackBar(content: Text('This link can only be streamed.')),
+      );
+      return;
+    }
+    if (target.isTorrent &&
+        ref.read(debridSettingsProvider).isConfigured &&
+        !target.canDownload) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not resolve this torrent.')),
       );
       return;
     }
@@ -747,7 +792,7 @@ class _PluginSourcesSheetState extends ConsumerState<PluginSourcesSheet> {
 
     try {
       final saveDir = await service.getDownloadPath(item, episode: episode);
-      final extension = extensionForUrl(target.url);
+      final extension = extensionForUrl(target.downloadUrl);
 
       String filename;
       if (episode != null && item.contentType != MultimediaContentType.movie) {
@@ -759,7 +804,7 @@ class _PluginSourcesSheetState extends ConsumerState<PluginSourcesSheet> {
       }
 
       final started = await service.startDownload(
-        url: target.url,
+        url: target.downloadUrl,
         filename: filename,
         directory: saveDir,
         item: item,

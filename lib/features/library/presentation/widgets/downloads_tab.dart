@@ -610,6 +610,9 @@ class _DownloadItemTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    // A finished-but-unconverted file is still "done" for play purposes, but
+    // its status line must show the conversion failure instead of "Completed".
+    final conversionFailed = progressData?.conversionFailed ?? false;
     final isDone = status == TaskStatus.complete;
     final isWorking =
         status == TaskStatus.running || status == TaskStatus.enqueued;
@@ -722,7 +725,9 @@ class _DownloadItemTile extends ConsumerWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    isDone ? l10n.completed : _getStatusText(status, l10n),
+                    (isDone && !conversionFailed)
+                        ? l10n.completed
+                        : _getStatusText(status, l10n, progressData),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: isDone
                           ? Colors.green
@@ -750,7 +755,21 @@ class _DownloadItemTile extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: LayoutConstants.spacingSm),
-              if (!isDone) ...[
+              if (progressData?.converting ?? false)
+                // The download finished, so swap the bar over to conversion
+                // progress instead of hiding it.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (progressData!.conversionProgress > 0)
+                        ? progressData!.conversionProgress
+                        : null,
+                    backgroundColor: theme.dividerColor.withValues(alpha: 0.1),
+                    minHeight: 4,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              if (!isDone && !(progressData?.converting ?? false)) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
@@ -919,7 +938,20 @@ class _DownloadItemTile extends ConsumerWidget {
     );
   }
 
-  String _getStatusText(TaskStatus status, AppLocalizations l10n) {
+  String _getStatusText(
+    TaskStatus status,
+    AppLocalizations l10n, [
+    DownloadProgressData? progressData,
+  ]) {
+    if (progressData?.conversionFailed ?? false) {
+      return l10n.statusConversionFailed;
+    }
+    if (progressData?.converting ?? false) {
+      final pct = ((progressData?.conversionProgress ?? 0) * 100).round();
+      return pct > 0
+          ? l10n.statusConvertingProgress(pct)
+          : l10n.statusConverting;
+    }
     switch (status) {
       case TaskStatus.enqueued:
         return l10n.statusQueued;

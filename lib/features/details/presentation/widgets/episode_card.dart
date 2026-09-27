@@ -83,6 +83,10 @@ class EpisodeCard extends HookConsumerWidget {
     final isDownloading = activeDownloads.contains(episode.url);
     final detailsState = ref.watch(detailsControllerProvider(parentItem.url));
     final details = detailsState.item;
+    final isSelecting = detailsState.isSelectingEpisodes;
+    final isSelected = detailsState.selectedEpisodeKeys.contains(
+      DetailsController.keyFor(episode),
+    );
 
     final progressMap = ref.watch(downloadProgressProvider);
     final downloadProgressData = progressMap[episode.url];
@@ -127,6 +131,24 @@ class EpisodeCard extends HookConsumerWidget {
         ref
             .read(downloadLauncherProvider)
             .launch(context, parentItem, episodeUrl: episode.url);
+      }
+    }
+
+    void toggleSelection() {
+      ref
+          .read(detailsControllerProvider(parentItem.url).notifier)
+          .toggleEpisodeSelection(episode);
+    }
+
+    /// Primary action for the card: toggles selection while multi-select is
+    /// active, otherwise plays the episode.
+    void handlePrimaryPress() {
+      if (isSelecting) {
+        toggleSelection();
+      } else {
+        ref
+            .read(detailsControllerProvider(parentItem.url).notifier)
+            .handlePlayPress(context, parentItem, specificEpisode: episode);
       }
     }
 
@@ -188,14 +210,8 @@ class EpisodeCard extends HookConsumerWidget {
               return KeyEventResult.handled;
             } else if (event is KeyUpEvent) {
               if (selectKeyDown.value && !longPressTriggered.value) {
-                // Short press → play the episode.
-                ref
-                    .read(detailsControllerProvider(parentItem.url).notifier)
-                    .handlePlayPress(
-                      context,
-                      parentItem,
-                      specificEpisode: episode,
-                    );
+                // Short press → play (or toggle while multi-select is on).
+                handlePrimaryPress();
               }
               selectKeyDown.value = false;
               longPressTriggered.value = false;
@@ -206,29 +222,38 @@ class EpisodeCard extends HookConsumerWidget {
           return KeyEventResult.ignored;
         },
         child: InkWell(
-          // Touch/mouse tap still plays the episode directly.
-          onTap: () => ref
-              .read(detailsControllerProvider(parentItem.url).notifier)
-              .handlePlayPress(context, parentItem, specificEpisode: episode),
-          onLongPress: triggerDownload,
+          // Touch/mouse tap plays the episode, or toggles the selection while
+          // batch-select mode is active.
+          onTap: handlePrimaryPress,
+          onLongPress: isSelecting
+              ? toggleSelection
+              : () {
+                  ref
+                      .read(detailsControllerProvider(parentItem.url).notifier)
+                      .beginEpisodeSelection(episode);
+                },
           borderRadius: BorderRadius.circular(12),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             width: width,
             decoration: BoxDecoration(
-              color: isFocused.value
+              color: isSelected
+                  ? primary.withValues(alpha: 0.14)
+                  : isFocused.value
                   ? primary.withValues(alpha: 0.18)
                   : Theme.of(context).colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(12.0),
               border: Border.all(
-                color: isFocused.value
+                color: isSelected
+                    ? primary
+                    : isFocused.value
                     ? primary
                     : Theme.of(context).dividerColor.withValues(
                         alpha: Theme.of(context).brightness == Brightness.dark
                             ? 0.1
                             : 0.5,
                       ),
-                width: isFocused.value ? 2 : 1,
+                width: (isSelected || isFocused.value) ? 2 : 1,
               ),
             ),
             clipBehavior: Clip.antiAlias,
@@ -240,7 +265,13 @@ class EpisodeCard extends HookConsumerWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildThumbnail(context, progress, statusBadge),
+                    _buildThumbnail(
+                      context,
+                      progress,
+                      statusBadge,
+                      showCheckbox: isSelecting,
+                      isSelected: isSelected,
+                    ),
                     const SizedBox(width: LayoutConstants.spacingMd),
                     Expanded(
                       child: Text(
@@ -257,18 +288,19 @@ class EpisodeCard extends HookConsumerWidget {
                     // Download icon — uses an explicit FocusNode so the parent
                     // onKeyEvent can force focus here from the body. Left from
                     // the icon returns focus to the body via this widget's own
-                    // onKeyEvent.
-                    _buildActionButtons(
-                      context,
-                      ref,
-                      downloadedFile,
-                      isDownloading,
-                      downloadProgress,
-                      downloadProgressData,
-                      details,
-                      downloadFocusNode,
-                      bodyFocusNode,
-                    ),
+                    // onKeyEvent. Hidden while multi-select is active.
+                    if (!isSelecting)
+                      _buildActionButtons(
+                        context,
+                        ref,
+                        downloadedFile,
+                        isDownloading,
+                        downloadProgress,
+                        downloadProgressData,
+                        details,
+                        downloadFocusNode,
+                        bodyFocusNode,
+                      ),
                   ],
                 ),
                 if (episode.description != null &&
@@ -420,8 +452,10 @@ class EpisodeCard extends HookConsumerWidget {
   Widget _buildThumbnail(
     BuildContext context,
     double progress,
-    String? statusBadge,
-  ) {
+    String? statusBadge, {
+    bool showCheckbox = false,
+    bool isSelected = false,
+  }) {
     return Stack(
       children: [
         ClipRRect(
@@ -482,22 +516,50 @@ class EpisodeCard extends HookConsumerWidget {
               ),
             ),
           ),
-        Positioned.fill(
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                shape: BoxShape.circle,
-              ),
-              child: const AppIcon(
-                'play_arrow_rounded',
-                color: Colors.white,
-                size: 24,
+        if (!showCheckbox)
+          Positioned.fill(
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  shape: BoxShape.circle,
+                ),
+                child: const AppIcon(
+                  'play_arrow_rounded',
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
             ),
           ),
-        ),
+        if (showCheckbox)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.black.withValues(alpha: 0.55),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const AppIcon(
+                      'check_rounded',
+                      color: Colors.white,
+                      size: 18,
+                    )
+                  : null,
+            ),
+          ),
       ],
     );
   }

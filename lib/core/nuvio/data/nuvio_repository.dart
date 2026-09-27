@@ -222,6 +222,7 @@ class NuvioRepository extends _$NuvioRepository {
       state.repos.where((r) => r.manifestUrl != manifestUrl).toList(),
     );
     await _codeStore.deleteRepository(manifestUrl);
+    _invalidateCodeCache(manifestUrl);
     for (final scraper
         in removed.manifest?.scrapers ?? const <NuvioScraperInfo>[]) {
       await clearScraperSettings(scraper.id);
@@ -415,11 +416,15 @@ class NuvioRepository extends _$NuvioRepository {
   }
 
   /// Drop cached code for the given scrapers (any version).
-  Future<void> _invalidateCode(String manifestUrl, Set<String> scraperIds) =>
-      _codeStore.deleteScrapers(
-        manifestUrl: manifestUrl,
-        scraperIds: scraperIds,
-      );
+  Future<void> _invalidateCode(String manifestUrl, Set<String> scraperIds) async {
+    // Keep the in-memory layer honest first, so a stale bundle can never be
+    // served from RAM even if the disk write below is interrupted.
+    _invalidateCodeCache(manifestUrl);
+    await _codeStore.deleteScrapers(
+      manifestUrl: manifestUrl,
+      scraperIds: scraperIds,
+    );
+  }
 
   /// Remove code cached for versions (or scrapers) the manifest no longer
   /// lists, so an old bundle can never be run after an update.
@@ -477,13 +482,37 @@ class NuvioRepository extends _$NuvioRepository {
   }
 
   /// Scraper source, from the on-disk store → network.
+  /// In-memory scraper-code cache, keyed by manifest + scraper + version.
+  ///
+  /// [codeFor] otherwise hits the filesystem for every scraper on every single
+  /// episode. A 20-episode batch resolved one after another re-read the same
+  /// dozen JS files 20 times; this collapses that to one read each. Cleared
+  /// whenever scrapers are enabled/disabled, updated, or a repository changes,
+  /// so a version bump can never serve stale code.
+  final Map<String, String> _codeMemoryCache = {};
+
+  void _invalidateCodeCache([String? manifestUrl]) {
+    if (manifestUrl == null) {
+      _codeMemoryCache.clear();
+      return;
+    }
+    _codeMemoryCache.removeWhere((k, _) => k.startsWith('$manifestUrl|'));
+  }
+
   Future<String> codeFor(NuvioRepo repo, NuvioScraperInfo scraper) async {
+    final memoryKey = '${repo.manifestUrl}|${scraper.id}|${scraper.version}';
+    final inMemory = _codeMemoryCache[memoryKey];
+    if (inMemory != null) return inMemory;
+
     final cached = await _codeStore.read(
       manifestUrl: repo.manifestUrl,
       scraperId: scraper.id,
       version: scraper.version,
     );
-    if (cached != null) return cached;
+    if (cached != null) {
+      _codeMemoryCache[memoryKey] = cached;
+      return cached;
+    }
 
     final uri = repo.codeUrlFor(scraper);
     if (uri == null) {
@@ -516,6 +545,7 @@ class NuvioRepository extends _$NuvioRepository {
       version: scraper.version,
       code: code,
     );
+    _codeMemoryCache[memoryKey] = code;
     return code;
   }
 
@@ -526,6 +556,7 @@ class NuvioRepository extends _$NuvioRepository {
     for (final scraper in repo.enabledScrapers) {
       try {
         if (force) {
+          _invalidateCodeCache(repo.manifestUrl);
           await _codeStore.deleteScrapers(
             manifestUrl: repo.manifestUrl,
             scraperIds: {scraper.id},

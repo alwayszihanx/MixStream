@@ -82,6 +82,18 @@ class NuvioRuntime {
     final streams = decoded['streams'];
     if (streams is! List) return const [];
 
+    // The run's cookie jar (host -> Cookie header value), exported by the
+    // engine so authenticated CDNs can still be downloaded.
+    final jar = decoded[NuvioEngine.cookiesKey];
+    final cookieJar = <String, String>{};
+    if (jar is Map) {
+      for (final entry in jar.entries) {
+        if (entry.key is String && entry.value is String) {
+          cookieJar[entry.key as String] = entry.value as String;
+        }
+      }
+    }
+
     final out = <NuvioStreamResult>[];
     for (final entry in streams) {
       if (entry is! Map) continue;
@@ -90,7 +102,10 @@ class NuvioRuntime {
         scraperId: scraperId,
         scraperName: scraperName,
       );
-      if (result != null) out.add(result);
+      if (result == null) continue;
+      out.add(
+        cookieJar.isEmpty ? result : result.withCookies(cookieJar),
+      );
     }
     return out;
   }

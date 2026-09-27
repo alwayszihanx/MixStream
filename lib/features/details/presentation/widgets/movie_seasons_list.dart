@@ -15,6 +15,67 @@ import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/app_icon.dart';
 import '../../../sources/presentation/plugin_sources_sheet.dart';
+import '../download_launcher.dart';
+
+/// Small pill button used by the batch-download selection controls.
+class _PillButton extends StatelessWidget {
+  final String label;
+  final String icon;
+  final VoidCallback? onTap;
+  final bool filled;
+  final bool enabled;
+
+  const _PillButton({
+    required this.label,
+    required this.icon,
+    this.onTap,
+    this.filled = false,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final disabled = !enabled || onTap == null;
+    final bg = filled
+        ? theme.colorScheme.primary
+        : theme.colorScheme.surfaceContainer;
+    final fg = filled
+        ? theme.colorScheme.onPrimary
+        : theme.colorScheme.onSurfaceVariant;
+
+    return Material(
+      color: disabled ? theme.colorScheme.surfaceContainer : bg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: disabled ? theme.colorScheme.surfaceContainer : bg,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppIcon(icon, size: 18, color: fg),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class MovieSeasonsList extends ConsumerStatefulWidget {
   final int movieId;
@@ -41,6 +102,11 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
   late final ScrollController _episodesScrollController;
   int _selectedRangeIndex = 0;
 
+  /// Batch-download selection for TMDB/Nuvio episodes. Keys are `S{season}E{n}`
+  /// because these episode models carry no URL of their own.
+  bool _selecting = false;
+  final Set<String> _selectedEpisodeKeys = {};
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +119,145 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
     _scrollController.dispose();
     _episodesScrollController.dispose();
     super.dispose();
+  }
+
+  String _keyFor(Map<String, dynamic> ep) {
+    final s = ep['season_number'] as int? ?? 0;
+    final e = ep['episode_number'] as int? ?? 0;
+    return 'S$s-E$e';
+  }
+
+  Episode _toEpisodeModel(Map<String, dynamic> ep) => Episode(
+    name: (ep['name'] as String?) ?? 'Episode',
+    url: '',
+    season: ep['season_number'] as int? ?? 0,
+    episode: ep['episode_number'] as int? ?? 0,
+    airDate: ep['air_date'] as String?,
+    description: ep['overview'] as String?,
+    rating: (ep['vote_average'] as num?)?.toDouble(),
+    runtime: ep['runtime'] as int?,
+  );
+
+  void _toggleKey(String key) {
+    setState(() {
+      if (!_selectedEpisodeKeys.remove(key)) _selectedEpisodeKeys.add(key);
+    });
+  }
+
+  void _exitSelection() {
+    setState(() {
+      _selecting = false;
+      _selectedEpisodeKeys.clear();
+    });
+  }
+
+  void _toggleSelectAll(List<Map<String, dynamic>> episodes) {
+    setState(() {
+      final keys = episodes.map(_keyFor).toSet();
+      if (_selectedEpisodeKeys.containsAll(keys)) {
+        _selectedEpisodeKeys.removeAll(keys);
+      } else {
+        _selectedEpisodeKeys.addAll(keys);
+      }
+    });
+  }
+
+  /// The entry-point button shown next to the section title. Selecting is
+  /// unavailable when we have no TMDB target to download against.
+  Widget _buildSelectButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final canSelect = widget.data != null && widget.data!.tmdbId != null;
+    if (!canSelect) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 12),
+      child: _PillButton(
+        label: l10n.selectEpisodes,
+        icon: 'checklist_rounded',
+        onTap: () => setState(() => _selecting = true),
+      ),
+    );
+  }
+
+  /// Action bar shown above the episode strip while multi-select is active.
+  Widget _buildSelectionBar(
+    BuildContext context,
+    List<Map<String, dynamic>> episodes,
+  ) {
+    if (!_selecting) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+    final count = _selectedEpisodeKeys.length;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          _PillButton(
+            label: count > 0
+                ? l10n.downloadSelectedCount(count)
+                : l10n.selectEpisodes,
+            icon: 'file_download_outlined',
+            filled: true,
+            enabled: count > 0,
+            onTap: count == 0
+                ? null
+                : () {
+                    final selected = episodes
+                        .where((e) => _selectedEpisodeKeys.contains(_keyFor(e)))
+                        .map(_toEpisodeModel)
+                        .toList();
+                    final target = widget.data;
+                    if (target == null || selected.isEmpty) return;
+                    _exitSelection();
+                    ref
+                        .read(downloadLauncherProvider)
+                        .downloadEpisodes(
+                          context,
+                          target,
+                          selected,
+                          skipExisting: true,
+                        );
+                  },
+          ),
+          const SizedBox(width: 8),
+          _PillButton(
+            label: count >= episodes.length
+                ? l10n.deselectAll
+                : l10n.selectAll,
+            icon: 'done_all_rounded',
+            onTap: () => _toggleSelectAll(episodes),
+          ),
+          const SizedBox(width: 8),
+          _PillButton(
+            label: l10n.done,
+            icon: 'close_rounded',
+            onTap: _exitSelection,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Checkbox badge drawn on an episode card while selecting.
+  Widget _selectionBadge(bool selected) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: 26,
+      height: 26,
+      decoration: BoxDecoration(
+        color: selected
+            ? Theme.of(context).colorScheme.primary
+            : Colors.black.withValues(alpha: 0.55),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+          width: 2,
+        ),
+      ),
+      child: selected
+          ? const AppIcon('check_rounded', color: Colors.white, size: 18)
+          : null,
+    );
   }
 
   Widget _buildTmdbLogo(BuildContext context) {
@@ -109,6 +314,7 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              _buildSelectButton(context),
               const SizedBox(width: 20),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -149,6 +355,7 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                         if (val != null) {
                           setState(() {
                             _selectedRangeIndex = 0;
+                            _selectedEpisodeKeys.clear();
                           });
                           ref
                               .read(
@@ -175,13 +382,18 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppLocalizations.of(context)!.seasons,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Text(
+                AppLocalizations.of(context)!.seasons,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              _buildSelectButton(context),
+            ],
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -213,6 +425,7 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                       onTap: () {
                         setState(() {
                           _selectedRangeIndex = 0;
+                          _selectedEpisodeKeys.clear();
                         });
                         ref
                             .read(
@@ -374,9 +587,13 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
             );
             if (episodes.isEmpty) return const SizedBox.shrink();
 
-            return SizedBox(
-              height: 240,
-              child: DesktopScrollWrapper(
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSelectionBar(context, episodes),
+                SizedBox(
+                  height: 240,
+                  child: DesktopScrollWrapper(
                 controller: _scrollController,
                 child: ListView.separated(
                   clipBehavior: Clip.none,
@@ -401,21 +618,15 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
 
                     return CardsWrapper(
                       onTap: () {
+                        if (_selecting) {
+                          _toggleKey(_keyFor(ep));
+                          return;
+                        }
                         if (widget.data == null) return;
-                        final epModel = Episode(
-                          name: (ep['name'] as String?) ?? 'Episode',
-                          url: '',
-                          season: ep['season_number'] as int? ?? 0,
-                          episode: ep['episode_number'] as int? ?? 0,
-                          airDate: ep['air_date'] as String?,
-                          description: ep['overview'] as String?,
-                          rating: (ep['vote_average'] as num?)?.toDouble(),
-                          runtime: ep['runtime'] as int?,
-                        );
                         PluginSourcesSheet.open(
                           context,
                           widget.data!,
-                          episode: epModel,
+                          episode: _toEpisodeModel(ep),
                         );
                       },
                       borderRadius: BorderRadius.circular(8),
@@ -427,27 +638,50 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                               .surfaceContainerHighest
                               .withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(8),
+                          border: _selecting &&
+                                  _selectedEpisodeKeys.contains(_keyFor(ep))
+                              ? Border.all(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 3,
+                                )
+                              : null,
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              child: CachedNetworkImage(
-                                imageUrl: imageUrl ?? '',
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                // TMDB still source is w500 — already matches
-                                // 300 dp card × ~2 DPR. Let CNI decode native.
-                                placeholder: (context, url) =>
-                                    ShimmerPlaceholder.rectangular(
-                                      borderRadius: 8,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  CachedNetworkImage(
+                                    imageUrl: imageUrl ?? '',
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    // TMDB still source is w500 — already matches
+                                    // 300 dp card × ~2 DPR. Let CNI decode native.
+                                    placeholder: (context, url) =>
+                                        ShimmerPlaceholder.rectangular(
+                                          borderRadius: 8,
+                                        ),
+                                    errorWidget: (_, _, _) =>
+                                        ThumbnailErrorPlaceholder(
+                                          label:
+                                              (ep['name'] as String?) ??
+                                              'Episode',
+                                        ),
+                                  ),
+                                  if (_selecting)
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: _selectionBadge(
+                                        _selectedEpisodeKeys.contains(
+                                          _keyFor(ep),
+                                        ),
+                                      ),
                                     ),
-                                errorWidget: (_, _, _) =>
-                                    ThumbnailErrorPlaceholder(
-                                      label:
-                                          (ep['name'] as String?) ?? 'Episode',
-                                    ),
+                                ],
                               ),
                             ),
                             Padding(
@@ -518,8 +752,10 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                     );
                   },
                 ),
+                ),
               ),
-            );
+            ],
+          );
           },
         );
       },
@@ -580,13 +816,19 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      AppLocalizations.of(context)!.episodes,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.episodes,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        _buildSelectButton(context),
+                      ],
                     ),
                     if (batchCount > 1)
                       Container(
@@ -638,6 +880,7 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                _buildSelectionBar(context, episodes),
                 ListView.separated(
                   padding: EdgeInsets.zero,
                   shrinkWrap: true,
@@ -661,44 +904,64 @@ class _MovieSeasonsListState extends ConsumerState<MovieSeasonsList> {
 
                     return CardsWrapper(
                       onTap: () {
+                        if (_selecting) {
+                          _toggleKey(_keyFor(ep));
+                          return;
+                        }
                         if (widget.data == null) return;
-                        final epModel = Episode(
-                          name: (ep['name'] as String?) ?? 'Episode',
-                          url: '',
-                          season: ep['season_number'] as int? ?? 0,
-                          episode: ep['episode_number'] as int? ?? 0,
-                          airDate: ep['air_date'] as String?,
-                          description: ep['overview'] as String?,
-                          rating: (ep['vote_average'] as num?)?.toDouble(),
-                          runtime: ep['runtime'] as int?,
-                        );
                         PluginSourcesSheet.open(
                           context,
                           widget.data!,
-                          episode: epModel,
+                          episode: _toEpisodeModel(ep),
                         );
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
                         padding: const EdgeInsets.only(bottom: 8),
+                        decoration: _selecting &&
+                                _selectedEpisodeKeys.contains(_keyFor(ep))
+                            ? BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 2,
+                                ),
+                              )
+                            : null,
                         child: Row(
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: CachedNetworkImage(
-                                imageUrl: imageUrl ?? '',
-                                width: 120,
-                                height: 68,
-                                // Skip memCacheWidth — source w500 already
-                                // matches 120 dp × ~3 DPR ~ 360 px target.
-                                fit: BoxFit.cover,
-                                errorWidget: (_, _, _) =>
-                                    ThumbnailErrorPlaceholder(
-                                      label:
-                                          (ep['name'] as String?) ?? 'Episode',
-                                      iconSize: 24,
+                            Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedNetworkImage(
+                                    imageUrl: imageUrl ?? '',
+                                    width: 120,
+                                    height: 68,
+                                    // Skip memCacheWidth — source w500 already
+                                    // matches 120 dp × ~3 DPR ~ 360 px target.
+                                    fit: BoxFit.cover,
+                                    errorWidget: (_, _, _) =>
+                                        ThumbnailErrorPlaceholder(
+                                          label:
+                                              (ep['name'] as String?) ??
+                                              'Episode',
+                                          iconSize: 24,
+                                        ),
+                                  ),
+                                ),
+                                if (_selecting)
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: _selectionBadge(
+                                      _selectedEpisodeKeys.contains(_keyFor(ep)),
                                     ),
-                              ),
+                                  ),
+                              ],
                             ),
                             const SizedBox(width: 12),
                             Expanded(

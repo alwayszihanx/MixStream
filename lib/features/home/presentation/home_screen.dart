@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_provider.dart';
 import 'home_state.dart';
+import 'regional_sections.dart';
 import 'package:mixstream/features/home/presentation/widgets/continue_watching_section.dart';
-import 'package:mixstream/features/home/presentation/widgets/continue_watching_hero_slot.dart';
 import 'package:mixstream/features/search/presentation/search_provider.dart';
 import 'package:mixstream/features/tracking/data/sync_manager.dart';
 import 'package:mixstream/features/tracking/domain/sync_progress_item.dart';
@@ -129,6 +129,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _retrySpinController.dispose();
     _wobbleController.dispose();
     super.dispose();
+  }
+
+  /// Resolves a home section key to a display title. Regional shelves use
+  /// stable keys (so they stay localisable); everything else — TMDB lists and
+  /// provider rows — already carries its title in the key.
+  String _sectionTitle(BuildContext context, String key) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n != null) {
+      switch (key) {
+        case LatestSection.key:
+          return l10n.sectionLatest;
+        case 'regional.hollywood':
+          return l10n.sectionHollywood;
+        case 'regional.bollywood':
+          return l10n.sectionBollywood;
+        case 'regional.southIndian':
+          return l10n.sectionSouthIndian;
+        case 'regional.british':
+          return l10n.sectionBritish;
+        case 'regional.french':
+          return l10n.sectionFrench;
+        case 'regional.german':
+          return l10n.sectionGerman;
+        case 'regional.russian':
+          return l10n.sectionRussian;
+        case 'regional.chinese':
+          return l10n.sectionChinese;
+        case 'regional.japanese':
+          return l10n.sectionJapanese;
+        case 'regional.korean':
+          return l10n.sectionKorean;
+        case 'regional.turkish':
+          return l10n.sectionTurkish;
+        case 'regional.arabic':
+          return l10n.sectionArabic;
+        case 'regional.indonesian':
+          return l10n.sectionIndonesian;
+      }
+    }
+    return key;
   }
 
   void _openDetails(BuildContext context, MultimediaItem item) {
@@ -419,10 +459,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 SliverToBoxAdapter(
                   child: _buildNoProviderBanner(context, ref),
                 ),
-              if (watchHistoryEnabled)
-                SliverToBoxAdapter(
-                  child: ContinueWatchingHeroSlot(),
-                ),
               if (data.containsKey('Trending'))
                 SliverToBoxAdapter(
                   child: ExploreCarousel(
@@ -501,7 +537,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     final entry = filteredEntries[index];
                     final addonTarget = _addonCatalogTarget(entry.key);
                     return MediaHorizontalList(
-                      title: addonTarget?.title ?? entry.key,
+                      title:
+                          addonTarget?.title ??
+                          _sectionTitle(context, entry.key),
                       mediaList: entry.value,
                       category: ViewAllCategory.providerContent,
                       showViewAll: true,

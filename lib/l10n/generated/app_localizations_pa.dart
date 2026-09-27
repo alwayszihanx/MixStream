@@ -195,6 +195,50 @@ class AppLocalizationsPa extends AppLocalizations {
   String get downloadNow => 'ਹੁਣੇ ਡਾਊਨਲੋਡ ਕਰੋ';
 
   @override
+  String get selectEpisodes => 'Select';
+
+  @override
+  String downloadSelectedCount(int count) {
+    return 'Download ($count)';
+  }
+
+  @override
+  String get selectAll => 'Select All';
+
+  @override
+  String selectAllCount(int count) {
+    return 'All ($count)';
+  }
+
+  @override
+  String get selectThisPage => 'This page';
+
+  @override
+  String episodesDownloaded(int count, int total) {
+    return '$count of $total downloaded';
+  }
+
+  @override
+  String get deselectAll => 'Deselect All';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get preparingDownloads => 'Preparing downloads...';
+
+  @override
+  String batchDownloadSummary(int started, int total) {
+    return 'Started $started of $total downloads';
+  }
+
+  @override
+  String get batchDownloadNoneStarted => 'No episodes could be downloaded';
+
+  @override
+  String get noEpisodesSelected => 'Select at least one episode';
+
+  @override
   String get selectSource => 'ਸਰੋਤ ਚੁਣੋ';
 
   @override
@@ -322,6 +366,17 @@ class AppLocalizationsPa extends AppLocalizations {
 
   @override
   String get statusDownloading => 'ਡਾਊਨਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...';
+
+  @override
+  String get statusConverting => 'Converting to MKV...';
+
+  @override
+  String statusConvertingProgress(int percent) {
+    return 'Converting to MKV... $percent%';
+  }
+
+  @override
+  String get statusConversionFailed => 'Kept as MP4 (MKV conversion failed)';
 
   @override
   String get statusFinished => 'ਖ਼ਤਮ ਹੋਇਆ';
@@ -931,6 +986,48 @@ class AppLocalizationsPa extends AppLocalizations {
 
   @override
   String get episodes => 'ਐਪੀਸੋਡ';
+
+  @override
+  String get sectionLatest => 'Latest Movies & Series';
+
+  @override
+  String get sectionHollywood => 'Hollywood Movies & Series';
+
+  @override
+  String get sectionBollywood => 'Bollywood Movies & Series';
+
+  @override
+  String get sectionSouthIndian => 'South Indian Movies & Series';
+
+  @override
+  String get sectionBritish => 'British Movies & Series';
+
+  @override
+  String get sectionFrench => 'French Movies & Series';
+
+  @override
+  String get sectionGerman => 'German Movies & Series';
+
+  @override
+  String get sectionRussian => 'Russian Movies & Series';
+
+  @override
+  String get sectionChinese => 'Chinese Movies & Series';
+
+  @override
+  String get sectionJapanese => 'Japanese Movies & Series';
+
+  @override
+  String get sectionKorean => 'Korean Movies & Series';
+
+  @override
+  String get sectionTurkish => 'Turkish Movies & Series';
+
+  @override
+  String get sectionArabic => 'Arabic Movies & Series';
+
+  @override
+  String get sectionIndonesian => 'Indonesian Movies & Series';
 
   @override
   String get selectSourceToPlay =>

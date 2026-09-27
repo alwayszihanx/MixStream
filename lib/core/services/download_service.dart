@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -15,6 +16,8 @@ import '../domain/entity/multimedia_item.dart';
 import '../router/app_router.dart';
 import '../storage/storage_service.dart';
 import '../network/dio_client_provider.dart';
+import 'hls_downloader.dart';
+import 'mkv_remuxer.dart';
 import 'notification_service.dart';
 
 part 'download_service.g.dart';
@@ -37,6 +40,16 @@ class DownloadProgressData {
   final int totalSize; // Bytes
   final TaskStatus status;
 
+  /// True while a finished download is being remuxed into MKV.
+  final bool converting;
+
+  /// 0..1 progress of the MKV conversion, when [converting] is set.
+  final double conversionProgress;
+
+  /// The download finished but the MP4→MKV remux failed, so the original file
+  /// was kept as-is. Surfaced in the Downloads row instead of failing silently.
+  final bool conversionFailed;
+
   DownloadProgressData({
     required this.taskId,
     required double progress,
@@ -44,6 +57,9 @@ class DownloadProgressData {
     required this.timeRemaining,
     required this.status,
     this.totalSize = -1,
+    this.converting = false,
+    this.conversionProgress = 0.0,
+    this.conversionFailed = false,
   }) : progress = progress.clamp(0.0, 1.0);
 
   String get downloadedSizeString {
@@ -267,7 +283,7 @@ class DownloadService {
                   ),
                 );
           }
-          _handleStatusUpdate(update, trackingUrl);
+          unawaited(_handleStatusUpdate(update, trackingUrl));
       }
     });
 
@@ -324,13 +340,12 @@ class DownloadService {
     _ref.read(appRouterProvider).go('/library');
   }
 
-  void _handleStatusUpdate(TaskStatusUpdate update, String trackingUrl) {
+  Future<void> _handleStatusUpdate(
+    TaskStatusUpdate update,
+    String trackingUrl,
+  ) async {
     if (update.status == TaskStatus.complete) {
-      _ref.read(activeDownloadsProvider.notifier).remove(trackingUrl);
-      _ref.read(downloadProgressProvider.notifier).remove(trackingUrl);
-
-      // Show system notification for download complete
-      _sendDownloadCompleteNotification(update.task);
+      await _finalizeCompletedDownload(update.task, trackingUrl);
     } else if (update.status == TaskStatus.failed ||
         update.status == TaskStatus.canceled) {
       _ref.read(activeDownloadsProvider.notifier).remove(trackingUrl);
@@ -348,6 +363,270 @@ class DownloadService {
             .read(storageServiceProvider)
             .removeDownloadMetadata(update.task.taskId);
       }
+    }
+  }
+
+  /// A finished download is remuxed into a genuine MKV before the "finished"
+  /// notification is fired, so the user never gets a file that is about to be
+  /// replaced. Conversion failure keeps the original file and is non-fatal.
+  Future<void> _finalizeCompletedDownload(Task task, String trackingUrl) async {
+    // Keep the row visible while the file is being converted.
+    final current = _ref.read(downloadProgressProvider)[trackingUrl];
+    if (current != null) {
+      _setConverting(trackingUrl, current, 0);
+    }
+
+    // Convert MP4 → MKV in a background isolate (pure Dart, no FFmpeg), behind
+    // a small queue. A batch can finish many files at once, and one isolate per
+    // completion spikes memory and competes with the remaining downloads for
+    // disk I/O.
+    var failed = false;
+    try {
+      final filePath = await _taskFilePath(task);
+      if (filePath != null && await File(filePath).exists()) {
+        final result = await _enqueueRemux(
+          filePath,
+          onProgress: current == null
+              ? null
+              : (p) => _setConverting(trackingUrl, current, p),
+        );
+        if (!result.success) {
+          failed = true;
+          if (kDebugMode) {
+            debugPrint('[DownloadService] MKV conversion failed: ${result.error}');
+          }
+        }
+      }
+    } catch (e) {
+      failed = true;
+      if (kDebugMode) {
+        debugPrint('[DownloadService] MKV conversion error: $e');
+      }
+    }
+
+    _ref.read(activeDownloadsProvider.notifier).remove(trackingUrl);
+    if (failed) {
+      // Keep the row so the user can see why the file is still an MP4.
+      _ref.read(downloadProgressProvider.notifier).update(
+        trackingUrl,
+        DownloadProgressData(
+          taskId: task.taskId,
+          progress: 1.0,
+          networkSpeed: 0,
+          timeRemaining: Duration.zero,
+          totalSize: current?.totalSize ?? 0,
+          status: TaskStatus.complete,
+          converting: false,
+          conversionFailed: true,
+        ),
+      );
+    } else {
+      _ref.read(downloadProgressProvider.notifier).remove(trackingUrl);
+    }
+    // The remux may have replaced the .mp4 with a .mkv, so cached paths for
+    // this item/episode (and any sibling that shared the scan) are stale.
+    invalidateDownloadedFiles();
+
+    // Show system notification for download complete
+    _sendDownloadCompleteNotification(task);
+  }
+
+  void _setConverting(
+    String trackingUrl,
+    DownloadProgressData current,
+    double fraction,
+  ) {
+    _ref
+        .read(downloadProgressProvider.notifier)
+        .update(
+          trackingUrl,
+          DownloadProgressData(
+            taskId: current.taskId,
+            progress: 1.0,
+            networkSpeed: 0,
+            timeRemaining: Duration.zero,
+            totalSize: current.totalSize,
+            status: TaskStatus.running,
+            converting: true,
+            conversionProgress: fraction.clamp(0.0, 1.0),
+          ),
+        );
+  }
+
+  /// Bounded queue for MKV conversions. Two at a time is enough to keep a
+  /// second core busy while leaving headroom for active downloads.
+  final List<_RemuxJob> _remuxQueue = [];
+  int _remuxActive = 0;
+  static const int _maxConcurrentRemuxes = 2;
+
+  Future<RemuxResult> _enqueueRemux(
+    String filePath, {
+    void Function(double)? onProgress,
+  }) {
+    final job = _RemuxJob(filePath, onProgress);
+    _remuxQueue.add(job);
+    _drainRemuxQueue();
+    return job.completer.future;
+  }
+
+  void _drainRemuxQueue() {
+    while (_remuxActive < _maxConcurrentRemuxes && _remuxQueue.isNotEmpty) {
+      final job = _remuxQueue.removeAt(0);
+      _remuxActive++;
+      unawaited(
+        _runRemuxJob(job).whenComplete(() {
+          _remuxActive--;
+          _drainRemuxQueue();
+        }),
+      );
+    }
+  }
+
+  Future<void> _runRemuxJob(_RemuxJob job) async {
+    try {
+      if (job.onProgress == null) {
+        // No progress UI attached: `compute` is cheaper than a manual isolate.
+        job.completer.complete(
+          await compute(remuxDownloadedVideoToMkv, job.path),
+        );
+        return;
+      }
+
+      // `compute` cannot forward a progress callback, so run the remux in a
+      // hand-spawned isolate and stream progress back over a port.
+      final progressPort = ReceivePort();
+      final replyPort = ReceivePort();
+      final progressSub = progressPort.listen((msg) {
+        if (msg is double) job.onProgress!(msg);
+      });
+
+      await Isolate.spawn(
+        _remuxIsolateEntry,
+        _RemuxRequest(job.path, progressPort.sendPort, replyPort.sendPort),
+      );
+
+      final result = await replyPort.first as RemuxResult;
+      await progressSub.cancel();
+      progressPort.close();
+      replyPort.close();
+      job.completer.complete(result);
+    } catch (e, st) {
+      job.completer.completeError(e, st);
+    }
+  }
+
+  /// Whether [url] points at an HLS playlist.
+  static bool _isHlsUrl(String url) {
+    final path = Uri.tryParse(url)?.path.toLowerCase() ?? '';
+    return path.endsWith('.m3u8') || path.endsWith('.m3u');
+  }
+
+  /// Downloads an HLS stream and writes it as a genuine `.mkv`.
+  ///
+  /// Runs on a background isolate (the demux/mux is CPU bound), reports
+  /// progress through the same map the UI already watches, and is a no-op if a
+  /// file already exists at the target.
+  Future<bool> _startHlsDownload({
+    required String url,
+    required String filename,
+    required String directory,
+    required MultimediaItem item,
+    Episode? episode,
+    String? trackingUrl,
+    Map<String, String>? headers,
+  }) async {
+    final key = trackingUrl ?? url;
+    final saveDir = await getDownloadPath(item, episode: episode);
+    final targetPath = p.join(saveDir, '$filename.mkv');
+    if (await File(targetPath).exists()) {
+      if (kDebugMode) debugPrint('[DownloadService] HLS already downloaded');
+      return false;
+    }
+    final taskId = 'hls:${key.hashCode.abs()}';
+
+    _ref.read(activeDownloadsProvider.notifier).add(key);
+    _ref
+        .read(downloadProgressProvider.notifier)
+        .update(
+          key,
+          DownloadProgressData(
+            taskId: taskId,
+            progress: 0,
+            networkSpeed: 0,
+            timeRemaining: Duration.zero,
+            status: TaskStatus.running,
+          ),
+        );
+
+    try {
+      await requestIgnoreBatteryOptimizations();
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        if (info.version.sdkInt >= 30) {
+          if (!await Permission.manageExternalStorage.isGranted) {
+            await Permission.manageExternalStorage.request();
+          }
+        } else if (!await Permission.storage.isGranted) {
+          await Permission.storage.request();
+        }
+      }
+      await Directory(saveDir).create(recursive: true);
+
+      final outPath = await compute(_hlsToMkvEntry, _HlsRequest(
+        url: url,
+        outputPath: targetPath,
+        headers: headers,
+      ));
+
+      final file = File(outPath);
+      if (!await file.exists()) {
+        throw StateError('HLS download produced no file');
+      }
+
+      // Persist metadata exactly like a normal download so the item shows up
+      // in the Downloads tab and can be played offline.
+      await _ref
+          .read(storageServiceProvider)
+          .saveDownloadMetadata(taskId, item, episode: episode);
+
+      _ref.read(downloadProgressProvider.notifier).update(
+        key,
+        DownloadProgressData(
+          taskId: taskId,
+          progress: 1.0,
+          networkSpeed: 0,
+          timeRemaining: Duration.zero,
+          totalSize: await file.length(),
+          status: TaskStatus.complete,
+        ),
+      );
+      _ref.read(activeDownloadsProvider.notifier).remove(key);
+      invalidateDownloadedFiles();
+
+      if (kDebugMode) {
+        debugPrint('[DownloadService] HLS saved to $outPath');
+      }
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('[DownloadService] HLS download failed: $e');
+      _ref.read(activeDownloadsProvider.notifier).remove(key);
+      _ref.read(downloadProgressProvider.notifier).remove(key);
+      return false;
+    }
+  }
+
+  Future<String?> _taskFilePath(Task task) async {
+    try {
+      final filename = task.filename;
+      final directory = task.directory;
+      if (Platform.isIOS) {
+        final docs = await getApplicationDocumentsDirectory();
+        return p.join(docs.path, directory, filename);
+      }
+      // Android / desktop: BaseDirectory.root + absolute directory.
+      return p.join(directory, filename);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -487,6 +766,20 @@ class DownloadService {
       debugPrint('[DownloadService] - Tracking URL: $trackingUrl');
       debugPrint('[DownloadService] - Filename: $filename');
       debugPrint('[DownloadService] - Directory: $directory');
+    }
+
+    // HLS is a playlist, not a file, so background_downloader cannot queue it.
+    // Fetch the segments and build a real MKV instead.
+    if (_isHlsUrl(url)) {
+      return _startHlsDownload(
+        url: url,
+        filename: filename,
+        directory: directory,
+        item: item,
+        episode: episode,
+        trackingUrl: trackingUrl,
+        headers: headers,
+      );
     }
 
     // Industry Standard: Ask for battery optimization when a real download starts
@@ -645,6 +938,41 @@ class DownloadService {
     return path;
   }
 
+  /// Resolved download paths, keyed by `directory\0baseName`.
+  ///
+  /// [getDownloadedFile] runs for every visible download row and every episode
+  /// card, and each call used to cost up to four `exists()` syscalls. Results
+  /// are cached and invalidated whenever a file is written, remuxed or
+  /// deleted. Negative results are cached too, so a missing file is not
+  /// re-probed on every rebuild.
+  final Map<String, File?> _downloadedFileCache = {};
+  static const int _maxDownloadedFileCacheEntries = 600;
+
+  static String _downloadedFileCacheKey(String directory, String baseName) =>
+      '$directory\u0000$baseName';
+
+  void _cacheDownloadedFile(String key, File? file) {
+    if (_downloadedFileCache.length >= _maxDownloadedFileCacheEntries) {
+      _downloadedFileCache.clear();
+    }
+    _downloadedFileCache[key] = file;
+  }
+
+  /// Drops every cached lookup. Called after any write/remux/delete so the
+  /// next check hits the disk.
+  void invalidateDownloadedFiles() => _downloadedFileCache.clear();
+
+  /// The `S<season>-E<episode>` prefix an episode is saved under.
+  static String episodeBaseName(Episode episode) {
+    final name = episode.name.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+    return 'S${episode.season}-E${episode.episode} $name';
+  }
+
+  /// Stable per-episode key. TMDB/Nuvio episodes have an empty [Episode.url],
+  /// so the season/episode numbers are the only dependable identity.
+  static String episodeDownloadKey(Episode episode) =>
+      'S${episode.season}-E${episode.episode}';
+
   Future<File?> getDownloadedFile(
     MultimediaItem item, {
     Episode? episode,
@@ -660,26 +988,82 @@ class DownloadService {
     final sanitizedTitle = item.title
         .replaceAll(RegExp(r'[^\w\s-]'), '')
         .trim();
-    String baseName;
+    final String baseName;
     if (episode != null && item.contentType != MultimediaContentType.movie) {
-      final sanitizedEpName = episode.name
-          .replaceAll(RegExp(r'[^\w\s-]'), '')
-          .trim();
-      baseName = "S${episode.season}-E${episode.episode} $sanitizedEpName";
+      baseName = episodeBaseName(episode);
     } else {
       baseName = sanitizedTitle;
     }
 
-    // Check common extensions
-    final extensions = ['.mp4', '.mkv', '.webm', '.avi'];
+    final key = _downloadedFileCacheKey(directoryPath, baseName);
+    if (_downloadedFileCache.containsKey(key)) {
+      return _downloadedFileCache[key];
+    }
+
+    // MKV first: a completed download is remuxed, so the converted file is the
+    // one we want to hand back.
+    const extensions = ['.mkv', '.mp4', '.webm', '.avi'];
     for (final ext in extensions) {
       final file = File(p.join(directoryPath, '$baseName$ext'));
       if (await file.exists()) {
+        _cacheDownloadedFile(key, file);
         return file;
       }
     }
 
+    _cacheDownloadedFile(key, null);
     return null;
+  }
+
+  /// Which of [episodes] already have a file on disk.
+  ///
+  /// Lists the season directory once and matches the `S<season>-E<episode>`
+  /// prefix, so this costs one directory read instead of four `exists()` calls
+  /// per episode. Returns keys in [episodeDownloadKey] form (`S1-E2`).
+  Future<Set<String>> existingEpisodeKeys(
+    MultimediaItem item,
+    List<Episode> episodes,
+  ) async {
+    final found = <String>{};
+    if (episodes.isEmpty) return found;
+
+    final directoryPath = await getDownloadPath(
+      item,
+      episode: episodes.first,
+      absolute: true,
+    );
+
+    final List<String> names;
+    try {
+      final dir = Directory(directoryPath);
+      if (!await dir.exists()) return found;
+      names = await dir
+          .list(followLinks: false)
+          .where((e) => e is File)
+          .map((e) => e.uri.pathSegments.isEmpty ? '' : e.uri.pathSegments.last)
+          .toList();
+    } catch (_) {
+      return found;
+    }
+
+    final pattern = RegExp(r'^S(\d+)-E(\d+)(?:\s|$)');
+    final byKey = <String, String>{};
+    for (final n in names) {
+      final m = pattern.firstMatch(n);
+      if (m != null) byKey['S${m.group(1)}-E${m.group(2)}'] = n;
+    }
+
+    for (final ep in episodes) {
+      final key = episodeDownloadKey(ep);
+      final name = byKey[key];
+      if (name == null) continue;
+      found.add(key);
+      _cacheDownloadedFile(
+        _downloadedFileCacheKey(directoryPath, episodeBaseName(ep)),
+        File(p.join(directoryPath, name)),
+      );
+    }
+    return found;
   }
 
   // Check if battery optimizations are ignored
@@ -702,6 +1086,7 @@ class DownloadService {
   }
 
   Future<bool> deleteDownloadedFile(File file) async {
+    invalidateDownloadedFiles();
     try {
       if (await file.exists()) {
         final parentDir = file.parent;
@@ -783,4 +1168,63 @@ class DownloadMetadata {
     }
     return "${mb.toStringAsFixed(2)} MB";
   }
+}
+
+/// One queued MP4→MKV conversion.
+class _RemuxJob {
+  final String path;
+  final void Function(double)? onProgress;
+  final Completer<RemuxResult> completer = Completer<RemuxResult>();
+
+  _RemuxJob(this.path, this.onProgress);
+}
+
+/// Message handed to the remux isolate so it can report progress and return a
+/// result. Kept to primitives so it is safely sendable.
+class _RemuxRequest {
+  final String path;
+  final SendPort progressPort;
+  final SendPort replyPort;
+
+  const _RemuxRequest(this.path, this.progressPort, this.replyPort);
+}
+
+/// Isolate entry point for a progress-reporting remux.
+void _remuxIsolateEntry(_RemuxRequest request) {
+  remuxDownloadedVideoToMkv(
+    request.path,
+    onProgress: request.progressPort.send,
+  ).then(
+    request.replyPort.send,
+    onError: (Object e) => request.replyPort.send(RemuxResult.fail('$e')),
+  );
+}
+
+/// Sendable parameters for the HLS→MKV isolate.
+class _HlsRequest {
+  final String url;
+  final String outputPath;
+  final Map<String, String>? headers;
+  const _HlsRequest({
+    required this.url,
+    required this.outputPath,
+    this.headers,
+  });
+}
+
+/// Isolate entry point: builds the MKV and returns its path.
+Future<String> _hlsToMkvEntry(_HlsRequest request) async {
+  final dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 60),
+      followRedirects: true,
+    ),
+  );
+  final file = await HlsDownloader(dio).downloadToMkv(
+    request.url,
+    request.outputPath,
+    headers: request.headers,
+  );
+  return file.path;
 }

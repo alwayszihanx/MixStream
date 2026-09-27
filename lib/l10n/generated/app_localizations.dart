@@ -541,6 +541,78 @@ abstract class AppLocalizations {
   /// **'Download Now'**
   String get downloadNow;
 
+  /// No description provided for @selectEpisodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get selectEpisodes;
+
+  /// No description provided for @downloadSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Download ({count})'**
+  String downloadSelectedCount(int count);
+
+  /// No description provided for @selectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get selectAll;
+
+  /// No description provided for @selectAllCount.
+  ///
+  /// In en, this message translates to:
+  /// **'All ({count})'**
+  String selectAllCount(int count);
+
+  /// No description provided for @selectThisPage.
+  ///
+  /// In en, this message translates to:
+  /// **'This page'**
+  String get selectThisPage;
+
+  /// No description provided for @episodesDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {total} downloaded'**
+  String episodesDownloaded(int count, int total);
+
+  /// No description provided for @deselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect All'**
+  String get deselectAll;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @preparingDownloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing downloads...'**
+  String get preparingDownloads;
+
+  /// No description provided for @batchDownloadSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Started {started} of {total} downloads'**
+  String batchDownloadSummary(int started, int total);
+
+  /// No description provided for @batchDownloadNoneStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'No episodes could be downloaded'**
+  String get batchDownloadNoneStarted;
+
+  /// No description provided for @noEpisodesSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one episode'**
+  String get noEpisodesSelected;
+
   /// No description provided for @selectSource.
   ///
   /// In en, this message translates to:
@@ -774,6 +846,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Downloading...'**
   String get statusDownloading;
+
+  /// No description provided for @statusConverting.
+  ///
+  /// In en, this message translates to:
+  /// **'Converting to MKV...'**
+  String get statusConverting;
+
+  /// No description provided for @statusConvertingProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Converting to MKV... {percent}%'**
+  String statusConvertingProgress(int percent);
+
+  /// No description provided for @statusConversionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept as MP4 (MKV conversion failed)'**
+  String get statusConversionFailed;
 
   /// No description provided for @statusFinished.
   ///
@@ -1848,6 +1938,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Episodes'**
   String get episodes;
+
+  /// No description provided for @sectionLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest Movies & Series'**
+  String get sectionLatest;
+
+  /// No description provided for @sectionHollywood.
+  ///
+  /// In en, this message translates to:
+  /// **'Hollywood Movies & Series'**
+  String get sectionHollywood;
+
+  /// No description provided for @sectionBollywood.
+  ///
+  /// In en, this message translates to:
+  /// **'Bollywood Movies & Series'**
+  String get sectionBollywood;
+
+  /// No description provided for @sectionSouthIndian.
+  ///
+  /// In en, this message translates to:
+  /// **'South Indian Movies & Series'**
+  String get sectionSouthIndian;
+
+  /// No description provided for @sectionBritish.
+  ///
+  /// In en, this message translates to:
+  /// **'British Movies & Series'**
+  String get sectionBritish;
+
+  /// No description provided for @sectionFrench.
+  ///
+  /// In en, this message translates to:
+  /// **'French Movies & Series'**
+  String get sectionFrench;
+
+  /// No description provided for @sectionGerman.
+  ///
+  /// In en, this message translates to:
+  /// **'German Movies & Series'**
+  String get sectionGerman;
+
+  /// No description provided for @sectionRussian.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian Movies & Series'**
+  String get sectionRussian;
+
+  /// No description provided for @sectionChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese Movies & Series'**
+  String get sectionChinese;
+
+  /// No description provided for @sectionJapanese.
+  ///
+  /// In en, this message translates to:
+  /// **'Japanese Movies & Series'**
+  String get sectionJapanese;
+
+  /// No description provided for @sectionKorean.
+  ///
+  /// In en, this message translates to:
+  /// **'Korean Movies & Series'**
+  String get sectionKorean;
+
+  /// No description provided for @sectionTurkish.
+  ///
+  /// In en, this message translates to:
+  /// **'Turkish Movies & Series'**
+  String get sectionTurkish;
+
+  /// No description provided for @sectionArabic.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic Movies & Series'**
+  String get sectionArabic;
+
+  /// No description provided for @sectionIndonesian.
+  ///
+  /// In en, this message translates to:
+  /// **'Indonesian Movies & Series'**
+  String get sectionIndonesian;
 
   /// No description provided for @selectSourceToPlay.
   ///
