@@ -32,7 +32,6 @@ import "../../../shared/widgets/expandable_text.dart";
 import "../../../shared/widgets/loading_indicator.dart";
 import 'package:mixstream/l10n/generated/app_localizations.dart';
 import '../../../shared/widgets/app_icon.dart';
-import 'widgets/episode_watched_action_sheet.dart';
 import '../../../shared/widgets/network_offline_card.dart';
 
 class DetailsScreen extends ConsumerStatefulWidget {
@@ -793,7 +792,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
           )
         else if (details == null)
           const _DetailsEmptyView()
-        else if (!isMovie && details!.episodes!.isNotEmpty)
+        else if (!isMovie && details.episodes!.isNotEmpty)
           DetailsSeasonListWrapper(itemUrl: widget.item.url),
 
         const SizedBox(height: 16),
@@ -1107,11 +1106,7 @@ class _DetailsErrorView extends ConsumerWidget {
   final Object error;
   final VoidCallback onRetry;
 
-  const _DetailsErrorView({
-    super.key,
-    required this.error,
-    required this.onRetry,
-  });
+  const _DetailsErrorView({required this.error, required this.onRetry});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

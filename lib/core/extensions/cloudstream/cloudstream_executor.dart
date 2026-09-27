@@ -241,7 +241,7 @@ class CloudStreamNativeExecutor implements CloudStreamExecutor {
   List<Map<String, dynamic>> _toMaps(List<dynamic>? raw) {
     if (raw == null) return const [];
     return raw
-        .whereType<Map>()
+        .whereType<Map<dynamic, dynamic>>()
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
   }

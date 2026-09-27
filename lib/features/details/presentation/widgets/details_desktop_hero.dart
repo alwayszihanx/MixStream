@@ -142,7 +142,7 @@ class DetailsDesktopHero extends HookConsumerWidget {
                 context,
                 details ?? displayItem,
                 downloadedFile,
-                episode: epList?.firstWhereOrNull((e) => e.url == episodeUrl),
+                episode: epList.firstWhereOrNull((e) => e.url == episodeUrl),
               )
           : showDownload
           ? () => ref

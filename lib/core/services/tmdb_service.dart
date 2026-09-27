@@ -931,7 +931,7 @@ class TmdbService {
       final futures = batch.map((idx) async {
         final item = items[idx];
         final title = item.title;
-        if (title == null || title.isEmpty) return;
+        if (title.isEmpty) return;
 
         try {
           final searchResults = await _dio.get<Map<String, dynamic>>(

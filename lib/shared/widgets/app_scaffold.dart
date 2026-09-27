@@ -232,9 +232,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
                 onTap: (index) => _onItemTapped(index, context),
               ),
             ),
-            _ => Scaffold(
-              body: AppBackground(child: widget.navigationShell),
-            ),
           },
         );
       },

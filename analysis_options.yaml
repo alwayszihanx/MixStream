@@ -14,8 +14,6 @@ analyzer:
     strict-casts: true
     strict-inference: true
     strict-raw-types: true
-  plugins:
-    - custom_lint
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
@@ -47,6 +45,10 @@ linter:
     # discarded_futures: true  # 147 info-level sites; fix with unawaited() or await incrementally
 #
 
+# custom_lint's riverpod_lint rules run through `dart run custom_lint` (CI has a
+# step for it) and through the IDE, which picks the plugin up from the
+# custom_lint dev dependency. The old analyzer.plugins entry is deprecated and
+# the analyzer warns about it on every run, so it is not repeated here.
 custom_lint:
   rules:
     - riverpod_avoid_global_provider

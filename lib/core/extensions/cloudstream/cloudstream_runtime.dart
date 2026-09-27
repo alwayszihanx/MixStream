@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:ui' show RootIsolateToken, BackgroundIsolateBinaryMessenger;
+// BackgroundIsolateBinaryMessenger comes from package:flutter/services.dart,
+// which is imported below; only RootIsolateToken needs dart:ui.
+import 'dart:ui' show RootIsolateToken;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -23,10 +25,9 @@ import 'package:encrypt/encrypt.dart' as encrypt_lib;
 /// `registerMainAPI`, …) and runs each plugin's `registerMainAPI(new X())`
 /// to capture its `MainAPI` instance.
 class CloudStreamRuntime {
-  CloudStreamRuntime._(this._sendPort, this._ready);
+  CloudStreamRuntime._(this._sendPort);
 
   final SendPort _sendPort;
-  final Future<void> _ready;
   int _nextId = 1;
   final Map<int, Completer<dynamic>> _pending = {};
 
@@ -35,7 +36,9 @@ class CloudStreamRuntime {
     final rx = ReceivePort();
     final ready = Completer<void>();
     final token = RootIsolateToken.instance;
-    final isolate = await Isolate.spawn(
+    // The isolate handle is deliberately dropped: the runtime is shut down by
+    // killing its ReceivePort, not by exiting anything.
+    await Isolate.spawn(
       _entry,
       [rx.sendPort, token],
       errorsAreFatal: false,
@@ -43,7 +46,7 @@ class CloudStreamRuntime {
     late final CloudStreamRuntime rt;
     rx.listen((msg) {
       if (msg is SendPort) {
-        rt = CloudStreamRuntime._(msg, ready.future);
+        rt = CloudStreamRuntime._(msg);
         ready.complete();
         return;
       }
@@ -96,7 +99,7 @@ void _entry(List<Object?> args) {
   mainPort.send(rx.sendPort);
   final runner = _CsRunner();
   rx.listen((msg) {
-    if (msg is! Map) return;
+    if (msg is! Map<String, dynamic>) return;
     runner.handle(msg);
   });
 }
@@ -502,7 +505,6 @@ class _CsRunner {
   final _dom = <String, html_dom.Node>{};
   int _domCnt = 0;
   int _cbCnt = 0;
-  int _asyncCnt = 0;
   final _inv = <int, String>{};
   final _cbInv = <String, int>{};
   final _prefs = <String, String>{};
@@ -523,7 +525,7 @@ class _CsRunner {
     _eval(_kCloudStreamJs, 'cloudstream');
   }
 
-  void handle(Map msg) {
+  void handle(Map<String, dynamic> msg) {
     final id = msg['id'] as int;
     final type = msg['type'] as String;
     if (type == 'load') {
@@ -730,13 +732,18 @@ class _CsRunner {
       client.close();
       return jsonEncode(result);
     } catch (e) {
-      return jsonEncode({'status': 0, 'body': '', 'headers': {}, 'error': e.toString()});
+      return jsonEncode({
+        'status': 0,
+        'body': '',
+        'headers': <String, String>{},
+        'error': e.toString(),
+      });
     }
   }
 
   Future<dynamic> _handleHttpParallel(Map<String, dynamic> m) async {
     final requests = (m['requests'] as List?) ?? [];
-    final out = [];
+    final out = <dynamic>[];
     for (final r in requests) {
       final rm = r is Map ? Map<String, dynamic>.from(r) : <String, dynamic>{};
       out.add(await _handleHttp(rm));
