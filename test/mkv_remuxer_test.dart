@@ -4,12 +4,62 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixstream/core/services/mkv_remuxer.dart';
 
+/// Matches the encoder name out of an `ffmpeg -encoders` line, which is
+///   " V....D libopenh264          OpenH264 H.264 / AVC / ..."
+/// i.e. a six-character capability field, then the name.
+final _encoderName = RegExp(r'^[ \t]*[VASXBD\.]{6}[ \t]+(\S+)');
+
+/// The encoder names this host's ffmpeg advertises, or null if ffmpeg is not
+/// installed at all. Probed once per run.
+Set<String>? _probeEncoders() {
+  try {
+    final r = Process.runSync('ffmpeg', ['-hide_banner', '-encoders']);
+    if (r.exitCode != 0) return null;
+    return (r.stdout as String)
+        .split('\n')
+        .map(_encoderName.firstMatch)
+        .nonNulls
+        .map((m) => m.group(1)!)
+        .toSet();
+  } on ProcessException {
+    return null;
+  }
+}
+
 /// Generates a small test MP4 with the host system's ffmpeg and validates that
 /// the pure-Dart remuxer produces a genuine, playable MKV (checked with
 /// ffprobe / full decode). These tools are only needed on the development
 /// machine — the app itself has no FFmpeg dependency.
+///
+/// Encoders are picked from what the host actually has, because ffmpeg builds
+/// differ: Ubuntu's package has libx264/libx265/libvpx and no libopenh264,
+/// while the machine this was written on has libopenh264 and neither x264 nor
+/// x265. Both produce the same codec_name, which is all the assertions read.
+/// A host with none of an encoder's candidates skips that test rather than
+/// failing it.
 void main() {
   final tmp = Directory.systemTemp.createTempSync('mkv_remux_test');
+  final encoders = _probeEncoders();
+
+  /// The first of [candidates] this ffmpeg has, or null after skipping the
+  /// test with the reason printed.
+  String? pick(List<String> candidates, String what) {
+    if (encoders == null) {
+      markTestSkipped('ffmpeg is not installed on this machine');
+      return null;
+    }
+    for (final c in candidates) {
+      if (encoders.contains(c)) return c;
+    }
+    markTestSkipped(
+      'no $what encoder in this ffmpeg build (tried ${candidates.join(', ')})',
+    );
+    return null;
+  }
+
+  /// H.264: the two encoders either build ships, in preference order.
+  String? pickH264() => pick(const ['libx264', 'libopenh264'], 'H.264');
+  String? pickVp9() => pick(const ['libvpx-vp9'], 'VP9');
 
   tearDownAll(() {
     try {
@@ -100,9 +150,11 @@ void main() {
   }
 
   test('H.264 + AAC (moov at end) → valid MKV', () async {
+    final vcodec = pickH264();
+    if (vcodec == null) return;
     final mp4 = await makeMp4(
       name: 'h264_moov_end.mp4',
-      vcodec: 'libopenh264',
+      vcodec: vcodec,
       acodec: 'aac',
       extra: ['-bf', '3', '-g', '50'], // B-frames exercise the ctts path
     );
@@ -114,9 +166,11 @@ void main() {
   });
 
   test('H.264 + AAC (moov at start / faststart) → valid MKV', () async {
+    final vcodec = pickH264();
+    if (vcodec == null) return;
     final mp4 = await makeMp4(
       name: 'h264_faststart.mp4',
-      vcodec: 'libopenh264',
+      vcodec: vcodec,
       acodec: 'aac',
       extra: ['-movflags', '+faststart'],
     );
@@ -126,19 +180,11 @@ void main() {
   });
 
   test('HEVC + AAC → valid MKV', () async {
-    final encoders = (await Process.run(
-      'ffmpeg',
-      ['-hide_banner', '-encoders'],
-    ))
-        .stdout
-        .toString();
-    if (!encoders.contains('libx265')) {
-      markTestSkipped('libx265 not available on this machine');
-      return;
-    }
+    final vcodec = pick(const ['libx265'], 'HEVC');
+    if (vcodec == null) return;
     final mp4 = await makeMp4(
       name: 'hevc.mp4',
-      vcodec: 'libx265',
+      vcodec: vcodec,
       acodec: 'aac',
     );
     final result = await remuxDownloadedVideoToMkv(mp4);
@@ -147,6 +193,10 @@ void main() {
   });
 
   test('WebM (VP9 + Opus) → renamed to .mkv, bytes untouched', () async {
+    final vcodec = pickVp9();
+    if (vcodec == null) return;
+    final acodec = pick(const ['libopus'], 'Opus');
+    if (acodec == null) return;
     final webm = '${tmp.path}/clip.webm';
     await run('ffmpeg', [
       '-y',
@@ -161,9 +211,9 @@ void main() {
       '-t',
       '3',
       '-c:v',
-      'libvpx-vp9',
+      vcodec,
       '-c:a',
-      'libopus',
+      acodec,
       webm,
     ]);
     final before = await File(webm).readAsBytes();
@@ -184,6 +234,8 @@ void main() {
   });
 
   test('already-.mkv Matroska → no-op success', () async {
+    final vcodec = pickVp9();
+    if (vcodec == null) return;
     final webm = '${tmp.path}/already.mkv';
     await run('ffmpeg', [
       '-y',
@@ -194,7 +246,7 @@ void main() {
       '-t',
       '2',
       '-c:v',
-      'libvpx-vp9',
+      vcodec,
       '-f',
       'matroska',
       webm,

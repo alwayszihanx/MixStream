@@ -66,6 +66,17 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock', 'packages/*/pubspec.yaml') }}
           restore-keys: ${{ runner.os }}-pub-
 
+      # ffmpeg and ffprobe are the oracle for the MKV remuxer and HLS suites:
+      # they generate the fixtures and then verify the output decodes clean.
+      # The app itself has no FFmpeg dependency, so this is test-only. Ubuntu's
+      # build carries libx264/libx265/libvpx/libopus; the suites pick their
+      # encoder from what is present, so this works on either.
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=30
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -version | head -1
+
       # Two different kinds of generated code, and only one of them is checked
       # in. lib/l10n/generated/** is committed, so gen-l10n here is a drift
       # check (see the next step). *.g.dart is gitignored, so without
