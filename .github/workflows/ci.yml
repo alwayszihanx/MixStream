@@ -11,7 +11,7 @@
 #     pubspec.*, this file): also Windows, macOS and iOS. That is the set that
 #     covers the vendored video_view C plugin, which is the code most
 #     likely to break on one platform only.
-#   Push to master, the nightly schedule, and manual dispatch: all five
+#   Push to main, the nightly schedule, and manual dispatch: all five
 #     shipping platforms unconditionally, so a break that no path filter could
 #     predict - a transitive pub bump, an Xcode or NDK image roll, a CocoaPods
 #     release - is caught within a day rather than at the next release build.
@@ -23,9 +23,12 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [master]
+    # main, not master: this repo has never had a master branch, so the old
+    # value meant no push ever ran CI at all and only the nightly schedule and
+    # manual dispatch did.
+    branches: [main]
   schedule:
-    # 06:00 UTC daily, on master. Runs the full five-platform matrix.
+    # 06:00 UTC daily. Runs the full five-platform matrix.
     - cron: '0 6 * * *'
   workflow_dispatch:
 
@@ -137,13 +140,19 @@ jobs:
               sys.exit(1)
           PY
 
+      # Errors and warnings gate the merge; infos do not. This SDK defaults
+      # --fatal-infos on, and analysis_options.yaml documents the lint backlog
+      # as something to work off incrementally (see the discarded_futures
+      # note), so 50-odd style infos would otherwise hold every PR. They are
+      # still printed, and `dart run custom_lint` below is unchanged.
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
-      # `flutter analyze` does not load analyzer plugins, so the riverpod_lint
-      # rule set that analysis_options.yaml wires in as a `custom_lint` plugin
-      # only ever ran in an IDE. This is the command that actually executes it
-      # (all 15 riverpod_lint 3.1.0 rules are on by default); it takes seconds.
+      # `flutter analyze` does not run the riverpod_lint rule set at all - the
+      # analyzer's own `plugins:` key for it is deprecated and no longer set,
+      # so outside an IDE those rules would never execute. This is the command
+      # that runs them (all 15 riverpod_lint 3.1.0 rules are on by default);
+      # it takes seconds.
       - name: Custom Lint
         run: dart run custom_lint
 
@@ -229,7 +238,8 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         run: |
           flutter pub get
-          flutter analyze
+          # Same policy as the app job: warnings gate, infos do not.
+          flutter analyze --no-fatal-infos
           # `flutter test` exits 1 on a package with no test/ directory, which
           # is a fact about the package rather than a failure - it turns this
           # job red on every run. The first test file added will make the
