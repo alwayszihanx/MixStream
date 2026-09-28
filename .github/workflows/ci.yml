@@ -261,6 +261,97 @@ jobs:
             echo "::notice::${{ matrix.package }} has no test/ directory; skipping."
           fi
 
+  # Boots the app on a real engine with real plugins registered, on a real
+  # device and a real simulator. The unit suite runs in a test binding where
+  # none of the native side exists, so it cannot see a failure that stops the
+  # app opening at all. Two shipped in 3.7.1 — libmpv.so.2 and
+  # libicuuc.so.74 missing on Linux — and both passed analyze and the entire
+  # unit suite. A test that never starts the app cannot catch an app that does
+  # not start.
+  #
+  # Skipped on pull requests on purpose: an emulator boot plus a simulator
+  # boot is minutes of wall clock on every PR, and a PR is a bad place to
+  # discover a flaky device. Pushes to main and the nightly run cover it.
+  smoke-mobile:
+    name: Smoke Test ${{ matrix.name }}
+    if: github.event_name != 'pull_request'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Android
+            os: ubuntu-latest
+          - name: iOS
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Set Up JDK
+        if: matrix.name == 'Android'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Cache Pub Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock', 'packages/*/pubspec.yaml') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      - name: Install Flutter Dependencies
+        run: |
+          flutter pub get
+          flutter gen-l10n
+          dart run build_runner build --delete-conflicting-outputs
+
+      # The emulator needs a KVM node the runner user can open. Without this
+      # the runner falls back to software rendering and the boot times out.
+      - name: Enable KVM
+        if: matrix.name == 'Android'
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Smoke Test Android
+        if: matrix.name == 'Android'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          # Not the minSdk floor (build.gradle.kts inherits Flutter's), but a
+          # current API level with a google_apis image: the point of this leg is
+          # that the plugins register cleanly on a device people actually run.
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: flutter test --no-pub integration_test
+
+      - name: Boot iOS Simulator
+        if: matrix.name == 'iOS'
+        run: |
+          set -euo pipefail
+          UDID="$(xcrun simctl list devices available --json \
+            | python3 -c "import json,sys; ds=json.load(sys.stdin)['devices']; \
+                print(next(d['udid'] for k in ds for d in ds[k] if 'iPhone' in d['name']))")"
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Smoke Test iOS
+        if: matrix.name == 'iOS'
+        run: flutter test --no-pub integration_test -d "$SIM_UDID"
+
   # The Go source the TorrServer binaries and the Android .aar are built from.
   # Nothing else in this workflow compiles it, and `go test` is seconds.
   torrent-server-go:

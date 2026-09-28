@@ -34,6 +34,19 @@ on:
         default: true
         type: boolean
 
+# A preview build only needs to read the repo — it uploads through
+# upload-artifact, not the contents API. Without an explicit block this
+# workflow inherited the repository default token, which is usually broader
+# than anything here uses.
+permissions:
+  contents: read
+
+env:
+  # Pinned for the same reason as ci.yml: an unpinned `stable` means the
+  # preview a user is told to trust was built by whatever SDK the runner had
+  # that week, not the one CI gated on. Keep in step with ci.yml.
+  FLUTTER_VERSION: 3.47.1
+
 jobs:
   android:
     name: Android Build
@@ -51,6 +64,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
       
       - name: Install Dependencies
         run: |
@@ -128,6 +142,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           
       - name: Install Dependencies
         run: |
@@ -191,6 +206,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           
       - name: Install Dependencies
         run: |
@@ -296,6 +312,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           
       - name: Install Dependencies
         run: |
@@ -400,6 +417,7 @@ jobs:
         if: ${{ matrix.arch != 'arm64' }}
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
       - name: Setup Flutter (ARM64 Linux)
         if: ${{ matrix.arch == 'arm64' }}
         run: |

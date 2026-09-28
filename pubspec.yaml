@@ -109,6 +109,14 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # Runs integration_test/ against a real engine with real plugins registered,
+  # on a real device or desktop. The unit suite cannot catch a native failure
+  # at startup — a missing shared library, a plugin that never registers, a
+  # platform channel that answers nothing — and those are exactly the failures
+  # that reach a user as "the app won't open". See integration_test/.
+  integration_test:
+    sdk: flutter
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your

@@ -32,6 +32,14 @@ on:
 permissions:
   contents: write
 
+env:
+  # Pinned for the same reason as ci.yml. An unpinned `stable` means the
+  # artifacts we ship are built by whatever SDK the runner happens to have that
+  # week, which is newer than the one CI gated on — and lib/l10n/generated/**
+  # is committed, so a different gen-l10n can rewrite checked-in output in a
+  # build that never ran the drift check. Keep this in step with ci.yml.
+  FLUTTER_VERSION: 3.47.1
+
 jobs:
   version:
     name: Get Version
@@ -79,6 +87,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install Dependencies
         run: |
@@ -191,6 +200,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install Dependencies
         run: |
@@ -275,6 +285,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install Dependencies
         run: |
@@ -374,6 +385,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
       - name: Install Dependencies
         run: |
           flutter config --enable-windows-desktop
@@ -484,6 +496,7 @@ jobs:
         if: ${{ matrix.arch != 'arm64' }}
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
       - name: Setup Flutter (ARM64 Linux)
         if: ${{ matrix.arch == 'arm64' }}
         run: |

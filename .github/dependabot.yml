@@ -1,0 +1,29 @@
+version: 2
+
+# GitHub Actions only, on purpose.
+#
+# Action majors drift silently — nothing in a green CI run tells you that
+# upload-artifact is three majors behind — and the upgrades are almost always
+# mechanical, so this is exactly the kind of churn to automate.
+#
+# `pub` is deliberately NOT enabled. The Dart graph is held back by a single
+# constraint: custom_lint 3.1.0 needs analyzer 8.4.0, and riverpod_generator /
+# riverpod_lint / riverpod_analyzer_utils form a 17-package cluster that all
+# move together. Dependabot would open PRs that either cannot resolve or
+# unblock that cluster one package at a time, in an order nobody chose.
+# Revisit once the analyzer ceiling is gone.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      # One PR for the routine bumps; anything major still comes on its own, so
+      # a major action bump is a decision rather than something that merged
+      # itself while nobody was looking.
+      actions-minor:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "ci"
