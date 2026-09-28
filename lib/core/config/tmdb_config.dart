@@ -18,16 +18,26 @@ import '../providers/device_info_provider.dart';
 class TmdbConfig {
   /// TMDB API key – compile-time override takes priority, fallback is the
   /// bundled key so the app works out of the box.
-  static const String apiKey = String.fromEnvironment(
-    'TMDB_API_KEY',
-    defaultValue: '1865f43a0549ca50d341dd9ab8b29f49',
-  );
+  ///
+  /// The empty-string check is load-bearing, not defensive noise. A CI build
+  /// that has no `TMDB_API_KEY` secret still passes one, as an EMPTY string,
+  /// and `--dart-define X=` overrides `defaultValue` just as a real value
+  /// does. So the key silently became "", every TmdbService method short-
+  /// circuited on `apiKey.isEmpty`, and the home screen rendered empty with no
+  /// error anywhere. An empty override now means "not supplied", which is what
+  /// it actually means.
+  static const String _apiKeyOverride = String.fromEnvironment('TMDB_API_KEY');
+  static const String apiKey = _apiKeyOverride == ''
+      ? '1865f43a0549ca50d341dd9ab8b29f49'
+      : _apiKeyOverride;
 
   /// Separate key used by Nuvio scrapers / logo fetches.
-  static const String logoApiKey = String.fromEnvironment(
+  static const String _logoApiKeyOverride = String.fromEnvironment(
     'TMDB_LOGO_API_KEY',
-    defaultValue: '98ae14df2b8d8f8f8136499daf79f0e0',
   );
+  static const String logoApiKey = _logoApiKeyOverride == ''
+      ? '98ae14df2b8d8f8f8136499daf79f0e0'
+      : _logoApiKeyOverride;
 
   static const String baseUrl = 'https://api.themoviedb.org/3';
   static const String _imageRoot = 'https://image.tmdb.org/t/p';
