@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -231,7 +231,7 @@ jobs:
       matrix:
         package: [flutter_torrent_server]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -286,7 +286,7 @@ jobs:
           - name: iOS
             os: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -362,7 +362,7 @@ jobs:
       run:
         working-directory: packages/flutter_torrent_server/go_src
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with:
           go-version-file: packages/flutter_torrent_server/go_src/go.mod
@@ -388,7 +388,7 @@ jobs:
     outputs:
       matrix: ${{ steps.pick.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # The diff needs the PR base commit, which a depth-1 checkout does
           # not have. blob:none keeps the trees `--name-only` walks without
@@ -452,7 +452,7 @@ jobs:
         # Git bash on the Windows runner, so every leg reads the same.
         shell: bash
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'

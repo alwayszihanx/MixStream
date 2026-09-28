@@ -58,7 +58,7 @@ jobs:
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.branch }}
       - uses: subosito/flutter-action@v2
@@ -132,7 +132,7 @@ jobs:
     if: ${{ github.event.inputs.build_ios == 'true' }}
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.branch }}
       - name: Select Latest Xcode
@@ -196,7 +196,7 @@ jobs:
             torrserver_binary: TorrServer-darwin-amd64
             xcode_arch: x86_64
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.branch }}
       - name: Select Latest Xcode
@@ -305,7 +305,7 @@ jobs:
             arch: x64
             torrserver_binary: TorrServer-windows-amd64.exe
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -410,7 +410,7 @@ jobs:
             arch: arm64
             torrserver_binary: TorrServer-linux-arm64
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.branch }}
       - uses: subosito/flutter-action@v2
