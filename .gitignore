@@ -91,4 +91,8 @@ tree-shaking-test*.js
 
 node_modules/
 
+# Reference apps dropped in beside the project for comparison. Complete
+# Dart/Kotlin codebases (hundreds of MB) that are not part of MixStream.
+Others/
+
 upload-keystore.jks

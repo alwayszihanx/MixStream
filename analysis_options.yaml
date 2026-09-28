@@ -18,6 +18,11 @@ analyzer:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - "packages/**"
+    # Reference apps dropped in beside the project for comparison. Each is a
+    # whole Dart package of its own, so without this the analyzer walks every
+    # one of them (~11k issues, errors included) on each run. Harmless when the
+    # directory is not there.
+    - "Others/**"
     - build/**
     - android/**
     - ios/**

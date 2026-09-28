@@ -23,6 +23,11 @@ class StorageService {
   late Box<dynamic> _extensionsBox;
   late Box<dynamic> _historyBox;
 
+  /// Where [Hive.init] was pointed. Kept because this Hive version exposes no
+  /// getter for it, and the corruption quarantine needs the path to rename
+  /// the box files it is about to replace.
+  String? _boxDir;
+
   static const String kLibraryBox = 'library_box';
   static const String kSettingsBox = 'settings_box';
   static const String kExtensionsBox = 'extension_data_box';
@@ -31,6 +36,7 @@ class StorageService {
   Future<void> init() async {
     final supportDir = await getApplicationSupportDirectory();
     Hive.init(supportDir.path);
+    _boxDir = supportDir.path;
 
     _libraryBox = await _safeOpenBox(kLibraryBox);
     _settingsBox = await _safeOpenBox(kSettingsBox);
@@ -44,14 +50,19 @@ class StorageService {
   Future<Box<dynamic>> _safeOpenBox(String boxName) async {
     try {
       return await Hive.openBox<dynamic>(boxName);
-    } catch (e) {
+    } on HiveError catch (e) {
+      // ONLY HiveError gets the salvage path. This used to catch everything,
+      // and everything includes a full disk, a permission error and a second
+      // desktop instance holding the lock — none of which is corruption, and
+      // all of which used to end with deleteBoxFromDisk() taking the user's
+      // library with them. Those now propagate to the caller instead.
       if (kDebugMode) {
         debugPrint(
-          "Error opening Hive box '$boxName': $e. Attempting recovery before deleting...",
+          "Error opening Hive box '$boxName': $e. Attempting recovery...",
         );
       }
 
-      // Attempt to salvage any readable entries before wiping the box.
+      // Attempt to salvage any readable entries before moving the box aside.
       final Map<dynamic, dynamic> salvaged = {};
       try {
         final recoveryBox = await Hive.openBox<dynamic>(
@@ -67,9 +78,11 @@ class StorageService {
         // Box is unreadable even with crash recovery — salvaged stays empty.
       }
 
-      try {
-        await Hive.deleteBoxFromDisk(boxName);
-      } catch (_) {}
+      // Quarantine rather than delete. The corrupt bytes are renamed, not
+      // unlinked, so if the salvage above came back empty there is still a
+      // copy on disk to recover by hand — a library is worth more than the
+      // megabytes it takes to keep a broken file around.
+      _quarantineBoxFiles(boxName);
 
       final fresh = await Hive.openBox<dynamic>(boxName);
 
@@ -84,6 +97,31 @@ class StorageService {
       }
 
       return fresh;
+    }
+  }
+
+  /// Renames a box's `.hive` and `.lock` files to `.corrupt-<millis>` so Hive
+  /// opens a fresh box while the unreadable original stays on disk.
+  void _quarantineBoxFiles(String boxName) {
+    final dir = _boxDir;
+    if (dir == null) return;
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    for (final file in [
+      File('$dir/$boxName.hive'),
+      File('$dir/$boxName.lock'),
+    ]) {
+      if (!file.existsSync()) continue;
+      try {
+        final target = File('${file.path}.corrupt-$stamp');
+        file.renameSync(target.path);
+        if (kDebugMode) {
+          debugPrint("Quarantined ${file.path} -> ${target.path}");
+        }
+      } catch (e) {
+        // Best effort. A box we cannot move is a box we cannot open, and the
+        // re-open below then surfaces that as a real error, not as data loss.
+        if (kDebugMode) debugPrint("Failed to quarantine ${file.path}: $e");
+      }
     }
   }
 
@@ -651,42 +689,93 @@ class StorageService {
 
   static const String _kExtensionRepoUrls = 'extension_repo_urls';
 
+  /// Keys that describe installed extensions and their scraper repositories.
+  /// "Reset Data (Keep Extensions)" exists to clear viewing history and
+  /// settings, not to uninstall the user's plugins — so these survive it.
+  /// The Nuvio prefixes are matched with startsWith because the settings and
+  /// code-cache keys are per-scraper (`nuvio_scraper_settings_<id>`).
+  static const List<String> _kExtensionPreservedPrefixes = [
+    _kExtensionRepoUrls,
+    'nuvio_repos_v1',
+    'nuvio_enabled_v1',
+    'nuvio_auto_update_v1',
+    'nuvio_scraper_settings_',
+    'nuvio_code_',
+  ];
+
+  static bool _isExtensionKey(String key) =>
+      _kExtensionPreservedPrefixes.any(key.startsWith);
+
+  /// Closes a box and deletes it from disk, each in its OWN try block.
+  ///
+  /// They cannot share one. [init] assigns the box fields in sequence, so the
+  /// field for a box that failed to open was never assigned — and these are
+  /// bare `late` fields, so merely reading `_libraryBox.isOpen` throws. With
+  /// one shared try, that read threw and the delete on the next line never
+  /// ran: the exact box `clearPreferences` was called to remove stayed on
+  /// disk. The delete is the part that matters, so it gets its own guard.
+  Future<void> _closeAndDeleteBox(String name, Box<dynamic>? box) async {
+    try {
+      if (box != null && box.isOpen) await box.close();
+    } catch (e) {
+      if (kDebugMode) debugPrint('Error closing $name: $e');
+    }
+    try {
+      await Hive.deleteBoxFromDisk(name);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Error deleting $name: $e');
+    }
+  }
+
   Future<void> clearPreferences({bool keepRepos = true}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      // Preserve extension repo URLs so installed extensions remain visible after Reset Data
-      final savedRepoUrls = prefs.getStringList(_kExtensionRepoUrls);
+
+      // Snapshot every extension-related key BEFORE clearing, then put the
+      // values back. The old code preserved `extension_repo_urls` alone and
+      // then deleted the extensions box unconditionally, so "Keep Extensions"
+      // lost every plugin's data and every Nuvio preference anyway — enabled
+      // state, auto-update, per-scraper settings, all of it.
+      final savedExtensionKeys = <String>[];
+      final savedExtensionValues = <String, Object?>{};
+      if (keepRepos) {
+        for (final key in prefs.getKeys()) {
+          if (!_isExtensionKey(key)) continue;
+          savedExtensionKeys.add(key);
+          savedExtensionValues[key] = prefs.get(key);
+        }
+      }
 
       await prefs.clear();
 
-      if (keepRepos && savedRepoUrls != null && savedRepoUrls.isNotEmpty) {
-        await prefs.setStringList(_kExtensionRepoUrls, savedRepoUrls);
+      for (final key in savedExtensionKeys) {
+        final value = savedExtensionValues[key];
+        if (value is String) {
+          await prefs.setString(key, value);
+        } else if (value is List<String>) {
+          await prefs.setStringList(key, value);
+        } else if (value is bool) {
+          await prefs.setBool(key, value);
+        } else if (value is int) {
+          await prefs.setInt(key, value);
+        } else if (value is double) {
+          await prefs.setDouble(key, value);
+        }
+        // Anything else is not one of ours to restore.
+      }
+      if (keepRepos && savedExtensionKeys.isNotEmpty && kDebugMode) {
+        debugPrint(
+          'clearPreferences: kept ${savedExtensionKeys.length} extension key(s).',
+        );
       }
 
-      // Delete Hive Boxes (Library, History, Settings, Extensions)
-      try {
-        if (_libraryBox.isOpen) await _libraryBox.close();
-        await Hive.deleteBoxFromDisk(kLibraryBox);
-      } catch (e) {
-        if (kDebugMode) debugPrint('Error deleting library box: $e');
-      }
-      try {
-        if (_settingsBox.isOpen) await _settingsBox.close();
-        await Hive.deleteBoxFromDisk(kSettingsBox);
-      } catch (e) {
-        if (kDebugMode) debugPrint('Error deleting settings box: $e');
-      }
-      try {
-        if (_historyBox.isOpen) await _historyBox.close();
-        await Hive.deleteBoxFromDisk(kHistoryBox);
-      } catch (e) {
-        if (kDebugMode) debugPrint('Error deleting history box: $e');
-      }
-      try {
-        if (_extensionsBox.isOpen) await _extensionsBox.close();
-        await Hive.deleteBoxFromDisk(kExtensionsBox);
-      } catch (e) {
-        if (kDebugMode) debugPrint('Error deleting extensions box: $e');
+      // Delete Hive boxes. The extensions box is only removed when the caller
+      // explicitly asked for it.
+      await _closeAndDeleteBox(kLibraryBox, _libraryBox);
+      await _closeAndDeleteBox(kSettingsBox, _settingsBox);
+      await _closeAndDeleteBox(kHistoryBox, _historyBox);
+      if (!keepRepos) {
+        await _closeAndDeleteBox(kExtensionsBox, _extensionsBox);
       }
     } catch (e) {
       if (kDebugMode) debugPrint('Error clearing preferences: $e');

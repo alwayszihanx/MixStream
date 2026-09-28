@@ -40,6 +40,67 @@ class LocalProxyService {
 
   static const int _maxPlaylists = 50;
 
+  /// Two pooled clients, one per request class, instead of a fresh
+  /// [HttpClient] per request.
+  ///
+  /// [HttpClient] is a connection pool, and a new one per request threw that
+  /// pool away every time: a two-hour HLS film at six-second segments is
+  /// ~1200 requests, so every segment paid a cold TCP + TLS handshake to the
+  /// CDN. On a slow or high-latency link that is visible as repeated
+  /// stutter, and it lands on the seek path too, where a stall is most
+  /// noticeable.
+  ///
+  /// The split exists because the two classes need opposite `autoUncompress`
+  /// settings, and that flag is per-client:
+  ///   - playlists: gzip must be decoded, because the body is parsed and
+  ///     rewritten.
+  ///   - video: gzip must NOT be requested, because CDNs treat
+  ///     `Accept-Encoding: gzip` + `Range` as incompatible and answer 200
+  ///     (whole file) instead of 206 (partial), which breaks seeking.
+  /// It also removes a race: the old code flipped `autoUncompress` on a client
+  /// that parallel segment fetches shared.
+  HttpClient? _playlistClient;
+  HttpClient? _mediaClient;
+
+  HttpClient _clientFor({required bool isPlaylist}) {
+    final existing = isPlaylist ? _playlistClient : _mediaClient;
+    if (existing != null) return existing;
+    final client = HttpClient()
+      // Bound the upstream so a stuck CDN can't freeze the player UI
+      // indefinitely (audit B4). Connection: 10 s, idle: 30 s. These cover
+      // the long tail of slow but eventually-responsive providers without
+      // hanging on truly dead hosts.
+      ..connectionTimeout = const Duration(seconds: 10)
+      ..idleTimeout = const Duration(seconds: 30)
+      ..autoUncompress = isPlaylist;
+    // NOTE: no badCertificateCallback. There used to be one returning true for
+    // every certificate, which accepted ANY certificate on a path that also
+    // replays the plugin's session cookies upstream — so an on-path attacker
+    // on shared wifi could both read those cookies and substitute the video
+    // bytes. Dart verifies by default; the override only removed that. A
+    // source with a genuinely broken certificate now fails loudly instead of
+    // playing to whoever is in the middle.
+    if (isPlaylist) {
+      _playlistClient = client;
+    } else {
+      _mediaClient = client;
+    }
+    return client;
+  }
+
+  Future<void> _closeClients() async {
+    final clients = [_playlistClient, _mediaClient];
+    _playlistClient = null;
+    _mediaClient = null;
+    for (final client in clients) {
+      try {
+        client?.close(force: true);
+      } catch (e) {
+        if (kDebugMode) debugPrint("LocalProxyService: client close error: $e");
+      }
+    }
+  }
+
   int get port => _serverPort;
 
   Future<void> startServer() async {
@@ -68,6 +129,7 @@ class LocalProxyService {
     _server = null;
     _serverPort = 0;
     _playlists.clear();
+    await _closeClients();
     if (server != null) {
       try {
         await server.close(force: true);
@@ -273,23 +335,7 @@ class LocalProxyService {
     // Check if this is an M3U8 request to handle Range headers and rewriting
     final isRequestM3u8 = targetUrl.toLowerCase().contains(".m3u8");
 
-    final client = HttpClient();
-    // Bound the upstream so a stuck CDN can't freeze the player UI
-    // indefinitely (audit B4). Connection: 10 s, idle: 30 s. These cover
-    // the long tail of slow but eventually-responsive providers without
-    // hanging on truly dead hosts.
-    client.connectionTimeout = const Duration(seconds: 10);
-    client.idleTimeout = const Duration(seconds: 30);
-    // For M3U8: autoUncompress=true so gzip-encoded playlists arrive as UTF-8
-    // text we can parse and rewrite. Content-Length is stripped for M3U8
-    // responses (body is rewritten, size changes).
-    //
-    // For binary video (MKV, MP4, TS): autoUncompress=false so Dart never
-    // injects "Accept-Encoding: gzip" on the outgoing request. CDNs treat
-    // gzip + Range as incompatible and return 200 (full file) instead of 206
-    // (partial), which breaks seeking.
-    client.autoUncompress = isRequestM3u8;
-    client.badCertificateCallback = (cert, host, port) => true;
+    final client = _clientFor(isPlaylist: isRequestM3u8);
 
     try {
       final req = await client.getUrl(Uri.parse(targetUrl));

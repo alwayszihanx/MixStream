@@ -15,6 +15,8 @@ import 'package:video_view/video_view.dart'
     show VideoController, SubtitleTrackConfig, VideoControllerPlaybackState;
 
 import '../../../../core/logger/app_logger.dart';
+import '../../../../core/network/playback_url_credentials.dart';
+import '../../../../core/nuvio/data/nuvio_stream_service.dart';
 import '../../../../core/services/download_service.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
 import '../../../../core/extensions/base_provider.dart';
@@ -1713,19 +1715,46 @@ class PlayerController extends Notifier<PlayerState> {
         // position — instead of switching to a worse/different source.
         // Only fall back to a different source if the re-resolve also
         // fails (changeStream → revertToPreviousStream on error).
+        //
+        // This used to call changeStream() with the SAME StreamResult, which
+        // cannot re-resolve anything: _resolveStreamUrl() only normalises the
+        // string it is given, so it reopened the identical dead URL, burned
+        // the one attempt, and dropped the user onto a worse source. It now
+        // actually re-runs the scrapers, with the cache bypassed.
         if (!_staleUrlReResolveAttempted && state.currentStream != null) {
+          // Fire and forget: this listener is synchronous, and the refresh is
+          // a scraper round trip. The attempt flag is set up front so a second
+          // error arriving meanwhile cannot start a second fan-out.
           _staleUrlReResolveAttempted = true;
-          if (kDebugMode) {
-            debugPrint(
-              '[Player] Mid-playback error — re-resolving current source '
-              '(likely expired stream URL).',
-            );
-          }
-          _enterRuntimePhase(
-            kind: PlaybackUiPhaseKind.switchingSource,
-            detail: "Refreshing stream...",
+          final failedUrl = state.currentStream!.url;
+          unawaited(
+            _refreshExpiredStreamUrl().then((refreshed) {
+              if (refreshed == null) {
+                // Nothing to re-resolve from (a direct link, or the scrapers
+                // are gone): switch source rather than pretend.
+                _markSourceAttempt(
+                  state.currentStreamIndex,
+                  SourceAttemptStatus.failed,
+                  isCurrent: false,
+                );
+                _revertMessage =
+                    "Current source stopped unexpectedly. Trying next available source...";
+                retryNextStream(sourceSessionId: state.sourceSessionId);
+                return;
+              }
+              if (kDebugMode) {
+                debugPrint(
+                  '[Player] Re-resolved an expired stream URL '
+                  '(${failedUrl.length} chars) from its scraper.',
+                );
+              }
+              _enterRuntimePhase(
+                kind: PlaybackUiPhaseKind.switchingSource,
+                detail: "Refreshing stream...",
+              );
+              unawaited(changeStream(refreshed, resetPosition: false));
+            }),
           );
-          unawaited(changeStream(state.currentStream!, resetPosition: false));
           return;
         }
 
@@ -2701,7 +2730,12 @@ class PlayerController extends Notifier<PlayerState> {
     }
 
     final uri = Uri.parse(stream.url);
-    final headers = <String, String>{...?stream.headers};
+    // The probe has to present the same identity as playback. It used to send
+    // the plugin's headers verbatim, so a stream with no User-Agent of its own
+    // was probed as "Dart/3.x (dart:io)" and played as a browser — and a CDN
+    // that ties a signed URL to the requesting agent (which is most of them)
+    // 403s the probe, marks a working source failed, and failover skips it.
+    final headers = _buildPlaybackHeaders(stream);
 
     try {
       final resp = await http
@@ -3126,19 +3160,36 @@ class PlayerController extends Notifier<PlayerState> {
       return;
     }
 
-    // Find the next index that isn't already failed
-    int nextIndex = state.currentStreamIndex + 1;
-    while (nextIndex < state.streams.length) {
+    // Find the next index that isn't already failed, walking the RING rather
+    // than the list. The old walk stopped at the end of the array, which put
+    // two whole classes of source permanently out of reach:
+    //
+    //  - any candidate BELOW the one the resolver happened to open. Opening is
+    //    not index 0 — it is whichever source the resolver ranked first, so
+    //    when that source failed, everything under it could never be tried.
+    //  - any failover at all from the last source in the list: nextIndex ran
+    //    straight past the end and the "all sources failed" overlay appeared
+    //    while working sources were still untried.
+    //
+    // step < total covers the other total-1 candidates exactly once and can
+    // never re-pick the source that just failed. _findFirstWorkingStream()
+    // already probes modularly, so the health check that follows is
+    // ring-aware too.
+    final total = state.streams.length;
+    int? pickedIndex;
+    for (var step = 1; step < total; step++) {
+      final candidate = (state.currentStreamIndex + step) % total;
       final attempt = state.sourceAttempts.firstWhereOrNull(
-        (e) => e.index == nextIndex,
+        (e) => e.index == candidate,
       );
       if (attempt == null || attempt.status != SourceAttemptStatus.failed) {
+        pickedIndex = candidate;
         break;
       }
-      nextIndex++;
     }
 
-    if (nextIndex < state.streams.length) {
+    if (pickedIndex != null) {
+      final nextIndex = pickedIndex;
       final nextAttempt = state.sourceAttempts.firstWhereOrNull(
         (e) => e.index == nextIndex,
       );
@@ -3148,8 +3199,17 @@ class PlayerController extends Notifier<PlayerState> {
           nextAttempt?.status == SourceAttemptStatus.trying;
 
       // Whether any candidate beyond nextIndex has already been health-checked.
-      final hasNextChecked = state.sourceAttempts.any(
-        (e) => e.index > nextIndex && e.status != SourceAttemptStatus.pending,
+      // "Beyond" is ring order — everything after nextIndex up to, but not
+      // including, the source that just failed. Comparing `e.index >
+      // nextIndex` would miss the wrapped tail, which is exactly the part this
+      // fix exists to reach.
+      SourceAttemptStatus? statusOf(int index) =>
+          state.sourceAttempts.firstWhereOrNull((e) => e.index == index)?.status;
+      final successors = <int>[
+        for (var step = 1; step < total; step++) (nextIndex + step) % total,
+      ];
+      final hasNextChecked = successors.any(
+        (i) => statusOf(i) != null && statusOf(i) != SourceAttemptStatus.pending,
       );
 
       int targetIndex = nextIndex;
@@ -3167,11 +3227,9 @@ class PlayerController extends Notifier<PlayerState> {
               ? state.streams.length
               : state.sourceAttempts.length,
         );
-      } else if (!hasNextChecked && state.streams.length > nextIndex + 1) {
+      } else if (!hasNextChecked && successors.isNotEmpty) {
         // Batch path: entering a new, unchecked window — run parallel health check.
-        final checkCount = (state.streams.length - nextIndex) > 3
-            ? 3
-            : (state.streams.length - nextIndex);
+        final checkCount = successors.length > 3 ? 3 : successors.length;
 
         // Mark all batch candidates as `trying` BEFORE the parallel check so the
         // source list shows the correct status, and enter a counter-free phase so
@@ -3888,8 +3946,87 @@ class PlayerController extends Notifier<PlayerState> {
     return providerName;
   }
 
-  Future<String?> _resolveStreamUrl(StreamResult stream) async {
-    if (stream.url.startsWith("magnet:") ||
+  /// Re-runs the scrapers for the current title looking for a replacement for
+  /// the stream that just died, and returns it — or null when there is nothing
+  /// to gain.
+  ///
+  /// Only worth trying when the dead URL actually looks time-bound: if the
+  /// link carries no credentials, re-running sixty scrapers cannot change the
+  /// answer, and the only correct next step is to switch source. Bounded so a
+  /// wedged scraper cannot turn a source switch into a hang.
+  static const Duration _kExpiredReresolveBudget = Duration(seconds: 25);
+
+  Future<StreamResult?> _refreshExpiredStreamUrl() async {
+    final failed = state.currentStream;
+    if (failed == null) return null;
+    if (!hasLikelyExpiringPlaybackCredentials(failed.url)) return null;
+
+    final tmdbId = _item.tmdbId?.toString() ?? '';
+    if (tmdbId.trim().isEmpty) return null;
+    final isSeries =
+        _item.contentType == MultimediaContentType.series ||
+        _item.contentType == MultimediaContentType.anime;
+    final episode = _episode ?? _resolveCurrentEpisode();
+    if (isSeries && episode == null) return null;
+
+    // The replacement should come from the same scraper as the one that died:
+    // a different provider may not have this release at the same quality.
+    StreamResult? best;
+    var bestScore = -1 << 30;
+    try {
+      await for (final progress in ref
+          .read(nuvioStreamServiceProvider)
+          .resolve(
+            tmdbId: tmdbId,
+            mediaType: isSeries ? 'tv' : 'movie',
+            season: isSeries ? episode?.season : null,
+            episode: isSeries ? episode?.episode : null,
+            bypassCache: true,
+          )
+          .timeout(_kExpiredReresolveBudget)) {
+        if (progress.isLoading && progress.streams.isEmpty) continue;
+        for (final candidate in progress.streams) {
+          if (candidate.url == failed.url) continue;
+          var score = 0;
+          // The replacement should come from the scraper that just died: a
+          // different provider may not carry this release at the same quality.
+          // providerName is "<scraper> · <provider>" when the scraper named
+          // one, so compare on the scraper name it starts with.
+          if (candidate.scraperName.isNotEmpty &&
+              failed.providerName.startsWith(candidate.scraperName)) {
+            score += 100;
+          }
+          if (candidate.name != null && candidate.name == failed.source) {
+            score += 40;
+          }
+          if (hasLikelyExpiringPlaybackCredentials(candidate.url)) score += 5;
+          if (score > bestScore) {
+            bestScore = score;
+            best = StreamResult(
+              url: candidate.url,
+              source: candidate.name ?? failed.source,
+              providerName: candidate.provider?.trim().isNotEmpty ?? false
+                  ? '${candidate.scraperName} · ${candidate.provider!.trim()}'
+                  : candidate.scraperName,
+              headers: candidate.headers,
+              subtitles: candidate.subtitles.isEmpty
+                  ? null
+                  : candidate.subtitles,
+            );
+          }
+        }
+        if (bestScore >= 100) break; // same scraper: good enough, stop early
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Player] Expired-URL re-resolve failed: $e');
+      }
+      return null;
+    }
+    return best;
+  }
+
+  Future<String?> _resolveStreamUrl(StreamResult stream) async {    if (stream.url.startsWith("magnet:") ||
         stream.url.endsWith(".torrent") ||
         (stream.url.startsWith("/") && stream.source.contains("Torrent"))) {
       state = state.copyWith(streamSubtitle: "Initializing Torrent Engine...");

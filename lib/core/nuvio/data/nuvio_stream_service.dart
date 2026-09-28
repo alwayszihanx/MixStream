@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../network/playback_url_credentials.dart';
 import '../models/nuvio_models.dart';
 import 'nuvio_repository.dart';
 import 'nuvio_runtime.dart';
@@ -93,13 +94,25 @@ class NuvioResultCache {
   }
 
   void store(String key, List<NuvioStreamResult> results) {
+    // Never cache a link that is signed or time-limited. A 60-second token
+    // served out of a 10-minute cache is a link that is already dead by the
+    // time the user reaches for it — which reads as "the source is broken"
+    // when it is really "we kept something that expired". Re-running one
+    // scraper is cheaper than a playback failure.
+    final cacheable = results
+        .where((r) => !hasLikelyExpiringPlaybackCredentials(r.url))
+        .toList();
+    if (cacheable.isEmpty) {
+      _entries.remove(key);
+      return;
+    }
     final now = _clock();
     _entries.removeWhere((_, entry) => now.difference(entry.createdAt) >= ttl);
     _entries.remove(key);
     while (_entries.length >= maxEntries) {
       _entries.remove(_entries.keys.first);
     }
-    _entries[key] = _CacheEntry(results, now);
+    _entries[key] = _CacheEntry(cacheable, now);
   }
 }
 
@@ -160,6 +173,13 @@ class NuvioStreamService {
     required String mediaType,
     int? season,
     int? episode,
+    /// Re-run the scrapers even when this episode's results are cached. Used
+    /// when the cached link has died — a signed URL that has expired looks
+    /// exactly like a fresh one, so only the scraper can produce a
+    /// replacement. Deliberately not a cache-wide flush: this is about one
+    /// episode, and throwing away every other title's results to fix one is
+    /// the wrong trade.
+    bool bypassCache = false,
   }) async* {
     final repository = _ref.read(nuvioRepositoryProvider.notifier);
     var state = _ref.read(nuvioRepositoryProvider);
@@ -241,7 +261,7 @@ class NuvioStreamService {
         scraper.id,
         '${scraper.version}|${settings.isEmpty ? '' : jsonEncode(settings)}',
       );
-      final cached = _cache.lookup(key);
+      final cached = bypassCache ? null : _cache.lookup(key);
       if (cached != null) {
         publish(scraper.id, scraper.name, cached);
         completed++;
@@ -270,7 +290,10 @@ class NuvioStreamService {
           episode: episode,
           settings: settings,
         );
-        _cache.store(key, results);
+        // A bypassed run is a repair run, not a fresh discovery: caching its
+        // output would let the very link we just replaced come back on the
+        // next visit.
+        if (!bypassCache) _cache.store(key, results);
         publish(scraper.id, scraper.name, results);
       } on NuvioRuntimeException catch (error) {
         statuses[scraper.id] = NuvioScraperStatus(
