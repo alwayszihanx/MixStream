@@ -182,29 +182,63 @@ class DohService {
     }
   }
 
+  /// Ceiling on a single DoH query. Deliberately shorter than the caller's
+  /// own connect budget: DoH is an OPTIMISATION, and when the endpoint is
+  /// blocked its timeout is pure added latency on every single request. At
+  /// the same 15 s the connect budget uses, a blocked endpoint doubled the
+  /// worst case instead of being skipped.
+  static const Duration _kResolveTimeout = Duration(seconds: 5);
+
+  /// How long a domain that failed to resolve stays failed. Without this,
+  /// every request to an unresolvable host pays the full timeout again.
+  static const Duration _kNegativeCacheTtl = Duration(seconds: 60);
+
+  /// Cap on the cache so a long session browsing many hosts cannot grow it
+  /// without bound.
+  static const int _kMaxCacheEntries = 512;
+
+  /// One query per domain at a time. Parallel segment fetches for the same
+  /// CDN host would otherwise each open their own DoH request.
+  final Map<String, Future<String?>> _inFlight = {};
+
   /// Resolves a domain to an IP address using DNS over HTTPS.
   /// Returns null if resolution fails (caller should fall back to normal DNS).
   Future<String?> resolve(String domain) async {
     if (!_enabled) return null;
 
-    // Check cache first
+    // Check cache first. A cached FAILURE counts as a hit: falling back to
+    // normal DNS immediately is the whole point when DoH is not working.
     final cached = _cache[domain];
     if (cached != null && cached.expiry.isAfter(DateTime.now())) {
       return cached.ip;
     }
 
+    final existing = _inFlight[domain];
+    if (existing != null) return existing;
+
+    final future = _resolveUncached(domain);
+    _inFlight[domain] = future;
+    // whenComplete rather than await-in-a-try: the de-registration happens on
+    // both paths, and there is no window where a late completion could add the
+    // entry back after the removal.
+    return future.whenComplete(() => _inFlight.remove(domain));
+  }
+
+  Future<String?> _resolveUncached(String domain) async {
     try {
-      final response = await _dio.get<dynamic>(
-        _endpoint,
-        queryParameters: {
-          'name': domain,
-          'type': 'A', // IPv4
-        },
-        options: Options(
-          headers: {'Accept': 'application/dns-json'},
-          responseType: ResponseType.json,
-        ),
-      );
+      final response = await _dio
+          .get<dynamic>(
+            _endpoint,
+            queryParameters: {
+              'name': domain,
+              'type': 'A', // IPv4
+            },
+            options: Options(
+              headers: {'Accept': 'application/dns-json'},
+              responseType: ResponseType.json,
+            ),
+          )
+          .timeout(_kResolveTimeout);
 
       if (response.statusCode == 200) {
         final data = response.data is String
@@ -235,7 +269,23 @@ class DohService {
       if (kDebugMode) debugPrint('[DoH] Failed to resolve $domain: $e');
     }
 
+    // Remember the failure briefly, so the next request for the same host
+    // skips straight to normal DNS instead of paying the timeout again.
+    _cache[domain] = _DohCacheEntry(
+      ip: '',
+      expiry: DateTime.now().add(_kNegativeCacheTtl),
+    );
+    _pruneCache();
     return null; // Fall back to normal DNS
+  }
+
+  /// Drops expired entries, then the oldest if still over the cap.
+  void _pruneCache() {
+    final now = DateTime.now();
+    _cache.removeWhere((_, entry) => !entry.expiry.isAfter(now));
+    while (_cache.length > _kMaxCacheEntries) {
+      _cache.remove(_cache.keys.first);
+    }
   }
 
   /// Clears the DNS cache.

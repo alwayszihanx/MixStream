@@ -79,6 +79,11 @@ class CloudflareBypass {
     await waiter.future;
   }
 
+  /// Ceiling on the platform-side WebView spawn. Long enough for a cold
+  /// start on a slow device, short enough that a wedged spawn is a single
+  /// failed bypass rather than a permanently disabled subsystem.
+  static const Duration _kSpawnTimeout = Duration(seconds: 30);
+
   void _releaseSpawnSlot() {
     if (_spawnQueue.isNotEmpty) {
       _spawnQueue.removeAt(0).complete();
@@ -152,6 +157,22 @@ class CloudflareBypass {
         if (html != null &&
             !html.contains('_cf_chl_opt') &&
             !html.contains('Just a moment')) {
+          // Cloudflare rotates `cf_clearance`, and this navigation is where the
+          // replacement lands. `onSolved` is the caller's cookie-jar hook, and
+          // it is the ONLY path that re-injects it — so a cached session
+          // returned without it, leaving the jar on the previous token. Every
+          // later plain-HTTP request to that host then 403s and escalates to
+          // another solve: more spawns, which is the whole thing the cached
+          // session exists to avoid.
+          if (onSolved != null) {
+            try {
+              await onSolved(host);
+            } catch (e) {
+              if (kDebugMode) {
+                debugPrint('$_tag cf_clearance re-injection failed: $e');
+              }
+            }
+          }
           return CfResult(body: html, statusCode: 200, finalUrl: url);
         }
         if (kDebugMode) {
@@ -297,7 +318,15 @@ class CloudflareBypass {
     );
 
     try {
-      await headless.run();
+      // `run()` is awaited with no ceiling, and the spawn slot is only
+      // released from the `finally` below. If the platform side never
+      // completes — on Windows the plugin wraps controller creation in a
+      // helper that only logs on failure, so a synchronous HRESULT error
+      // means the completion handler never fires — that `finally` never runs,
+      // and with _maxConcurrentSpawns == 1 the bypass is disabled for the
+      // rest of the process. One wedged spawn took Cloudflare handling out
+      // for the whole session.
+      await headless.run().timeout(_kSpawnTimeout);
       final deadline = DateTime.now().add(_timeout);
       while (!solved && DateTime.now().isBefore(deadline)) {
         await Future<void>.delayed(_pollInterval);

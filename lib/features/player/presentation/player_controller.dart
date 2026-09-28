@@ -2948,9 +2948,13 @@ class PlayerController extends Notifier<PlayerState> {
       double? syncedPct;
       int syncedTimestamp = 0;
       try {
-        final syncedProgressList = await ref.read(
-          syncedProgressProvider.future,
-        );
+        // Bounded: this runs while the media is already open, and a Trakt or
+        // Simkl account that is slow to answer must not hold up the first
+        // frame. Without a timeout the local resume point is gated behind
+        // somebody else's API.
+        final syncedProgressList = await ref
+            .read(syncedProgressProvider.future)
+            .timeout(_kSyncedResumeBudget);
         if (syncedProgressList.isNotEmpty) {
           SyncProgressItem? match;
           if (isSeries) {
@@ -2961,9 +2965,7 @@ class PlayerController extends Notifier<PlayerState> {
                       p.type == MultimediaContentType.series &&
                       p.season == ep?.season &&
                       p.episode == ep?.episode &&
-                      (p.tmdbId == _item.tmdbId?.toString() ||
-                          p.imdbId == _item.imdbId ||
-                          p.title.toLowerCase() == _item.title.toLowerCase()),
+                      _isSameSyncedTitle(p),
                 )
                 .firstOrNull;
           } else {
@@ -2971,9 +2973,7 @@ class PlayerController extends Notifier<PlayerState> {
                 .where(
                   (p) =>
                       p.type == MultimediaContentType.movie &&
-                      (p.tmdbId == _item.tmdbId?.toString() ||
-                          p.imdbId == _item.imdbId ||
-                          p.title.toLowerCase() == _item.title.toLowerCase()),
+                      _isSameSyncedTitle(p),
                 )
                 .firstOrNull;
           }
@@ -3636,11 +3636,25 @@ class PlayerController extends Notifier<PlayerState> {
             final currentIndex = episodes.indexOf(currentEpisode);
             if (currentIndex != -1 && currentIndex < episodes.length - 1) {
               final nextEpisode = episodes[currentIndex + 1];
-              // Save NEXT episode as current progress (reset to 0)
+              // Roll the history entry forward to the next episode — but keep
+              // whatever position it already has. The old code wrote 0/0
+              // here, and Hive's put is a full replace, so a viewer who had
+              // already watched twenty minutes of the next episode lost all of
+              // it by finishing the previous one.
+              final repo = ref.read(historyRepositoryProvider);
+              final keptPosition = repo.getEpisodePosition(
+                _item.url,
+                mainUrl: nextEpisode.url.isEmpty ? null : nextEpisode.url,
+                season: nextEpisode.season,
+                episode: nextEpisode.episode,
+              );
+              final keptDuration = repo.getDuration(
+                nextEpisode.url.isEmpty ? _item.url : nextEpisode.url,
+              );
               historyNotifier.saveProgress(
                 itemToSave,
-                0,
-                0,
+                keptPosition,
+                keptDuration > 0 ? keptDuration : 0,
                 lastStreamUrl: null,
                 lastEpisodeUrl: nextEpisode.url,
                 season: nextEpisode.season,
@@ -3959,6 +3973,35 @@ class PlayerController extends Notifier<PlayerState> {
       }
     }
     return providerName;
+  }
+
+  /// How long a remote (cross-device) progress lookup may hold up the local
+  /// resume decision. Past this we use the local position and move on.
+  static const Duration _kSyncedResumeBudget = Duration(seconds: 3);
+
+  /// Whether a synced entry refers to the same title as the one opening.
+  ///
+  /// Every arm requires the identifier to be present on BOTH sides. The old
+  /// chain was a bare `||` of three comparisons, and two of them are trivially
+  /// true when both sides are empty: `p.tmdbId == _item.tmdbId?.toString()`
+  /// holds for null == null, and two untitled items with no ids matched each
+  /// other. An untitled local title then adopted the first untitled remote
+  /// entry and resumed at a stranger's position.
+  bool _isSameSyncedTitle(SyncProgressItem remote) {
+    final localTmdb = _item.tmdbId?.toString();
+    if (localTmdb != null && localTmdb.isNotEmpty) {
+      if (remote.tmdbId == localTmdb) return true;
+    }
+    final localImdb = _item.imdbId;
+    if (localImdb != null && localImdb.isNotEmpty && remote.imdbId == localImdb) {
+      return true;
+    }
+    // Title is the last resort, and only when there is something to compare:
+    // two empty titles are not a match.
+    final localTitle = _item.title.trim().toLowerCase();
+    final remoteTitle = remote.title.trim().toLowerCase();
+    if (localTitle.isEmpty || remoteTitle.isEmpty) return false;
+    return localTitle == remoteTitle;
   }
 
   /// Re-runs the scrapers for the current title looking for a replacement for
