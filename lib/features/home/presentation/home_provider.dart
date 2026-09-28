@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/addons/data/addon_client.dart';
-import '../../../../core/config/tmdb_config.dart';
 import '../../../../core/addons/data/addon_repository.dart';
 import '../../../../core/addons/models/addon_manifest.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
@@ -84,13 +84,13 @@ class HomeData extends _$HomeData {
     final token = ++_fetchToken;
     final activeProvider = ref.read(activeProviderProvider);
 
-    // Only skip the work when the network is genuinely unreachable. See
-    // _isOnline: the previous dns.google probe reported "offline" on networks
-    // that simply block it.
-    if (!await _isOnline()) {
-      if (_isCurrent(token)) state = const HomeOffline();
-      return;
-    }
+    // No reachability probe runs ahead of this, deliberately. Two probes were
+    // tried here and both were wrong: a DNS lookup of dns.google reported
+    // "offline" on any network that blocks it, and a real HTTP request to
+    // TMDB turned one extra failure into a blank home screen with a message
+    // that said "no internet" when the internet was fine. The catalog request
+    // below IS the signal — it reports its own failure a moment later, and it
+    // fails for the same reasons the screen would have been blank anyway.
 
     try {
       // 1. Get the provider (or TMDB fallback) catalog first so the hero and
@@ -130,11 +130,44 @@ class HomeData extends _$HomeData {
         shelves[key] = items;
         publish();
       });
+
+      // The fetch is over. publish() only ever moves OFF HomeLoading, so
+      // without this an all-empty run left the screen on the loading shimmer
+      // FOREVER — no content, no error, no way out but pull-to-refresh. That
+      // is what an empty TMDB key looks like from the user's side, which is
+      // why the bug behind it was invisible.
+      if (!_isCurrent(token)) return;
+      if (state is! HomeSuccess) {
+        state = const HomeError(
+          'Could not load anything. Pull down to try again.',
+        );
+      }
     } catch (e) {
       if (state is! HomeSuccess && _isCurrent(token)) {
-        state = HomeError(e.toString());
+        // Say "offline" only for failures that actually mean the network
+        // could not be reached. A 401 or a malformed response is not an
+        // offline device, and claiming otherwise sends the user hunting for a
+        // wifi problem they do not have.
+        state = _looksLikeNetworkFailure(e)
+            ? const HomeOffline()
+            : HomeError(e.toString());
       }
     }
+  }
+
+  /// Whether [error] is worth describing to the user as "no internet".
+  static bool _looksLikeNetworkFailure(Object error) {
+    if (error is SocketException) return true;
+    if (error is HttpException) return true;
+    if (error is TimeoutException) return true;
+    if (error is HandshakeException) return true;
+    final text = error.toString().toLowerCase();
+    return text.contains('socket') ||
+        text.contains('connection') ||
+        text.contains('network') ||
+        text.contains('timed out') ||
+        text.contains('unreachable') ||
+        text.contains('failed host lookup');
   }
 
   /// Loads the "Latest" plus every per-industry regional shelf.
@@ -192,7 +225,13 @@ class HomeData extends _$HomeData {
             if (seen.add(item.tmdbId ?? item.url.hashCode)) merged.add(item);
           }
         }
-        if (merged.length >= 40) onShelf(key, merged);
+        // Publish anything substantial. This used to require 40 entries, which
+        // sounds like a quality bar but is really a cliff: a shelf with 39
+        // valid, freshly-sorted results was thrown away silently, and if EVERY
+        // shelf landed under it the home screen had nothing to show. The
+        // filter belongs on the rendering side, not on whether a section
+        // exists at all.
+        if (merged.isNotEmpty) onShelf(key, merged);
       } catch (e) {
         if (kDebugMode) debugPrint('[HomeData] shelf $key failed: $e');
       }
@@ -228,35 +267,6 @@ class HomeData extends _$HomeData {
 
     for (var i = 0; i < jobs.length; i += chunkSize) {
       await Future.wait(jobs.sublist(i, (i + chunkSize).clamp(0, jobs.length)));
-    }
-  }
-
-  /// Whether the app can reach the network at all.
-  ///
-  /// This used to be `InternetAddress.lookup('dns.google')`, which is not a
-  /// connectivity test: dns.google is unreachable on any network that blocks
-  /// it, and on plenty that only allow port 53 to the local resolver, so the
-  /// home screen showed "no internet" while the internet was fine. It now
-  /// asks the host the app actually needs, and treats ANY HTTP answer as
-  /// reachable — a 401 or a 404 still proves the network path works, which is
-  /// the only thing being asked here.
-  Future<bool> _isOnline() async {
-    final client = HttpClient();
-    try {
-      client.connectionTimeout = const Duration(seconds: 3);
-      final request = await client
-          .getUrl(Uri.parse('${TmdbConfig.baseUrl}/configuration'))
-          .timeout(const Duration(seconds: 4));
-      final response = await request
-          .close()
-          .timeout(const Duration(seconds: 4));
-      return response.statusCode > 0;
-    } catch (_) {
-      return false;
-    } finally {
-      try {
-        client.close(force: true);
-      } catch (_) {}
     }
   }
 
