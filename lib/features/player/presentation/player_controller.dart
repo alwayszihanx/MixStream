@@ -490,6 +490,21 @@ class PlayerController extends Notifier<PlayerState> {
   /// match + per-platform libmpv default-UA divergence).
   Map<String, String> _buildPlaybackHeaders(StreamResult stream) {
     final headers = <String, String>{...?stream.headers};
+    // Hop-by-hop and range-control headers belong to whoever is making THIS
+    // request, not to the scraper that described the link. A scraper that
+    // hands back `Range: bytes=0-` has turned every seek into a no-op, and
+    // `Accept-Encoding: gzip` makes a CDN answer a range request with 200 and
+    // the whole file instead of 206 — which is the exact failure this app's
+    // own proxy documents at length when it splits its clients on the same
+    // flag. The same reasoning has to apply where the headers are handed on,
+    // or the proxy ends up fighting the header the plugin supplied.
+    headers.removeWhere((key, _) {
+      final lower = key.toLowerCase();
+      return lower == 'range' ||
+          lower == 'accept-encoding' ||
+          lower == 'if-range' ||
+          lower == 'content-length';
+    });
     final hasUserAgent = headers.keys.any(
       (k) => k.toLowerCase() == 'user-agent',
     );

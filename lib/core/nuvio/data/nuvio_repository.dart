@@ -154,11 +154,25 @@ class NuvioRepository extends _$NuvioRepository {
     }
   }
 
+  /// Ask intermediaries not to serve a stored copy.
+  ///
+  /// Both Nuvio URLs are content that changes without its filename changing,
+  /// and both are usually behind a CDN. Without this, a cached manifest means
+  /// the version diff sees no change, so a published scraper update simply
+  /// never arrives; a cached code file is worse still, because the store
+  /// writes the STALE bytes under the new version's filename, and from then on
+  /// the app believes it is current while running the previous release.
+  static const Map<String, String> _noCacheHeaders = {
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+  };
+
   Future<NuvioManifest> fetchManifest(String url) async {
     final response = await _dio.get<dynamic>(
       url,
       options: Options(
         responseType: ResponseType.plain,
+        headers: _noCacheHeaders,
         receiveTimeout: const Duration(seconds: 20),
         validateStatus: (status) => status != null && status < 500,
       ),
@@ -523,6 +537,7 @@ class NuvioRepository extends _$NuvioRepository {
       uri.toString(),
       options: Options(
         responseType: ResponseType.plain,
+        headers: _noCacheHeaders,
         receiveTimeout: const Duration(seconds: 25),
         validateStatus: (status) => status != null && status < 500,
       ),

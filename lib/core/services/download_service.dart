@@ -521,6 +521,21 @@ class DownloadService {
     return path.endsWith('.m3u8') || path.endsWith('.m3u');
   }
 
+  /// Drops the headers a download must own for itself. See the call site for
+  /// why `Range` and `Accept-Encoding` are the dangerous two.
+  static Map<String, String> _sanitizeDownloadHeaders(Map<String, String>? headers) {
+    if (headers == null || headers.isEmpty) return const {};
+    final sanitized = Map<String, String>.of(headers);
+    sanitized.removeWhere((key, _) {
+      final lower = key.toLowerCase();
+      return lower == 'range' ||
+          lower == 'if-range' ||
+          lower == 'accept-encoding' ||
+          lower == 'content-length';
+    });
+    return sanitized;
+  }
+
   /// Downloads an HLS stream and writes it as a genuine `.mkv`.
   ///
   /// Runs on a background isolate (the demux/mux is CPU bound), reports
@@ -863,7 +878,12 @@ class DownloadService {
       displayName: filename,
       baseDirectory: baseDir,
       directory: taskDirectory,
-      headers: headers ?? {},
+      // Same rule as playback: a scraper-supplied Range/Accept-Encoding
+      // describes a request this download is not making, and `gzip` + `Range`
+      // is the combination that makes a CDN answer 200 with the whole file
+      // instead of 206 — which looks like a download that ignores pause and
+      // resume, and silently doubles the data.
+      headers: _sanitizeDownloadHeaders(headers),
       updates: Updates.statusAndProgress,
       retries: 3, // Align with example
       allowPause: true,

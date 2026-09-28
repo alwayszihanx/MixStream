@@ -1,7 +1,9 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/addons/data/addon_client.dart';
+import '../../../../core/config/tmdb_config.dart';
 import '../../../../core/addons/data/addon_repository.dart';
 import '../../../../core/addons/models/addon_manifest.dart';
 import '../../../../core/domain/entity/multimedia_item.dart';
@@ -50,8 +52,13 @@ AddonCatalogTarget? addonCatalogTarget(String key) {
 
 @riverpod
 class HomeData extends _$HomeData {
+  int _fetchToken = 0;
+
   @override
   HomeState build() {
+    // Bumped here as well as in fetch(): a provider change must cancel the
+    // previous provider's in-flight load, not just its next one.
+    _fetchToken++;
     final activeProvider = ref.watch(activeProviderProvider);
     if (activeProvider == null) {
       // No MixStream provider installed — fall back to the TMDB catalog so
@@ -65,13 +72,23 @@ class HomeData extends _$HomeData {
     return const HomeLoading();
   }
 
+  /// Whether to trust an in-flight fetch's result.
+  ///
+  /// The notifier outlives a rebuild, so without this a fetch that is still
+  /// running for the provider the user just switched away from lands on top of
+  /// the grid they are now looking at. Bumped in `build` as well, so a
+  /// provider change cancels the previous provider's in-flight load.
+  bool _isCurrent(int token) => token == _fetchToken && ref.mounted;
+
   Future<void> fetch() async {
+    final token = ++_fetchToken;
     final activeProvider = ref.read(activeProviderProvider);
 
-    // Fast connectivity check
-    final online = await _isOnline();
-    if (!online) {
-      state = const HomeOffline();
+    // Only skip the work when the network is genuinely unreachable. See
+    // _isOnline: the previous dns.google probe reported "offline" on networks
+    // that simply block it.
+    if (!await _isOnline()) {
+      if (_isCurrent(token)) state = const HomeOffline();
       return;
     }
 
@@ -87,6 +104,7 @@ class HomeData extends _$HomeData {
       final shelves = <String, List<MultimediaItem>>{};
 
       void publish() {
+        if (!_isCurrent(token)) return;
         // Regional shelves sit directly under the hero; provider rows follow.
         final merged = <String, List<MultimediaItem>>{};
         for (final entry in shelves.entries) {
@@ -108,11 +126,14 @@ class HomeData extends _$HomeData {
       // 2. Stream the regional shelves in as each one resolves, so a slow
       //    region never blocks the rest of the page.
       await _fetchRegionalShelves(onShelf: (key, items) {
+        if (!_isCurrent(token)) return;
         shelves[key] = items;
         publish();
       });
     } catch (e) {
-      if (state is! HomeSuccess) state = HomeError(e.toString());
+      if (state is! HomeSuccess && _isCurrent(token)) {
+        state = HomeError(e.toString());
+      }
     }
   }
 
@@ -210,14 +231,32 @@ class HomeData extends _$HomeData {
     }
   }
 
+  /// Whether the app can reach the network at all.
+  ///
+  /// This used to be `InternetAddress.lookup('dns.google')`, which is not a
+  /// connectivity test: dns.google is unreachable on any network that blocks
+  /// it, and on plenty that only allow port 53 to the local resolver, so the
+  /// home screen showed "no internet" while the internet was fine. It now
+  /// asks the host the app actually needs, and treats ANY HTTP answer as
+  /// reachable — a 401 or a 404 still proves the network path works, which is
+  /// the only thing being asked here.
   Future<bool> _isOnline() async {
+    final client = HttpClient();
     try {
-      final result = await InternetAddress.lookup(
-        'dns.google',
-      ).timeout(const Duration(seconds: 2));
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      client.connectionTimeout = const Duration(seconds: 3);
+      final request = await client
+          .getUrl(Uri.parse('${TmdbConfig.baseUrl}/configuration'))
+          .timeout(const Duration(seconds: 4));
+      final response = await request
+          .close()
+          .timeout(const Duration(seconds: 4));
+      return response.statusCode > 0;
     } catch (_) {
       return false;
+    } finally {
+      try {
+        client.close(force: true);
+      } catch (_) {}
     }
   }
 
