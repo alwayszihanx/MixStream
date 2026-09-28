@@ -121,7 +121,7 @@ jobs:
         run: flutter build apk --release --split-per-abi --dart-define-from-file=dart-defines.json
 
       - name: Upload APKs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android-apks
           path: build/app/outputs/flutter-apk/*.apk
@@ -175,7 +175,7 @@ jobs:
           zip -r MixStream-iOS-preview.ipa Payload
           
       - name: Upload IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ios-ipa
           path: MixStream-iOS-preview.ipa
@@ -286,7 +286,7 @@ jobs:
           zip -ry "../../../../../MixStream-macOS-${{ matrix.arch }}-preview.zip" MixStream.app
 
       - name: Upload macOS Build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-${{ matrix.arch }}
           path: |
@@ -388,7 +388,7 @@ jobs:
           Compress-Archive -Path build\windows\${{ matrix.arch }}\runner\Release\* -DestinationPath "MixStream-Windows-${{ matrix.arch }}-preview.zip"
 
       - name: Upload Windows Build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-${{ matrix.arch }}
           path: |
@@ -474,7 +474,7 @@ jobs:
           tar -czvf "../../../../../MixStream-Linux-${{ matrix.arch }}-preview.tar.gz" .
 
       - name: Upload Linux Build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-${{ matrix.arch }}
           path: |
